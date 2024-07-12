@@ -65,11 +65,17 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	for _, commit := range commits {
+	analyzedCommits, versionBump, err := rp.AnalyzeCommits(commits)
+	if err != nil {
+		return err
+	}
+
+	for _, commit := range analyzedCommits {
 		title, _, _ := strings.Cut(commit.Message, "\n")
 		fmt.Printf("%s %s\n", commit.Hash, title)
 	}
 	fmt.Printf("Previous Tag: %s\n", previousTag.Name)
+	fmt.Printf("Recommended Bump: %v\n", versionBump)
 
 	return nil
 }
