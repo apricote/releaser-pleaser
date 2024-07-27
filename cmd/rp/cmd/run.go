@@ -5,10 +5,7 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"strings"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/spf13/cobra"
 
 	rp "github.com/apricote/releaser-pleaser"
@@ -21,8 +18,10 @@ var runCmd = &cobra.Command{
 }
 
 var (
-	flagForge string
-	flagRepo  string
+	flagForge  string
+	flagBranch string
+	flagOwner  string
+	flagRepo   string
 )
 
 func init() {
@@ -31,51 +30,60 @@ func init() {
 	// Here you will define your flags and configuration settings.
 
 	runCmd.PersistentFlags().StringVar(&flagForge, "forge", "", "")
+	runCmd.PersistentFlags().StringVar(&flagBranch, "branch", "main", "")
+	runCmd.PersistentFlags().StringVar(&flagOwner, "owner", "", "")
 	runCmd.PersistentFlags().StringVar(&flagRepo, "repo", "", "")
 }
 
 func run(cmd *cobra.Command, args []string) error {
+	ctx := cmd.Context()
+
 	var f rp.Forge
 
 	forgeOptions := rp.ForgeOptions{
 		Repository: flagRepo,
+		BaseBranch: flagBranch,
 	}
 
 	switch flagForge {
-	case "gitlab":
-		f = rp.NewGitLab(forgeOptions)
+	//case "gitlab":
+	//f = rp.NewGitLab(forgeOptions)
 	case "github":
-		f = rp.NewGitHub(forgeOptions)
+		f = rp.NewGitHub(logger, &rp.GitHubOptions{
+			ForgeOptions: forgeOptions,
+			Owner:        flagOwner,
+			Repo:         flagRepo,
+		})
 	}
 
-	log.Println("Repo URL: " + f.RepoURL())
-
-	//repo, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-	//	URL:          .RepoURL(),
-	//	SingleBranch: true,
-	//	Depth:        CommitSearchDepth,
-	//})
-	repo, err := git.PlainOpen("~/git/listory")
+	tag, err := f.LatestTag(ctx)
 	if err != nil {
 		return err
 	}
 
-	commits, previousTag, err := rp.ReleasableCommits(repo)
+	logger.InfoContext(ctx, "Latest Tag", "tag.hash", tag.Hash, "tag.name", tag.Name)
+
+	releaseableCommits, err := f.CommitsSince(ctx, tag)
 	if err != nil {
 		return err
 	}
 
-	analyzedCommits, versionBump, err := rp.AnalyzeCommits(commits)
+	logger.InfoContext(ctx, "Found releasable commits", "length", len(releaseableCommits))
+
+	changesets, err := f.Changesets(ctx, releaseableCommits)
 	if err != nil {
 		return err
 	}
 
-	for _, commit := range analyzedCommits {
-		title, _, _ := strings.Cut(commit.Message, "\n")
-		fmt.Printf("%s %s\n", commit.Hash, title)
+	logger.InfoContext(ctx, "Found changesets", "length", len(changesets))
+
+	for _, changeset := range changesets {
+		fmt.Printf("%s %s\n", changeset.Identifier, changeset.URL)
+		for _, entry := range changeset.ChangelogEntries {
+			fmt.Printf("  - %s %s\n", entry.Hash, entry.Description)
+		}
 	}
-	fmt.Printf("Previous Tag: %s\n", previousTag.Name)
-	fmt.Printf("Recommended Bump: %v\n", versionBump)
+	fmt.Printf("Previous Tag: %s\n", tag.Name)
 
 	return nil
 }
