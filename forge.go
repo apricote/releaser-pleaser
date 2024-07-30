@@ -8,6 +8,11 @@ import (
 	"github.com/google/go-github/v63/github"
 )
 
+const (
+	GITHUB_PER_PAGE_MAX  = 100
+	GITHUB_PR_STATE_OPEN = "open"
+)
+
 type Changeset struct {
 	URL              string
 	Identifier       string
@@ -26,6 +31,10 @@ type Forge interface {
 
 	// Changesets looks up the Pull/Merge Requests for each commit, returning its parsed metadata.
 	Changesets(context.Context, []Commit) ([]Changeset, error)
+
+	// PullRequestForBranch returns the open pull request between the branch and ForgeOptions.BaseBranch. If no open PR
+	// exists, it returns nil.
+	PullRequestForBranch(context.Context, string) (*ReleasePullRequest, error)
 }
 
 type ForgeOptions struct {
@@ -106,7 +115,7 @@ func (g *GitHub) commitsSinceTag(ctx context.Context, tag *Tag) ([]*github.Repos
 			ctx, g.options.Owner, g.options.Repo,
 			tag.Hash, head, &github.ListOptions{
 				Page:    page,
-				PerPage: 100,
+				PerPage: GITHUB_PER_PAGE_MAX,
 			})
 		if err != nil {
 			return nil, err
@@ -149,7 +158,7 @@ func (g *GitHub) Changesets(ctx context.Context, commits []Commit) ([]Changeset,
 				ctx, g.options.Owner, g.options.Repo,
 				commit.Hash, &github.ListOptions{
 					Page:    page,
-					PerPage: 100,
+					PerPage: GITHUB_PER_PAGE_MAX,
 				})
 			if err != nil {
 				return nil, err
@@ -197,6 +206,43 @@ func (g *GitHub) Changesets(ctx context.Context, commits []Commit) ([]Changeset,
 	}
 
 	return changesets, nil
+}
+
+func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*ReleasePullRequest, error) {
+	page := 1
+
+	for {
+		prs, resp, err := g.client.PullRequests.ListPullRequestsWithCommit(ctx, g.options.Owner, g.options.Repo, branch, &github.ListOptions{
+			Page:    page,
+			PerPage: GITHUB_PER_PAGE_MAX,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, pr := range prs {
+			if pr.Base.GetLabel() == g.options.BaseBranch && pr.Head.GetLabel() == branch && pr.GetState() == GITHUB_PR_STATE_OPEN {
+				labels := make([]string, 0, len(pr.Labels))
+				for _, label := range pr.Labels {
+					labels = append(labels, label.GetName())
+				}
+
+				return &ReleasePullRequest{
+					ID:          pr.GetNumber(),
+					Title:       pr.GetTitle(),
+					Description: pr.GetBody(),
+					Labels:      labels,
+				}, nil
+			}
+		}
+
+		if page == resp.LastPage || resp.LastPage == 0 {
+			break
+		}
+		page = resp.NextPage
+	}
+
+	return nil, nil
 }
 
 func (g *GitHubOptions) autodiscover() {
