@@ -9,9 +9,10 @@ import (
 
 type AnalyzedCommit struct {
 	Commit
-	Type        string
-	Description string
-	Scope       *string
+	Type           string
+	Description    string
+	Scope          *string
+	BreakingChange bool
 }
 
 func AnalyzeCommits(commits []Commit) ([]AnalyzedCommit, conventionalcommits.VersionBump, error) {
@@ -38,10 +39,11 @@ func AnalyzeCommits(commits []Commit) ([]AnalyzedCommit, conventionalcommits.Ver
 		if commitVersionBump > conventionalcommits.UnknownVersion {
 			// We only care about releasable commits
 			analyzedCommits = append(analyzedCommits, AnalyzedCommit{
-				Commit:      commit,
-				Type:        conventionalCommit.Type,
-				Description: conventionalCommit.Description,
-				Scope:       conventionalCommit.Scope,
+				Commit:         commit,
+				Type:           conventionalCommit.Type,
+				Description:    conventionalCommit.Description,
+				Scope:          conventionalCommit.Scope,
+				BreakingChange: conventionalCommit.IsBreakingChange(),
 			})
 		}
 

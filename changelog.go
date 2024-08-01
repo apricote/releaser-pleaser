@@ -90,16 +90,18 @@ func UpdateChangelogFile(wt *git.Worktree, newEntry string) error {
 	return nil
 }
 
-func NewChangelogEntry(commits []AnalyzedCommit, version, link string) (string, error) {
+func NewChangelogEntry(changesets []Changeset, version, link string) (string, error) {
 	features := make([]AnalyzedCommit, 0)
 	fixes := make([]AnalyzedCommit, 0)
 
-	for _, commit := range commits {
-		switch commit.Type {
-		case "feat":
-			features = append(features, commit)
-		case "fix":
-			fixes = append(fixes, commit)
+	for _, changeset := range changesets {
+		for _, commit := range changeset.ChangelogEntries {
+			switch commit.Type {
+			case "feat":
+				features = append(features, commit)
+			case "fix":
+				fixes = append(fixes, commit)
+			}
 		}
 	}
 

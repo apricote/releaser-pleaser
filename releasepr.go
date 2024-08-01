@@ -32,6 +32,23 @@ const (
 	NextVersionTypeAlpha
 )
 
+func (n NextVersionType) String() string {
+	switch n {
+	case NextVersionTypeUndefined:
+		return "undefined"
+	case NextVersionTypeNormal:
+		return "normal"
+	case NextVersionTypeRC:
+		return "rc"
+	case NextVersionTypeBeta:
+		return "beta"
+	case NextVersionTypeAlpha:
+		return "alpha"
+	default:
+		return ""
+	}
+}
+
 // PR Labels
 const (
 	LabelNextVersionTypeNormal = "rp-next-version::normal"

@@ -2,15 +2,21 @@ package rp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v63/github"
 )
 
 const (
-	GITHUB_PER_PAGE_MAX  = 100
-	GITHUB_PR_STATE_OPEN = "open"
+	GitHubPerPageMax  = 100
+	GitHubPRStateOpen = "open"
+	GitHubEnvAPIToken = "GITHUB_TOKEN"
+	GitHubEnvUsername = "GITHUB_USER"
 )
 
 type Changeset struct {
@@ -21,6 +27,10 @@ type Changeset struct {
 
 type Forge interface {
 	RepoURL() string
+	CloneURL() string
+	ReleaseURL(version string) string
+
+	GitAuth() transport.AuthMethod
 
 	// LatestTag returns the last tag created on the main branch. If no tag is found, it returns nil.
 	LatestTag(context.Context) (*Tag, error)
@@ -54,7 +64,22 @@ type GitHub struct {
 }
 
 func (g *GitHub) RepoURL() string {
-	return fmt.Sprintf("https://github.com/%s", g.options.Repository)
+	return fmt.Sprintf("https://github.com/%s/%s", g.options.Owner, g.options.Repo)
+}
+
+func (g *GitHub) CloneURL() string {
+	return fmt.Sprintf("https://github.com/%s/%s.git", g.options.Owner, g.options.Repo)
+}
+
+func (g *GitHub) ReleaseURL(version string) string {
+	return fmt.Sprintf("https://github.com/%s/%s/releases/tag/%s", g.options.Owner, g.options.Repo, version)
+}
+
+func (g *GitHub) GitAuth() transport.AuthMethod {
+	return &http.BasicAuth{
+		Username: g.options.Username,
+		Password: g.options.APIToken,
+	}
 }
 
 func (g *GitHub) LatestTag(ctx context.Context) (*Tag, error) {
@@ -115,7 +140,7 @@ func (g *GitHub) commitsSinceTag(ctx context.Context, tag *Tag) ([]*github.Repos
 			ctx, g.options.Owner, g.options.Repo,
 			tag.Hash, head, &github.ListOptions{
 				Page:    page,
-				PerPage: GITHUB_PER_PAGE_MAX,
+				PerPage: GitHubPerPageMax,
 			})
 		if err != nil {
 			return nil, err
@@ -158,7 +183,7 @@ func (g *GitHub) Changesets(ctx context.Context, commits []Commit) ([]Changeset,
 				ctx, g.options.Owner, g.options.Repo,
 				commit.Hash, &github.ListOptions{
 					Page:    page,
-					PerPage: GITHUB_PER_PAGE_MAX,
+					PerPage: GitHubPerPageMax,
 				})
 			if err != nil {
 				return nil, err
@@ -214,14 +239,20 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 	for {
 		prs, resp, err := g.client.PullRequests.ListPullRequestsWithCommit(ctx, g.options.Owner, g.options.Repo, branch, &github.ListOptions{
 			Page:    page,
-			PerPage: GITHUB_PER_PAGE_MAX,
+			PerPage: GitHubPerPageMax,
 		})
 		if err != nil {
+			var ghErr *github.ErrorResponse
+			if errors.As(err, &ghErr) {
+				if ghErr.Message == fmt.Sprintf("No commit found for SHA: %s", branch) {
+					return nil, nil
+				}
+			}
 			return nil, err
 		}
 
 		for _, pr := range prs {
-			if pr.Base.GetLabel() == g.options.BaseBranch && pr.Head.GetLabel() == branch && pr.GetState() == GITHUB_PR_STATE_OPEN {
+			if pr.Base.GetLabel() == g.options.BaseBranch && pr.Head.GetLabel() == branch && pr.GetState() == GitHubPRStateOpen {
 				labels := make([]string, 0, len(pr.Labels))
 				for _, label := range pr.Labels {
 					labels = append(labels, label.GetName())
@@ -246,6 +277,13 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 }
 
 func (g *GitHubOptions) autodiscover() {
+	if apiToken := os.Getenv(GitHubEnvAPIToken); apiToken != "" {
+		g.APIToken = apiToken
+	}
+	// TODO: Check if there is a better solution for cloning/pushing locally
+	if username := os.Getenv(GitHubEnvUsername); username != "" {
+		g.Username = username
+	}
 	// TODO: Read settings from GitHub Actions env vars
 }
 
@@ -256,6 +294,7 @@ type GitHubOptions struct {
 	Repo  string
 
 	APIToken string
+	Username string
 }
 
 func NewGitHub(log *slog.Logger, options *GitHubOptions) *GitHub {
