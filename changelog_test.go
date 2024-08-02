@@ -2,7 +2,6 @@ package rp
 
 import (
 	"io"
-	"log"
 	"testing"
 
 	"github.com/go-git/go-git/v5"
@@ -104,9 +103,9 @@ func TestUpdateChangelogFile(t *testing.T) {
 
 func Test_NewChangelogEntry(t *testing.T) {
 	type args struct {
-		commits []AnalyzedCommit
-		version string
-		link    string
+		changesets []Changeset
+		version    string
+		link       string
 	}
 	tests := []struct {
 		name    string
@@ -117,9 +116,9 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "empty",
 			args: args{
-				commits: []AnalyzedCommit{},
-				version: "1.0.0",
-				link:    "https://example.com/1.0.0",
+				changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{}}},
+				version:    "1.0.0",
+				link:       "https://example.com/1.0.0",
 			},
 			want:    "## [1.0.0](https://example.com/1.0.0)",
 			wantErr: assert.NoError,
@@ -127,13 +126,13 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "single feature",
 			args: args{
-				commits: []AnalyzedCommit{
+				changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{
 					{
 						Commit:      Commit{},
 						Type:        "feat",
 						Description: "Foobar!",
 					},
-				},
+				}}},
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
@@ -143,13 +142,13 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "single fix",
 			args: args{
-				commits: []AnalyzedCommit{
+				changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{
 					{
 						Commit:      Commit{},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
-				},
+				}}},
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
@@ -159,7 +158,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "multiple commits with scopes",
 			args: args{
-				commits: []AnalyzedCommit{
+				changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{
 					{
 						Commit:      Commit{},
 						Type:        "feat",
@@ -182,7 +181,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 						Description: "So sad!",
 						Scope:       ptr("sad"),
 					},
-				},
+				}}},
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
@@ -203,7 +202,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewChangelogEntry(tt.args.commits, tt.args.version, tt.args.link)
+			got, err := NewChangelogEntry(tt.args.changesets, tt.args.version, tt.args.link)
 			if !tt.wantErr(t, err) {
 				return
 			}

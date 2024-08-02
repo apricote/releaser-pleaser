@@ -13,4 +13,3 @@
 - {{ if .Scope }}**{{.Scope}}**: {{end}}{{.Description}}
 {{ end -}}
 {{- end -}}
-`
