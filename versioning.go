@@ -8,56 +8,68 @@ import (
 	"github.com/leodido/go-conventionalcommits"
 )
 
-func NextVersion(currentTag *Tag, changesets []Changeset, nextVersionType NextVersionType) (string, error) {
+func NextVersion(latestTag *Tag, stableTag *Tag, versionBump conventionalcommits.VersionBump, nextVersionType NextVersionType) (string, error) {
 	// TODO: Validate for versioning after pre-releases
-	currentVersion := "v0.0.0"
-	if currentTag != nil {
-		currentVersion = currentTag.Name
+	latestVersion := "v0.0.0"
+	if latestTag != nil {
+		latestVersion = latestTag.Name
+	}
+	stableVersion := "v0.0.0"
+	if stableTag != nil {
+		stableVersion = stableTag.Name
 	}
 
 	// The lib can not handle v prefixes
-	currentVersion = strings.TrimPrefix(currentVersion, "v")
+	latestVersion = strings.TrimPrefix(latestVersion, "v")
+	stableVersion = strings.TrimPrefix(stableVersion, "v")
 
-	version, err := semver.Parse(currentVersion)
+	latest, err := semver.Parse(latestVersion)
 	if err != nil {
 		return "", err
 	}
 
-	versionBump := maxVersionBump(changesets)
+	stable, err := semver.Parse(stableVersion)
+	if err != nil {
+		return "", err
+	}
+
+	next := stable // Copy all fields
+
 	switch versionBump {
 	case conventionalcommits.UnknownVersion:
-		// No new version, TODO: Throw error?
+		return "", fmt.Errorf("invalid latest bump (unknown)")
 	case conventionalcommits.PatchVersion:
-		err = version.IncrementPatch()
+		err = next.IncrementPatch()
 	case conventionalcommits.MinorVersion:
-		err = version.IncrementMinor()
+		err = next.IncrementMinor()
 	case conventionalcommits.MajorVersion:
-		err = version.IncrementMajor()
-	}
-	if err != nil {
-		return "", err
+		err = next.IncrementMajor()
 	}
 
 	switch nextVersionType {
+	case NextVersionTypeUndefined, NextVersionTypeNormal:
+		next.Pre = make([]semver.PRVersion, 0)
 	case NextVersionTypeAlpha, NextVersionTypeBeta, NextVersionTypeRC:
 		id := uint64(0)
 
-		if version.Pre[0].String() == nextVersionType.String() {
-			if version.Pre[1].String() == "" || !version.Pre[1].IsNumeric() {
+		if len(latest.Pre) >= 2 && latest.Pre[0].String() == nextVersionType.String() {
+			if latest.Pre[1].String() == "" || !latest.Pre[1].IsNumeric() {
 				return "", fmt.Errorf("invalid format of previous tag")
 			}
-			id = version.Pre[1].VersionNum + 1
+			id = latest.Pre[1].VersionNum + 1
 		}
 
-		setPRVersion(&version, nextVersionType.String(), id)
-	case NextVersionTypeUndefined, NextVersionTypeNormal:
-		version.Pre = make([]semver.PRVersion, 0)
+		setPRVersion(&next, nextVersionType.String(), id)
 	}
 
-	return "v" + version.String(), nil
+	if err != nil {
+		return "", err
+	}
+
+	return "v" + next.String(), nil
 }
 
-func maxVersionBump(changesets []Changeset) conventionalcommits.VersionBump {
+func VersionBumpFromChangesets(changesets []Changeset) conventionalcommits.VersionBump {
 	bump := conventionalcommits.UnknownVersion
 
 	for _, changeset := range changesets {

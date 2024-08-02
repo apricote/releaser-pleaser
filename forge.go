@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v63/github"
@@ -32,8 +33,9 @@ type Forge interface {
 
 	GitAuth() transport.AuthMethod
 
-	// LatestTag returns the last tag created on the main branch. If no tag is found, it returns nil.
-	LatestTag(context.Context) (*Tag, error)
+	// LatestTags returns the last stable tag created on the main branch. If there is a more recent pre-release tag,
+	// that is also returned. If no tag is found, it returns nil.
+	LatestTags(context.Context) (stable *Tag, prerelease *Tag, err error)
 
 	// CommitsSince returns all commits to main branch after the Tag. The tag can be `nil`, in which case this
 	// function should return all commits.
@@ -82,24 +84,56 @@ func (g *GitHub) GitAuth() transport.AuthMethod {
 	}
 }
 
-func (g *GitHub) LatestTag(ctx context.Context) (*Tag, error) {
-	g.log.Debug("listing all tags in github repository")
-	// We only get the first page because the latest tag is returned as the first item
-	tags, _, err := g.client.Repositories.ListTags(ctx, g.options.Owner, g.options.Repo, nil)
-	if err != nil {
-		return nil, err
+func (g *GitHub) LatestTags(ctx context.Context) (latest *Tag, stable *Tag, err error) {
+	g.log.DebugContext(ctx, "listing all tags in github repository")
+
+	page := 1
+
+	for {
+		tags, resp, err := g.client.Repositories.ListTags(
+			ctx, g.options.Owner, g.options.Repo,
+			&github.ListOptions{Page: page, PerPage: GitHubPerPageMax},
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		for _, ghTag := range tags {
+			tag := &Tag{
+				Hash: ghTag.GetCommit().GetSHA(),
+				Name: ghTag.GetName(),
+			}
+
+			version, err := semver.Parse(tag.Name)
+			if err != nil {
+				g.log.WarnContext(
+					ctx, "unable to parse tag as semver, skipping",
+					"tag.name", tag.Name,
+					"tag.hash", tag.Hash,
+					"error", err,
+				)
+				continue
+			}
+
+			if latest == nil {
+				latest = tag
+			}
+			if len(version.Pre) == 0 {
+				// Stable version tag
+				// We return once we have found the latest stable tag, not needed to look at every single tag.
+				return latest, tag, nil
+			}
+		}
+
+		if page == resp.LastPage || resp.LastPage == 0 {
+			break
+		}
+
+		page = resp.NextPage
+
 	}
 
-	if len(tags) > 0 {
-		// TODO: Is tags sorted?
-		tag := tags[0]
-		return &Tag{
-			Hash: tag.GetCommit().GetSHA(),
-			Name: tag.GetName(),
-		}, nil
-	}
-
-	return nil, nil
+	return nil, nil, nil
 }
 
 func (g *GitHub) CommitsSince(ctx context.Context, tag *Tag) ([]Commit, error) {
