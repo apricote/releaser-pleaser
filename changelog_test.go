@@ -21,7 +21,6 @@ func TestUpdateChangelogFile(t *testing.T) {
 		repoFn          testutils.Repo
 		entry           string
 		expectedContent string
-		newFile         bool
 		wantErr         assert.ErrorAssertionFunc
 	}{
 		{
@@ -29,7 +28,6 @@ func TestUpdateChangelogFile(t *testing.T) {
 			repoFn:          testutils.WithTestRepo(),
 			entry:           "## v1.0.0\n",
 			expectedContent: "# Changelog\n\n## v1.0.0\n",
-			newFile:         true,
 			wantErr:         assert.NoError,
 		},
 		{
@@ -81,13 +79,8 @@ func TestUpdateChangelogFile(t *testing.T) {
 
 			changelogFileStatus := wtStatus.File(ChangelogFile)
 
-			if tt.newFile {
-				assert.Equal(t, git.Unmodified, changelogFileStatus.Worktree, "unexpected file status in worktree")
-				assert.Equal(t, git.Added, changelogFileStatus.Staging, "unexpected file status in staging")
-			} else {
-				assert.Equal(t, git.Modified, changelogFileStatus.Worktree, "unexpected file status in worktree")
-				assert.Equal(t, git.Modified, changelogFileStatus.Staging, "unexpected file status in staging")
-			}
+			assert.Equal(t, git.Unmodified, changelogFileStatus.Worktree, "unexpected file status in worktree")
+			assert.Equal(t, git.Added, changelogFileStatus.Staging, "unexpected file status in staging")
 
 			changelogFile, err := wt.Filesystem.Open(ChangelogFile)
 			require.NoError(t, err)

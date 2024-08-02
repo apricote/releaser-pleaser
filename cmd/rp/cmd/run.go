@@ -123,7 +123,7 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 	}
 
 	if pr != nil {
-		logger.InfoContext(ctx, "found existing release pull request: %d: %s", pr.ID, pr.Title)
+		logger.InfoContext(ctx, "found existing release pull request", "pr.id", pr.ID, "pr.title", pr.Title)
 	}
 
 	var releaseOverrides rp.ReleaseOverrides

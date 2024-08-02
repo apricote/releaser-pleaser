@@ -110,9 +110,10 @@ func TestAnalyzeCommits(t *testing.T) {
 					Description: "blabla",
 				},
 				{
-					Commit:      Commit{Message: "feat!: foobar"},
-					Type:        "feat",
-					Description: "foobar",
+					Commit:         Commit{Message: "feat!: foobar"},
+					Type:           "feat",
+					Description:    "foobar",
+					BreakingChange: true,
 				},
 			},
 			expectedBump: conventionalcommits.MajorVersion,
