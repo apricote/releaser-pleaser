@@ -64,12 +64,12 @@ func run(cmd *cobra.Command, args []string) error {
 		})
 	}
 
-	changesets, latestTag, stableTag, err := getChangesetsFromForge(ctx, f)
+	changesets, releases, err := getChangesetsFromForge(ctx, f)
 	if err != nil {
 		return fmt.Errorf("failed to get changesets: %w", err)
 	}
 
-	err = reconcileReleasePR(ctx, f, changesets, latestTag, stableTag)
+	err = reconcileReleasePR(ctx, f, changesets, releases)
 	if err != nil {
 		return fmt.Errorf("failed to reconcile release pr: %w", err)
 	}
@@ -77,39 +77,39 @@ func run(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func getChangesetsFromForge(ctx context.Context, forge rp.Forge) (changesets []rp.Changeset, latestTag *rp.Tag, stableTag *rp.Tag, err error) {
-	latestTag, stableTag, err = forge.LatestTags(ctx)
+func getChangesetsFromForge(ctx context.Context, forge rp.Forge) ([]rp.Changeset, rp.Releases, error) {
+	releases, err := forge.LatestTags(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, rp.Releases{}, err
 	}
 
-	if latestTag != nil {
-		logger.InfoContext(ctx, "found latest tag", "tag.hash", latestTag.Hash, "tag.name", latestTag.Name)
+	if releases.Latest != nil {
+		logger.InfoContext(ctx, "found latest tag", "tag.hash", releases.Latest.Hash, "tag.name", releases.Latest.Name)
+		if releases.Stable != nil && releases.Latest.Hash != releases.Stable.Hash {
+			logger.InfoContext(ctx, "found stable tag", "tag.hash", releases.Stable.Hash, "tag.name", releases.Stable.Name)
+		}
 	} else {
 		logger.InfoContext(ctx, "no latest tag found")
 	}
-	if latestTag.Hash != stableTag.Hash {
-		logger.InfoContext(ctx, "found stable tag", "tag.hash", stableTag.Hash, "tag.name", stableTag.Name)
-	}
 
-	releasableCommits, err := forge.CommitsSince(ctx, stableTag)
+	releasableCommits, err := forge.CommitsSince(ctx, releases.Stable)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, rp.Releases{}, err
 	}
 
 	logger.InfoContext(ctx, "Found releasable commits", "length", len(releasableCommits))
 
-	changesets, err = forge.Changesets(ctx, releasableCommits)
+	changesets, err := forge.Changesets(ctx, releasableCommits)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, rp.Releases{}, err
 	}
 
 	logger.InfoContext(ctx, "Found changesets", "length", len(changesets))
 
-	return changesets, latestTag, stableTag, nil
+	return changesets, releases, nil
 }
 
-func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Changeset, latestTag *rp.Tag, stableTag *rp.Tag) error {
+func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Changeset, releases rp.Releases) error {
 	rpBranch := fmt.Sprintf(RELEASER_PLEASER_BRANCH, flagBranch)
 	rpBranchRef := plumbing.NewBranchReferenceName(rpBranch)
 	// Check Forge for open PR
@@ -135,7 +135,7 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 	}
 
 	versionBump := rp.VersionBumpFromChangesets(changesets)
-	nextVersion, err := rp.NextVersion(latestTag, stableTag, versionBump, releaseOverrides.NextVersionType)
+	nextVersion, err := releases.NextVersion(versionBump, releaseOverrides.NextVersionType)
 	if err != nil {
 		return err
 	}

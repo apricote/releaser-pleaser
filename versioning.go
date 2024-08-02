@@ -8,29 +8,20 @@ import (
 	"github.com/leodido/go-conventionalcommits"
 )
 
-func NextVersion(latestTag *Tag, stableTag *Tag, versionBump conventionalcommits.VersionBump, nextVersionType NextVersionType) (string, error) {
-	// TODO: Validate for versioning after pre-releases
-	latestVersion := "v0.0.0"
-	if latestTag != nil {
-		latestVersion = latestTag.Name
-	}
-	stableVersion := "v0.0.0"
-	if stableTag != nil {
-		stableVersion = stableTag.Name
-	}
+type Releases struct {
+	Latest *Tag
+	Stable *Tag
+}
 
-	// The lib can not handle v prefixes
-	latestVersion = strings.TrimPrefix(latestVersion, "v")
-	stableVersion = strings.TrimPrefix(stableVersion, "v")
-
-	latest, err := semver.Parse(latestVersion)
+func (r Releases) NextVersion(versionBump conventionalcommits.VersionBump, nextVersionType NextVersionType) (string, error) {
+	latest, err := parseSemverWithDefault(r.Latest)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse latest version: %w", err)
 	}
 
-	stable, err := semver.Parse(stableVersion)
+	stable, err := parseSemverWithDefault(r.Stable)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to parse stable version: %w", err)
 	}
 
 	next := stable // Copy all fields
@@ -98,4 +89,21 @@ func setPRVersion(version *semver.Version, prType string, count uint64) {
 		{VersionStr: prType},
 		{VersionNum: count, IsNum: true},
 	}
+}
+
+func parseSemverWithDefault(tag *Tag) (semver.Version, error) {
+	version := "v0.0.0"
+	if tag != nil {
+		version = tag.Name
+	}
+
+	// The lib can not handle v prefixes
+	version = strings.TrimPrefix(version, "v")
+
+	parsedVersion, err := semver.Parse(version)
+	if err != nil {
+		return semver.Version{}, fmt.Errorf("failed to parse version %q: %w", version, err)
+	}
+
+	return parsedVersion, nil
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/blang/semver/v4"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -35,7 +36,7 @@ type Forge interface {
 
 	// LatestTags returns the last stable tag created on the main branch. If there is a more recent pre-release tag,
 	// that is also returned. If no tag is found, it returns nil.
-	LatestTags(context.Context) (stable *Tag, prerelease *Tag, err error)
+	LatestTags(context.Context) (Releases, error)
 
 	// CommitsSince returns all commits to main branch after the Tag. The tag can be `nil`, in which case this
 	// function should return all commits.
@@ -84,10 +85,12 @@ func (g *GitHub) GitAuth() transport.AuthMethod {
 	}
 }
 
-func (g *GitHub) LatestTags(ctx context.Context) (latest *Tag, stable *Tag, err error) {
+func (g *GitHub) LatestTags(ctx context.Context) (Releases, error) {
 	g.log.DebugContext(ctx, "listing all tags in github repository")
 
 	page := 1
+
+	var releases Releases
 
 	for {
 		tags, resp, err := g.client.Repositories.ListTags(
@@ -95,7 +98,7 @@ func (g *GitHub) LatestTags(ctx context.Context) (latest *Tag, stable *Tag, err 
 			&github.ListOptions{Page: page, PerPage: GitHubPerPageMax},
 		)
 		if err != nil {
-			return nil, nil, err
+			return Releases{}, err
 		}
 
 		for _, ghTag := range tags {
@@ -104,7 +107,7 @@ func (g *GitHub) LatestTags(ctx context.Context) (latest *Tag, stable *Tag, err 
 				Name: ghTag.GetName(),
 			}
 
-			version, err := semver.Parse(tag.Name)
+			version, err := semver.Parse(strings.TrimPrefix(tag.Name, "v"))
 			if err != nil {
 				g.log.WarnContext(
 					ctx, "unable to parse tag as semver, skipping",
@@ -115,13 +118,14 @@ func (g *GitHub) LatestTags(ctx context.Context) (latest *Tag, stable *Tag, err 
 				continue
 			}
 
-			if latest == nil {
-				latest = tag
+			if releases.Latest == nil {
+				releases.Latest = tag
 			}
 			if len(version.Pre) == 0 {
 				// Stable version tag
 				// We return once we have found the latest stable tag, not needed to look at every single tag.
-				return latest, tag, nil
+				releases.Stable = tag
+				break
 			}
 		}
 
@@ -130,10 +134,9 @@ func (g *GitHub) LatestTags(ctx context.Context) (latest *Tag, stable *Tag, err 
 		}
 
 		page = resp.NextPage
-
 	}
 
-	return nil, nil, nil
+	return releases, nil
 }
 
 func (g *GitHub) CommitsSince(ctx context.Context, tag *Tag) ([]Commit, error) {

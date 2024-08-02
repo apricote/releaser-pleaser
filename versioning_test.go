@@ -8,24 +8,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNextVersion(t *testing.T) {
+func TestReleases_NextVersion(t *testing.T) {
 	type args struct {
-		latestTag       *Tag
-		stableTag       *Tag
 		versionBump     conventionalcommits.VersionBump
 		nextVersionType NextVersionType
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr assert.ErrorAssertionFunc
+		name     string
+		releases Releases
+		args     args
+		want     string
+		wantErr  assert.ErrorAssertionFunc
 	}{
 		{
 			name: "simple bump (major)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1"},
-				stableTag:       &Tag{Name: "v1.1.1"},
 				versionBump:     conventionalcommits.MajorVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
@@ -34,9 +35,12 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "simple bump (minor)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1"},
-				stableTag:       &Tag{Name: "v1.1.1"},
+
 				versionBump:     conventionalcommits.MinorVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
@@ -45,9 +49,12 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "simple bump (patch)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1"},
-				stableTag:       &Tag{Name: "v1.1.1"},
+
 				versionBump:     conventionalcommits.PatchVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
@@ -56,9 +63,12 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "normal to prerelease  (major)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1"},
-				stableTag:       &Tag{Name: "v1.1.1"},
+
 				versionBump:     conventionalcommits.MajorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -67,9 +77,12 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "normal to prerelease  (minor)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1"},
-				stableTag:       &Tag{Name: "v1.1.1"},
+
 				versionBump:     conventionalcommits.MinorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -78,9 +91,12 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "normal to prerelease  (patch)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1"},
-				stableTag:       &Tag{Name: "v1.1.1"},
+
 				versionBump:     conventionalcommits.PatchVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -89,9 +105,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "prerelease bump (major)",
+			releases: Releases{
+				Latest: &Tag{Name: "v2.0.0-rc.0"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v2.0.0-rc.0"},
-				stableTag:       &Tag{Name: "v1.1.1"},
 				versionBump:     conventionalcommits.MajorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -100,9 +118,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "prerelease bump (minor)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.2.0-rc.0"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.2.0-rc.0"},
-				stableTag:       &Tag{Name: "v1.1.1"},
 				versionBump:     conventionalcommits.MinorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -111,9 +131,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "prerelease bump (patch)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.2-rc.0"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.2-rc.0"},
-				stableTag:       &Tag{Name: "v1.1.1"},
 				versionBump:     conventionalcommits.PatchVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -122,9 +144,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "prerelease different bump (major)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.2.0-rc.0"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.2.0-rc.0"},
-				stableTag:       &Tag{Name: "v1.1.1"},
 				versionBump:     conventionalcommits.MajorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -133,9 +157,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "prerelease different bump (minor)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.2-rc.0"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.2-rc.0"},
-				stableTag:       &Tag{Name: "v1.1.1"},
 				versionBump:     conventionalcommits.MinorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -144,9 +170,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "prerelease to prerelease",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1-alpha.2"},
+				Stable: &Tag{Name: "v1.1.0"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1-alpha.2"},
-				stableTag:       &Tag{Name: "v1.1.0"},
 				versionBump:     conventionalcommits.PatchVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -155,9 +183,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "prerelease to normal (explicit)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1-alpha.2"},
+				Stable: &Tag{Name: "v1.1.0"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1-alpha.2"},
-				stableTag:       &Tag{Name: "v1.1.0"},
 				versionBump:     conventionalcommits.PatchVersion,
 				nextVersionType: NextVersionTypeNormal,
 			},
@@ -166,9 +196,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "prerelease to normal (implicit)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1-alpha.2"},
+				Stable: &Tag{Name: "v1.1.0"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1-alpha.2"},
-				stableTag:       &Tag{Name: "v1.1.0"},
 				versionBump:     conventionalcommits.PatchVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
@@ -177,9 +209,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "nil tag (major)",
+			releases: Releases{
+				Latest: nil,
+				Stable: nil,
+			},
 			args: args{
-				latestTag:       nil,
-				stableTag:       nil,
 				versionBump:     conventionalcommits.MajorVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
@@ -188,9 +222,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "nil tag (minor)",
+			releases: Releases{
+				Latest: nil,
+				Stable: nil,
+			},
 			args: args{
-				latestTag:       nil,
-				stableTag:       nil,
 				versionBump:     conventionalcommits.MinorVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
@@ -199,9 +235,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "nil tag (patch)",
+			releases: Releases{
+				Latest: nil,
+				Stable: nil,
+			},
 			args: args{
-				latestTag:       nil,
-				stableTag:       nil,
 				versionBump:     conventionalcommits.PatchVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
@@ -210,9 +248,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "error on invalid tag semver",
+			releases: Releases{
+				Latest: &Tag{Name: "foodazzle"},
+				Stable: &Tag{Name: "foodazzle"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "foodazzle"},
-				stableTag:       &Tag{Name: "foodazzle"},
 				versionBump:     conventionalcommits.PatchVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -221,9 +261,11 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "error on invalid tag prerelease",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1-rc.foo"},
+				Stable: &Tag{Name: "v1.1.1-rc.foo"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1-rc.foo"},
-				stableTag:       &Tag{Name: "v1.1.1-rc.foo"},
 				versionBump:     conventionalcommits.PatchVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
@@ -232,9 +274,12 @@ func TestNextVersion(t *testing.T) {
 		},
 		{
 			name: "error on invalid bump",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1"},
+				Stable: &Tag{Name: "v1.1.1"},
+			},
 			args: args{
-				latestTag:       &Tag{Name: "v1.1.1"},
-				stableTag:       &Tag{Name: "v1.1.1"},
+
 				versionBump:     conventionalcommits.UnknownVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
@@ -244,11 +289,11 @@ func TestNextVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NextVersion(tt.args.latestTag, tt.args.stableTag, tt.args.versionBump, tt.args.nextVersionType)
-			if !tt.wantErr(t, err, fmt.Sprintf("NextVersion(%v, %v, %v, %v)", tt.args.latestTag, tt.args.stableTag, tt.args.versionBump, tt.args.nextVersionType)) {
+			got, err := tt.releases.NextVersion(tt.args.versionBump, tt.args.nextVersionType)
+			if !tt.wantErr(t, err, fmt.Sprintf("Releases(%v, %v).NextVersion(%v, %v)", tt.releases.Latest, tt.releases.Stable, tt.args.versionBump, tt.args.nextVersionType)) {
 				return
 			}
-			assert.Equalf(t, tt.want, got, "NextVersion(%v, %v, %v, %v)", tt.args.latestTag, tt.args.stableTag, tt.args.versionBump, tt.args.nextVersionType)
+			assert.Equalf(t, tt.want, got, "Releases(%v, %v).NextVersion(%v, %v)", tt.releases.Latest, tt.releases.Stable, tt.args.versionBump, tt.args.nextVersionType)
 		})
 	}
 }
