@@ -1,6 +1,3 @@
-/*
-Copyright © 2024 Julian Tölle
-*/
 package cmd
 
 import (
