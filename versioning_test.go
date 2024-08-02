@@ -247,6 +247,48 @@ func TestReleases_NextVersion(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "nil stable release (major)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1-rc.0"},
+				Stable: nil,
+			},
+			args: args{
+				versionBump:     conventionalcommits.MajorVersion,
+				nextVersionType: NextVersionTypeUndefined,
+			},
+			want:    "v2.0.0",
+			wantErr: assert.NoError,
+		},
+		{
+			name: "nil stable release (minor)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1-rc.0"},
+				Stable: nil,
+			},
+			args: args{
+
+				versionBump:     conventionalcommits.MinorVersion,
+				nextVersionType: NextVersionTypeUndefined,
+			},
+			want:    "v1.2.0",
+			wantErr: assert.NoError,
+		},
+		{
+			name: "nil stable release (patch)",
+			releases: Releases{
+				Latest: &Tag{Name: "v1.1.1-rc.0"},
+				Stable: nil,
+			},
+			args: args{
+
+				versionBump:     conventionalcommits.PatchVersion,
+				nextVersionType: NextVersionTypeUndefined,
+			},
+			// TODO: Is this actually correct our should it be v1.1.1?
+			want:    "v1.1.2",
+			wantErr: assert.NoError,
+		},
+		{
 			name: "error on invalid tag semver",
 			releases: Releases{
 				Latest: &Tag{Name: "foodazzle"},

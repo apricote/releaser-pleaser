@@ -24,7 +24,12 @@ func (r Releases) NextVersion(versionBump conventionalcommits.VersionBump, nextV
 		return "", fmt.Errorf("failed to parse stable version: %w", err)
 	}
 
-	next := stable // Copy all fields
+	// If there is a previous stable release, we use that as the version anchor. Falling back to any pre-releases
+	// if they are the only tags in the repo.
+	next := latest
+	if r.Stable != nil {
+		next = stable
+	}
 
 	switch versionBump {
 	case conventionalcommits.UnknownVersion:
