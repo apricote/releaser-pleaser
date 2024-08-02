@@ -145,7 +145,7 @@ func (g *GitHub) CommitsSince(ctx context.Context, tag *Tag) ([]Commit, error) {
 	if tag != nil {
 		repositoryCommits, err = g.commitsSinceTag(ctx, tag)
 	} else {
-		return nil, fmt.Errorf("not implemented")
+		repositoryCommits, err = g.commitsSinceInit(ctx)
 	}
 
 	if err != nil {
@@ -190,6 +190,47 @@ func (g *GitHub) commitsSinceTag(ctx context.Context, tag *Tag) ([]*github.Repos
 		}
 
 		repositoryCommits = append(repositoryCommits, comparison.Commits...)
+
+		if page == resp.LastPage || resp.LastPage == 0 {
+			break
+		}
+
+		page = resp.NextPage
+	}
+
+	return repositoryCommits, nil
+}
+
+func (g *GitHub) commitsSinceInit(ctx context.Context) ([]*github.RepositoryCommit, error) {
+	head := g.options.BaseBranch
+	log := g.log.With("head", head)
+	log.Debug("listing all commits")
+
+	page := 1
+
+	var repositoryCommits []*github.RepositoryCommit
+	for {
+		log.Debug("fetching page", "page", page)
+		commits, resp, err := g.client.Repositories.ListCommits(
+			ctx, g.options.Owner, g.options.Repo,
+			&github.CommitsListOptions{
+				SHA: head,
+				ListOptions: github.ListOptions{
+					Page:    page,
+					PerPage: GitHubPerPageMax,
+				},
+			})
+		if err != nil {
+			return nil, err
+		}
+
+		if repositoryCommits == nil && resp.LastPage > 0 {
+			// Pre-initialize slice on first request
+			log.Debug("found commits", "pages", resp.LastPage)
+			repositoryCommits = make([]*github.RepositoryCommit, 0, resp.LastPage*GitHubPerPageMax)
+		}
+
+		repositoryCommits = append(repositoryCommits, commits...)
 
 		if page == resp.LastPage || resp.LastPage == 0 {
 			break
