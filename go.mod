@@ -3,6 +3,7 @@ module github.com/apricote/releaser-pleaser
 go 1.22.4
 
 require (
+	github.com/Kunde21/markdownfmt/v3 v3.1.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.12.0
@@ -10,7 +11,7 @@ require (
 	github.com/leodido/go-conventionalcommits v0.12.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
-	github.com/yuin/goldmark v1.7.3
+	github.com/yuin/goldmark v1.7.4
 )
 
 require (
@@ -27,6 +28,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
+	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect

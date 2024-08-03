@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
+
+	"github.com/apricote/releaser-pleaser/internal/markdown"
 )
 
 type ReleasePullRequest struct {
@@ -95,7 +96,7 @@ func (pr *ReleasePullRequest) parseVersioningFlags(overrides ReleaseOverrides) R
 
 func (pr *ReleasePullRequest) parseDescription(overrides ReleaseOverrides) (ReleaseOverrides, error) {
 	source := []byte(pr.Description)
-	descriptionAST := parser.NewParser().Parse(text.NewReader(source))
+	descriptionAST := markdown.NewParser().Parse(text.NewReader(source))
 
 	err := ast.Walk(descriptionAST, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
@@ -137,5 +138,17 @@ func textFromLines(source []byte, n ast.Node) string {
 	}
 
 	return string(content)
+}
 
+func (pr *ReleasePullRequest) SetTitle(branch, version string) {
+	pr.Title = fmt.Sprintf("chore(%s): release %s", branch, version)
+}
+
+func (pr *ReleasePullRequest) SetDescription(changelogEntry string) error {
+	_, err := pr.parseDescription(ReleaseOverrides{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
