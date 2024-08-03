@@ -200,6 +200,9 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 		}
 
 		localCommit, err := repo.CommitObject(releaseCommitHash)
+		if err != nil {
+			return err
+		}
 
 		diff, err := localCommit.PatchContext(ctx, remoteCommit)
 		if err != nil {

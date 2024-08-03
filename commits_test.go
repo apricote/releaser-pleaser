@@ -8,9 +8,6 @@ import (
 )
 
 func TestAnalyzeCommits(t *testing.T) {
-	type args struct {
-		commits []Commit
-	}
 	tests := []struct {
 		name            string
 		commits         []Commit
