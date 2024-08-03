@@ -48,6 +48,8 @@ type Forge interface {
 	// PullRequestForBranch returns the open pull request between the branch and ForgeOptions.BaseBranch. If no open PR
 	// exists, it returns nil.
 	PullRequestForBranch(context.Context, string) (*ReleasePullRequest, error)
+
+	CreatePullRequest(context.Context, *ReleasePullRequest) (*ReleasePullRequest, error)
 }
 
 type ForgeOptions struct {
@@ -330,7 +332,7 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 		}
 
 		for _, pr := range prs {
-			if pr.Base.GetLabel() == g.options.BaseBranch && pr.Head.GetLabel() == branch && pr.GetState() == GitHubPRStateOpen {
+			if pr.GetBase().GetLabel() == g.options.BaseBranch && pr.GetHead().GetLabel() == branch && pr.GetState() == GitHubPRStateOpen {
 				labels := make([]string, 0, len(pr.Labels))
 				for _, label := range pr.Labels {
 					labels = append(labels, label.GetName())
@@ -341,6 +343,7 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 					Title:       pr.GetTitle(),
 					Description: pr.GetBody(),
 					Labels:      labels,
+					Head:        pr.GetHead().GetLabel(),
 				}, nil
 			}
 		}
@@ -352,6 +355,25 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 	}
 
 	return nil, nil
+}
+
+func (g *GitHub) CreatePullRequest(ctx context.Context, pr *ReleasePullRequest) (*ReleasePullRequest, error) {
+	ghPR, _, err := g.client.PullRequests.Create(
+		ctx, g.options.Owner, g.options.Repo,
+		&github.NewPullRequest{
+			Title: &pr.Title,
+			Head:  &pr.Head,
+			Base:  &g.options.BaseBranch,
+			Body:  &pr.Description,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	pr.ID = int(*ghPR.ID) // TODO: String ID?
+
+	return pr, nil
 }
 
 func (g *GitHubOptions) autodiscover() {

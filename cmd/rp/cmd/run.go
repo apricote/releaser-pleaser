@@ -232,7 +232,21 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 		logger.InfoContext(ctx, "file content is already up-to-date in remote branch, skipping push")
 	}
 
-	// TODO Open PR
+	// Open/Update PR
+	if pr == nil {
+		pr = &rp.ReleasePullRequest{
+			Title:       releaseCommitMessage,
+			Description: "TODO",
+			Labels:      nil,
+			Head:        rpBranch,
+		}
+
+		pr, err = forge.CreatePullRequest(ctx, pr)
+		if err != nil {
+			return err
+		}
+		logger.InfoContext(ctx, "opened pull request", "pr.title", pr.Title, "pr.id", pr.ID)
+	}
 
 	return nil
 }

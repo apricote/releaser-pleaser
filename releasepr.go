@@ -13,6 +13,8 @@ type ReleasePullRequest struct {
 	Title       string
 	Description string
 	Labels      []string
+
+	Head string
 }
 
 type ReleaseOverrides struct {
