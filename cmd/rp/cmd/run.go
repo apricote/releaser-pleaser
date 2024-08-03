@@ -178,34 +178,59 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 	}
 
 	releaseCommitMessage := fmt.Sprintf("chore(%s): release %s", flagBranch, nextVersion)
-	releaseCommit, err := worktree.Commit(releaseCommitMessage, &git.CommitOptions{})
+	releaseCommitHash, err := worktree.Commit(releaseCommitMessage, &git.CommitOptions{})
 	if err != nil {
 		return err
 	}
 
-	logger.InfoContext(ctx, "created release commit", "commit.hash", releaseCommit.String(), "commit.message", releaseCommitMessage)
+	logger.InfoContext(ctx, "created release commit", "commit.hash", releaseCommitHash.String(), "commit.message", releaseCommitMessage)
 
-	// TODO: Check if there is a diff between forge/rpBranch..rpBranch..forge/rpBranch and only push if there are changes
-	// To reduce wasted CI cycles
+	newReleasePRChanges := true
 
-	pushRefSpec := config.RefSpec(fmt.Sprintf(
-		"+%s:%s",
-		rpBranchRef,
-		// This needs to be the local branch name, not the remotes/origin ref
-		// See https://stackoverflow.com/a/75727620
-		rpBranchRef,
-	))
-	logger.DebugContext(ctx, "pushing branch", "commit.hash", releaseCommit.String(), "branch.name", rpBranch, "refspec", pushRefSpec.String())
-	if err = repo.PushContext(ctx, &git.PushOptions{
-		RemoteName: rp.GitRemoteName,
-		RefSpecs:   []config.RefSpec{pushRefSpec},
-		Force:      true,
-		Auth:       forge.GitAuth(),
-	}); err != nil {
-		return err
+	// Check if anything changed in comparison to the remote branch (if exists)
+	if remoteRef, err := repo.Reference(plumbing.NewRemoteReferenceName(rp.GitRemoteName, rpBranch), false); err != nil {
+		if err.Error() != "reference not found" {
+			// "reference not found" is expected and we should always push
+			return err
+		}
+	} else {
+		remoteCommit, err := repo.CommitObject(remoteRef.Hash())
+		if err != nil {
+			return err
+		}
+
+		localCommit, err := repo.CommitObject(releaseCommitHash)
+
+		diff, err := localCommit.PatchContext(ctx, remoteCommit)
+		if err != nil {
+			return err
+		}
+
+		newReleasePRChanges = len(diff.FilePatches()) > 0
 	}
 
-	logger.InfoContext(ctx, "pushed branch", "commit.hash", releaseCommit.String(), "branch.name", rpBranch, "refspec", pushRefSpec.String())
+	if newReleasePRChanges {
+		pushRefSpec := config.RefSpec(fmt.Sprintf(
+			"+%s:%s",
+			rpBranchRef,
+			// This needs to be the local branch name, not the remotes/origin ref
+			// See https://stackoverflow.com/a/75727620
+			rpBranchRef,
+		))
+		logger.DebugContext(ctx, "pushing branch", "commit.hash", releaseCommitHash.String(), "branch.name", rpBranch, "refspec", pushRefSpec.String())
+		if err = repo.PushContext(ctx, &git.PushOptions{
+			RemoteName: rp.GitRemoteName,
+			RefSpecs:   []config.RefSpec{pushRefSpec},
+			Force:      true,
+			Auth:       forge.GitAuth(),
+		}); err != nil {
+			return err
+		}
+
+		logger.InfoContext(ctx, "pushed branch", "commit.hash", releaseCommitHash.String(), "branch.name", rpBranch, "refspec", pushRefSpec.String())
+	} else {
+		logger.InfoContext(ctx, "file content is already up-to-date in remote branch, skipping push")
+	}
 
 	// TODO Open PR
 
