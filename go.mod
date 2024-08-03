@@ -10,7 +10,7 @@ require (
 	github.com/leodido/go-conventionalcommits v0.12.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
-	github.com/yuin/goldmark v1.7.3
+	github.com/yuin/goldmark v1.7.4
 )
 
 require (

@@ -90,7 +90,7 @@ func UpdateChangelogFile(wt *git.Worktree, newEntry string) error {
 	return nil
 }
 
-func NewChangelogEntry(changesets []Changeset, version, link string) (string, error) {
+func NewChangelogEntry(changesets []Changeset, version, link, prefix, suffix string) (string, error) {
 	features := make([]AnalyzedCommit, 0)
 	fixes := make([]AnalyzedCommit, 0)
 
@@ -111,6 +111,8 @@ func NewChangelogEntry(changesets []Changeset, version, link string) (string, er
 		"Fixes":       fixes,
 		"Version":     version,
 		"VersionLink": link,
+		"Prefix":      prefix,
+		"Suffix":      suffix,
 	})
 	if err != nil {
 		return "", err

@@ -167,7 +167,7 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 		return err
 	}
 
-	changelogEntry, err := rp.NewChangelogEntry(changesets, nextVersion, forge.ReleaseURL(nextVersion))
+	changelogEntry, err := rp.NewChangelogEntry(changesets, nextVersion, forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
 	if err != nil {
 		return err
 	}
@@ -237,18 +237,28 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 
 	// Open/Update PR
 	if pr == nil {
-		pr = &rp.ReleasePullRequest{
-			Title:       releaseCommitMessage,
-			Description: "TODO",
-			Labels:      nil,
-			Head:        rpBranch,
+		pr, err = rp.NewReleasePullRequest(rpBranch, flagBranch, nextVersion, changelogEntry)
+		if err != nil {
+			return err
 		}
 
-		pr, err = forge.CreatePullRequest(ctx, pr)
+		err = forge.CreatePullRequest(ctx, pr)
 		if err != nil {
 			return err
 		}
 		logger.InfoContext(ctx, "opened pull request", "pr.title", pr.Title, "pr.id", pr.ID)
+	} else {
+		pr.SetTitle(flagBranch, nextVersion)
+		err = pr.SetDescription(changelogEntry)
+		if err != nil {
+			return err
+		}
+
+		err = forge.UpdatePullRequest(ctx, pr)
+		if err != nil {
+			return err
+		}
+		logger.InfoContext(ctx, "updated pull request", "pr.title", pr.Title, "pr.id", pr.ID)
 	}
 
 	return nil

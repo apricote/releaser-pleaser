@@ -1,4 +1,7 @@
 ## [{{.Version}}]({{.VersionLink}})
+{{- if .Prefix }}
+{{ .Prefix }}
+{{ end -}}
 {{- if (gt (len .Features) 0) }}
 ### Features
 
@@ -13,3 +16,7 @@
 - {{ if .Scope }}**{{.Scope}}**: {{end}}{{.Description}}
 {{ end -}}
 {{- end -}}
+
+{{- if .Suffix }}
+{{ .Suffix }}
+{{ end -}}

@@ -49,7 +49,8 @@ type Forge interface {
 	// exists, it returns nil.
 	PullRequestForBranch(context.Context, string) (*ReleasePullRequest, error)
 
-	CreatePullRequest(context.Context, *ReleasePullRequest) (*ReleasePullRequest, error)
+	CreatePullRequest(context.Context, *ReleasePullRequest) error
+	UpdatePullRequest(context.Context, *ReleasePullRequest) error
 }
 
 type ForgeOptions struct {
@@ -332,7 +333,7 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 		}
 
 		for _, pr := range prs {
-			if pr.GetBase().GetLabel() == g.options.BaseBranch && pr.GetHead().GetLabel() == branch && pr.GetState() == GitHubPRStateOpen {
+			if pr.GetBase().GetRef() == g.options.BaseBranch && pr.GetHead().GetRef() == branch && pr.GetState() == GitHubPRStateOpen {
 				labels := make([]string, 0, len(pr.Labels))
 				for _, label := range pr.Labels {
 					labels = append(labels, label.GetName())
@@ -343,7 +344,7 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 					Title:       pr.GetTitle(),
 					Description: pr.GetBody(),
 					Labels:      labels,
-					Head:        pr.GetHead().GetLabel(),
+					Head:        pr.GetHead().GetRef(),
 				}, nil
 			}
 		}
@@ -357,7 +358,8 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 	return nil, nil
 }
 
-func (g *GitHub) CreatePullRequest(ctx context.Context, pr *ReleasePullRequest) (*ReleasePullRequest, error) {
+func (g *GitHub) CreatePullRequest(ctx context.Context, pr *ReleasePullRequest) error {
+	// TODO: Labels
 	ghPR, _, err := g.client.PullRequests.Create(
 		ctx, g.options.Owner, g.options.Repo,
 		&github.NewPullRequest{
@@ -368,12 +370,36 @@ func (g *GitHub) CreatePullRequest(ctx context.Context, pr *ReleasePullRequest) 
 		},
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	pr.ID = int(*ghPR.ID) // TODO: String ID?
+	_, _, err = g.client.Issues.AddLabelsToIssue(
+		ctx, g.options.Owner, g.options.Repo,
+		ghPR.GetNumber(), pr.Labels,
+	)
+	if err != nil {
+		return err
+	}
 
-	return pr, nil
+	// TODO: String ID?
+	pr.ID = ghPR.GetNumber()
+
+	return nil
+}
+
+func (g *GitHub) UpdatePullRequest(ctx context.Context, pr *ReleasePullRequest) error {
+	_, _, err := g.client.PullRequests.Edit(
+		ctx, g.options.Owner, g.options.Repo, pr.ID,
+		&github.PullRequest{
+			Title: &pr.Title,
+			Body:  &pr.Description,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (g *GitHubOptions) autodiscover() {
