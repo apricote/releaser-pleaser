@@ -1,4 +1,8 @@
+---
+
+<!-- section-start changelog -->
 {{ .Changelog }}
+<!-- section-end changelog -->
 
 ---
 

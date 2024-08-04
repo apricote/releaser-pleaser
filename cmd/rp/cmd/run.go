@@ -61,6 +61,11 @@ func run(cmd *cobra.Command, args []string) error {
 		})
 	}
 
+	err := createPendingReleases(ctx, f)
+	if err != nil {
+		return fmt.Errorf("failed to create pending releases: %w", err)
+	}
+
 	changesets, releases, err := getChangesetsFromForge(ctx, f)
 	if err != nil {
 		return fmt.Errorf("failed to get changesets: %w", err)
@@ -69,6 +74,51 @@ func run(cmd *cobra.Command, args []string) error {
 	err = reconcileReleasePR(ctx, f, changesets, releases)
 	if err != nil {
 		return fmt.Errorf("failed to reconcile release pr: %w", err)
+	}
+
+	return nil
+}
+
+func createPendingReleases(ctx context.Context, forge rp.Forge) error {
+	prs, err := forge.PendingReleases(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, pr := range prs {
+		err = createPendingRelease(ctx, forge, pr)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createPendingRelease(ctx context.Context, forge rp.Forge, pr *rp.ReleasePullRequest) error {
+	if pr.ReleaseCommit == nil {
+		return fmt.Errorf("pull request is missing the merge commit")
+	}
+
+	version, err := pr.Version()
+	if err != nil {
+		return err
+	}
+
+	changelog, err := pr.ChangelogText()
+	if err != nil {
+		return err
+	}
+
+	// TODO: pre-release & latest
+	err = forge.CreateRelease(ctx, *pr.ReleaseCommit, version, changelog, false, true)
+	if err != nil {
+		return err
+	}
+
+	err = forge.SetPullRequestLabels(ctx, pr, []string{rp.LabelReleasePending}, []string{rp.LabelReleaseTagged})
+	if err != nil {
+		return err
 	}
 
 	return nil
