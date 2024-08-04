@@ -21,6 +21,7 @@ const (
 	GitHubPRStateClosed = "closed"
 	GitHubEnvAPIToken   = "GITHUB_TOKEN"
 	GitHubEnvUsername   = "GITHUB_USER"
+	GitHubLabelColor    = "dedede"
 )
 
 type Changeset struct {
@@ -46,6 +47,8 @@ type Forge interface {
 
 	// Changesets looks up the Pull/Merge Requests for each commit, returning its parsed metadata.
 	Changesets(context.Context, []Commit) ([]Changeset, error)
+
+	EnsureLabelsExist(context.Context, []string) error
 
 	// PullRequestForBranch returns the open pull request between the branch and ForgeOptions.BaseBranch. If no open PR
 	// exists, it returns nil.
@@ -320,6 +323,52 @@ func (g *GitHub) Changesets(ctx context.Context, commits []Commit) ([]Changeset,
 	}
 
 	return changesets, nil
+}
+
+func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []string) error {
+	existingLabels := make([]string, 0, len(labels))
+
+	page := 1
+
+	for {
+		g.log.Debug("fetching labels on repo", "page", page)
+		ghLabels, resp, err := g.client.Issues.ListLabels(
+			ctx, g.options.Owner, g.options.Repo,
+			&github.ListOptions{
+				Page:    page,
+				PerPage: GitHubPerPageMax,
+			})
+		if err != nil {
+			return err
+		}
+
+		for _, label := range ghLabels {
+			existingLabels = append(existingLabels, label.GetName())
+		}
+
+		if page == resp.LastPage || resp.LastPage == 0 {
+			break
+		}
+		page = resp.NextPage
+	}
+
+	for _, label := range labels {
+		if !slices.Contains(existingLabels, label) {
+			g.log.Info("creating label in repository", "label.name", label)
+			_, _, err := g.client.Issues.CreateLabel(
+				ctx, g.options.Owner, g.options.Repo,
+				&github.Label{
+					Name:  &label,
+					Color: Pointer(GitHubLabelColor),
+				},
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*ReleasePullRequest, error) {

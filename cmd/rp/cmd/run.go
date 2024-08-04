@@ -69,7 +69,12 @@ func run(cmd *cobra.Command, _ []string) error {
 		})
 	}
 
-	err := createPendingReleases(ctx, f)
+	err := ensureLabels(ctx, f)
+	if err != nil {
+		return fmt.Errorf("failed to ensure all labels exist: %w", err)
+	}
+
+	err = createPendingReleases(ctx, f)
 	if err != nil {
 		return fmt.Errorf("failed to create pending releases: %w", err)
 	}
@@ -85,6 +90,10 @@ func run(cmd *cobra.Command, _ []string) error {
 	}
 
 	return nil
+}
+
+func ensureLabels(ctx context.Context, forge rp.Forge) error {
+	return forge.EnsureLabelsExist(ctx, rp.Labels)
 }
 
 func createPendingReleases(ctx context.Context, forge rp.Forge) error {

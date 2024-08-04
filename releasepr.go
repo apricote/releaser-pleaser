@@ -99,6 +99,16 @@ const (
 	LabelReleaseTagged  = "rp-release::tagged"
 )
 
+var Labels = []string{
+	LabelNextVersionTypeNormal,
+	LabelNextVersionTypeRC,
+	LabelNextVersionTypeBeta,
+	LabelNextVersionTypeAlpha,
+
+	LabelReleasePending,
+	LabelReleaseTagged,
+}
+
 const (
 	DescriptionLanguagePrefix = "rp-prefix"
 	DescriptionLanguageSuffix = "rp-suffix"
