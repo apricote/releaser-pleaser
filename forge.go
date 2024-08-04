@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -15,10 +16,11 @@ import (
 )
 
 const (
-	GitHubPerPageMax  = 100
-	GitHubPRStateOpen = "open"
-	GitHubEnvAPIToken = "GITHUB_TOKEN"
-	GitHubEnvUsername = "GITHUB_USER"
+	GitHubPerPageMax    = 100
+	GitHubPRStateOpen   = "open"
+	GitHubPRStateClosed = "closed"
+	GitHubEnvAPIToken   = "GITHUB_TOKEN"
+	GitHubEnvUsername   = "GITHUB_USER"
 )
 
 type Changeset struct {
@@ -51,6 +53,12 @@ type Forge interface {
 
 	CreatePullRequest(context.Context, *ReleasePullRequest) error
 	UpdatePullRequest(context.Context, *ReleasePullRequest) error
+	SetPullRequestLabels(ctx context.Context, pr *ReleasePullRequest, remove, add []string) error
+	ClosePullRequest(context.Context, *ReleasePullRequest) error
+
+	PendingReleases(context.Context) ([]*ReleasePullRequest, error)
+
+	CreateRelease(ctx context.Context, commit Commit, title, changelog string, prelease, latest bool) error
 }
 
 type ForgeOptions struct {
@@ -334,18 +342,7 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 
 		for _, pr := range prs {
 			if pr.GetBase().GetRef() == g.options.BaseBranch && pr.GetHead().GetRef() == branch && pr.GetState() == GitHubPRStateOpen {
-				labels := make([]string, 0, len(pr.Labels))
-				for _, label := range pr.Labels {
-					labels = append(labels, label.GetName())
-				}
-
-				return &ReleasePullRequest{
-					ID:          pr.GetNumber(),
-					Title:       pr.GetTitle(),
-					Description: pr.GetBody(),
-					Labels:      labels,
-					Head:        pr.GetHead().GetRef(),
-				}, nil
+				return gitHubPRToReleasePullRequest(pr), nil
 			}
 		}
 
@@ -359,7 +356,6 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 }
 
 func (g *GitHub) CreatePullRequest(ctx context.Context, pr *ReleasePullRequest) error {
-	// TODO: Labels
 	ghPR, _, err := g.client.PullRequests.Create(
 		ctx, g.options.Owner, g.options.Repo,
 		&github.NewPullRequest{
@@ -373,24 +369,21 @@ func (g *GitHub) CreatePullRequest(ctx context.Context, pr *ReleasePullRequest) 
 		return err
 	}
 
-	_, _, err = g.client.Issues.AddLabelsToIssue(
-		ctx, g.options.Owner, g.options.Repo,
-		ghPR.GetNumber(), pr.Labels,
-	)
+	// TODO: String ID?
+	pr.ID = ghPR.GetNumber()
+
+	err = g.SetPullRequestLabels(ctx, pr, []string{}, pr.Labels)
 	if err != nil {
 		return err
 	}
-
-	// TODO: String ID?
-	pr.ID = ghPR.GetNumber()
 
 	return nil
 }
 
 func (g *GitHub) UpdatePullRequest(ctx context.Context, pr *ReleasePullRequest) error {
 	_, _, err := g.client.PullRequests.Edit(
-		ctx, g.options.Owner, g.options.Repo, pr.ID,
-		&github.PullRequest{
+		ctx, g.options.Owner, g.options.Repo,
+		pr.ID, &github.PullRequest{
 			Title: &pr.Title,
 			Body:  &pr.Description,
 		},
@@ -400,6 +393,141 @@ func (g *GitHub) UpdatePullRequest(ctx context.Context, pr *ReleasePullRequest) 
 	}
 
 	return nil
+}
+
+func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *ReleasePullRequest, remove, add []string) error {
+	for _, label := range remove {
+		_, err := g.client.Issues.RemoveLabelForIssue(
+			ctx, g.options.Owner, g.options.Repo,
+			pr.ID, label,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, _, err := g.client.Issues.AddLabelsToIssue(
+		ctx, g.options.Owner, g.options.Repo,
+		pr.ID, add,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *GitHub) ClosePullRequest(ctx context.Context, pr *ReleasePullRequest) error {
+	_, _, err := g.client.PullRequests.Edit(
+		ctx, g.options.Owner, g.options.Repo,
+		pr.ID, &github.PullRequest{
+			State: Pointer(GitHubPRStateClosed),
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *GitHub) PendingReleases(ctx context.Context) ([]*ReleasePullRequest, error) {
+	page := 1
+
+	var prs []*ReleasePullRequest
+
+	for {
+		ghPRs, resp, err := g.client.PullRequests.List(
+			ctx, g.options.Owner, g.options.Repo,
+			&github.PullRequestListOptions{
+				State: GitHubPRStateClosed,
+				Base:  g.options.BaseBranch,
+				ListOptions: github.ListOptions{
+					Page:    page,
+					PerPage: GitHubPerPageMax,
+				},
+			})
+		if err != nil {
+			return nil, err
+		}
+
+		if prs == nil && resp.LastPage > 0 {
+			// Pre-initialize slice on first request
+			g.log.Debug("found pending releases", "pages", resp.LastPage)
+			prs = make([]*ReleasePullRequest, 0, (resp.LastPage-1)*GitHubPerPageMax)
+		}
+
+		for _, pr := range ghPRs {
+			pending := slices.ContainsFunc(pr.Labels, func(l *github.Label) bool {
+				return l.GetName() == LabelReleasePending
+			})
+			if !pending {
+				continue
+			}
+
+			// pr.Merged is always nil :(
+			if pr.MergedAt == nil {
+				// Closed and not merged
+				continue
+			}
+
+			prs = append(prs, gitHubPRToReleasePullRequest(pr))
+		}
+
+		if page == resp.LastPage || resp.LastPage == 0 {
+			break
+		}
+		page = resp.NextPage
+	}
+
+	return prs, nil
+}
+
+func (g *GitHub) CreateRelease(ctx context.Context, commit Commit, title, changelog string, preRelease, latest bool) error {
+	makeLatest := ""
+	if latest {
+		makeLatest = "true"
+	} else {
+		makeLatest = "false"
+	}
+	_, _, err := g.client.Repositories.CreateRelease(
+		ctx, g.options.Owner, g.options.Repo,
+		&github.RepositoryRelease{
+			TagName:         &title,
+			TargetCommitish: &commit.Hash,
+			Name:            &title,
+			Body:            &changelog,
+			Prerelease:      &preRelease,
+			MakeLatest:      &makeLatest,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func gitHubPRToReleasePullRequest(pr *github.PullRequest) *ReleasePullRequest {
+	labels := make([]string, 0, len(pr.Labels))
+	for _, label := range pr.Labels {
+		labels = append(labels, label.GetName())
+	}
+
+	var releaseCommit *Commit
+	if pr.MergeCommitSHA != nil {
+		releaseCommit = &Commit{Hash: pr.GetMergeCommitSHA()}
+	}
+
+	return &ReleasePullRequest{
+		ID:          pr.GetNumber(),
+		Title:       pr.GetTitle(),
+		Description: pr.GetBody(),
+		Labels:      labels,
+
+		Head:          pr.GetHead().GetRef(),
+		ReleaseCommit: releaseCommit,
+	}
 }
 
 func (g *GitHubOptions) autodiscover() {
@@ -461,4 +589,8 @@ func NewGitLab(options ForgeOptions) *GitLab {
 
 func (g *GitLab) RepoURL() string {
 	return fmt.Sprintf("https://gitlab.com/%s", g.options.Repository)
+}
+
+func Pointer[T any](value T) *T {
+	return &value
 }

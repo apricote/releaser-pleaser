@@ -40,8 +40,15 @@ func init() {
 	runCmd.PersistentFlags().StringVar(&flagRepo, "repo", "", "")
 }
 
-func run(cmd *cobra.Command, args []string) error {
+func run(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
+
+	logger.DebugContext(ctx, "run called",
+		"forge", flagForge,
+		"branch", flagBranch,
+		"owner", flagOwner,
+		"repo", flagRepo,
+	)
 
 	var f rp.Forge
 
@@ -54,11 +61,17 @@ func run(cmd *cobra.Command, args []string) error {
 	//case "gitlab":
 	//f = rp.NewGitLab(forgeOptions)
 	case "github":
+		logger.DebugContext(ctx, "using forge GitHub")
 		f = rp.NewGitHub(logger, &rp.GitHubOptions{
 			ForgeOptions: forgeOptions,
 			Owner:        flagOwner,
 			Repo:         flagRepo,
 		})
+	}
+
+	err := createPendingReleases(ctx, f)
+	if err != nil {
+		return fmt.Errorf("failed to create pending releases: %w", err)
 	}
 
 	changesets, releases, err := getChangesetsFromForge(ctx, f)
@@ -70,6 +83,70 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to reconcile release pr: %w", err)
 	}
+
+	return nil
+}
+
+func createPendingReleases(ctx context.Context, forge rp.Forge) error {
+	logger.InfoContext(ctx, "checking for pending releases")
+	prs, err := forge.PendingReleases(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(prs) == 0 {
+		logger.InfoContext(ctx, "No pending releases found")
+		return nil
+	}
+
+	logger.InfoContext(ctx, "Found pending releases", "length", len(prs))
+
+	for _, pr := range prs {
+		err = createPendingRelease(ctx, forge, pr)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createPendingRelease(ctx context.Context, forge rp.Forge, pr *rp.ReleasePullRequest) error {
+	logger := logger.With("pr.id", pr.ID, "pr.title", pr.Title)
+
+	if pr.ReleaseCommit == nil {
+		return fmt.Errorf("pull request is missing the merge commit")
+	}
+
+	logger.Info("Creating release", "commit.hash", pr.ReleaseCommit.Hash)
+
+	version, err := pr.Version()
+	if err != nil {
+		return err
+	}
+
+	changelog, err := pr.ChangelogText()
+	if err != nil {
+		return err
+	}
+
+	// TODO: pre-release & latest
+
+	logger.DebugContext(ctx, "Creating release on forge")
+	err = forge.CreateRelease(ctx, *pr.ReleaseCommit, version, changelog, false, true)
+	if err != nil {
+		return fmt.Errorf("failed to create release on forge: %w", err)
+	}
+	logger.DebugContext(ctx, "created release", "release.title", version, "release.url", forge.ReleaseURL(version))
+
+	logger.DebugContext(ctx, "updating pr labels")
+	err = forge.SetPullRequestLabels(ctx, pr, []string{rp.LabelReleasePending}, []string{rp.LabelReleaseTagged})
+	if err != nil {
+		return err
+	}
+	logger.DebugContext(ctx, "updated pr labels")
+
+	logger.InfoContext(ctx, "Created release", "release.title", version, "release.url", forge.ReleaseURL(version))
 
 	return nil
 }
@@ -121,6 +198,20 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 
 	if pr != nil {
 		logger.InfoContext(ctx, "found existing release pull request", "pr.id", pr.ID, "pr.title", pr.Title)
+	}
+
+	if len(changesets) == 0 {
+		if pr != nil {
+			logger.InfoContext(ctx, "closing existing pull requests, no changesets available", "pr.id", pr.ID, "pr.title", pr.Title)
+			err = forge.ClosePullRequest(ctx, pr)
+			if err != nil {
+				return err
+			}
+		} else {
+			logger.InfoContext(ctx, "No changesets available for release")
+		}
+
+		return nil
 	}
 
 	var releaseOverrides rp.ReleaseOverrides

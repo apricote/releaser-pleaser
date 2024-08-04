@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"log"
+	"regexp"
 	"text/template"
 
 	"github.com/yuin/goldmark/ast"
@@ -35,7 +36,8 @@ type ReleasePullRequest struct {
 	Description string
 	Labels      []string
 
-	Head string
+	Head          string
+	ReleaseCommit *Commit
 }
 
 func NewReleasePullRequest(head, branch, version, changelogEntry string) (*ReleasePullRequest, error) {
@@ -104,6 +106,15 @@ const (
 
 const (
 	MarkdownSectionOverrides = "overrides"
+	MarkdownSectionChangelog = "changelog"
+)
+
+const (
+	TitleFormat = "chore(%s): release %s"
+)
+
+var (
+	TitleRegex = regexp.MustCompile("chore(.*): release (.*)")
 )
 
 func (pr *ReleasePullRequest) GetOverrides() (ReleaseOverrides, error) {
@@ -169,7 +180,7 @@ func (pr *ReleasePullRequest) parseDescription(overrides ReleaseOverrides) (Rele
 	return overrides, nil
 }
 
-func (pr *ReleasePullRequest) getCurrentOverridesText() (string, error) {
+func (pr *ReleasePullRequest) overridesText() (string, error) {
 	source := []byte(pr.Description)
 	gm := markdown.New()
 	descriptionAST := gm.Parser().Parse(text.NewReader(source))
@@ -214,6 +225,51 @@ func (pr *ReleasePullRequest) getCurrentOverridesText() (string, error) {
 	return outputBuffer.String(), nil
 }
 
+func (pr *ReleasePullRequest) ChangelogText() (string, error) {
+	source := []byte(pr.Description)
+	gm := markdown.New()
+	descriptionAST := gm.Parser().Parse(text.NewReader(source))
+
+	var section *east.Section
+
+	err := ast.Walk(descriptionAST, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		if n.Type() != ast.TypeBlock || n.Kind() != east.KindSection {
+			return ast.WalkContinue, nil
+		}
+
+		anySection, ok := n.(*east.Section)
+		if !ok {
+			return ast.WalkStop, fmt.Errorf("node has unexpected type: %T", n)
+		}
+
+		if anySection.Name != MarkdownSectionChangelog {
+			return ast.WalkContinue, nil
+		}
+
+		section = anySection
+		return ast.WalkStop, nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if section == nil {
+		return "", nil
+	}
+
+	outputBuffer := new(bytes.Buffer)
+	err = gm.Renderer().Render(outputBuffer, source, section)
+	if err != nil {
+		return "", err
+	}
+
+	return outputBuffer.String(), nil
+}
+
 func textFromLines(source []byte, n ast.Node) string {
 	content := make([]byte, 0)
 
@@ -230,8 +286,17 @@ func (pr *ReleasePullRequest) SetTitle(branch, version string) {
 	pr.Title = fmt.Sprintf("chore(%s): release %s", branch, version)
 }
 
+func (pr *ReleasePullRequest) Version() (string, error) {
+	matches := TitleRegex.FindStringSubmatch(pr.Title)
+	if len(matches) != 3 {
+		return "", fmt.Errorf("title has unexpected format")
+	}
+
+	return matches[2], nil
+}
+
 func (pr *ReleasePullRequest) SetDescription(changelogEntry string) error {
-	overrides, err := pr.getCurrentOverridesText()
+	overrides, err := pr.overridesText()
 	if err != nil {
 		return err
 	}

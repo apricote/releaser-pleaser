@@ -58,7 +58,11 @@ func TestReleasePullRequest_SetDescription(t *testing.T) {
 			name:           "empty description",
 			pr:             &ReleasePullRequest{},
 			changelogEntry: `## v1.0.0`,
-			want: `## v1.0.0
+			want: `---
+
+<!-- section-start changelog -->
+## v1.0.0
+<!-- section-end changelog -->
 
 ---
 
@@ -87,11 +91,15 @@ func TestReleasePullRequest_SetDescription(t *testing.T) {
 		{
 			name: "existing overrides",
 			pr: &ReleasePullRequest{
-				Description: `## v0.1.0
+				Description: `---
+
+<!-- section-start changelog -->
+## v0.1.0
 
 ### Features
 
 - bedazzle
+<!-- section-end changelog -->
 
 ---
 
@@ -117,7 +125,11 @@ This release is awesome!
 `,
 			},
 			changelogEntry: `## v1.0.0`,
-			want: `## v1.0.0
+			want: `---
+
+<!-- section-start changelog -->
+## v1.0.0
+<!-- section-end changelog -->
 
 ---
 
