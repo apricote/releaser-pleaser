@@ -241,7 +241,7 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 	logger.DebugContext(ctx, "cloning repository", "clone.url", forge.CloneURL())
 	repo, err := rp.CloneRepo(ctx, forge.CloneURL(), flagBranch, forge.GitAuth())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to clone repository: %w", err)
 	}
 	worktree, err := repo.Worktree()
 	if err != nil {
@@ -259,28 +259,28 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 		Branch: rpBranchRef,
 		Create: true,
 	}); err != nil {
-		return err
+		return fmt.Errorf("failed to check out branch: %w", err)
 	}
 
 	err = rp.RunUpdater(ctx, nextVersion, worktree)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update files with new version: %w", err)
 	}
 
 	changelogEntry, err := rp.NewChangelogEntry(changesets, nextVersion, forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to build changelog entry: %w", err)
 	}
 
 	err = rp.UpdateChangelogFile(worktree, changelogEntry)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update changelog file: %w", err)
 	}
 
 	releaseCommitMessage := fmt.Sprintf("chore(%s): release %s", flagBranch, nextVersion)
 	releaseCommitHash, err := worktree.Commit(releaseCommitMessage, &git.CommitOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 
 	logger.InfoContext(ctx, "created release commit", "commit.hash", releaseCommitHash.String(), "commit.message", releaseCommitMessage)
