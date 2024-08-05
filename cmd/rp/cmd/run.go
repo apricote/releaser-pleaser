@@ -330,7 +330,7 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 			Force:      true,
 			Auth:       forge.GitAuth(),
 		}); err != nil {
-			return err
+			return fmt.Errorf("failed to push branch: %w", err)
 		}
 
 		logger.InfoContext(ctx, "pushed branch", "commit.hash", releaseCommitHash.String(), "branch.name", rpBranch, "refspec", pushRefSpec.String())

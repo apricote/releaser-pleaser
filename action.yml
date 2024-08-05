@@ -22,3 +22,4 @@ runs:
     - --branch=${{ inputs.branch }}
   env:
     GITHUB_TOKEN: ${{ inputs.token }}
+    GITHUB_USER: "oauth2"
