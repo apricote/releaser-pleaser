@@ -278,7 +278,10 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 	}
 
 	releaseCommitMessage := fmt.Sprintf("chore(%s): release %s", flagBranch, nextVersion)
-	releaseCommitHash, err := worktree.Commit(releaseCommitMessage, &git.CommitOptions{})
+	releaseCommitHash, err := worktree.Commit(releaseCommitMessage, &git.CommitOptions{
+		Author:    rp.GitSignature(),
+		Committer: rp.GitSignature(),
+	})
 	if err != nil {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}

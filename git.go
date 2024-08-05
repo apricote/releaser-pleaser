@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 )
 
@@ -45,4 +47,12 @@ func CloneRepo(ctx context.Context, cloneURL, branch string, auth transport.Auth
 	}
 
 	return repo, nil
+}
+
+func GitSignature() *object.Signature {
+	return &object.Signature{
+		Name:  "releaser-pleaser",
+		Email: "",
+		When:  time.Now(),
+	}
 }
