@@ -9,10 +9,7 @@ on:
       - labeled
       - unlabeled
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   releaser-pleaser:
@@ -21,5 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - run: env
-      - uses: ./
+      - name: releaser-pleaser
+        uses: ./
+        with:
+          token: ${{ secrets.RELEASER_PLEASER_TOKEN }}
