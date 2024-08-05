@@ -21,6 +21,7 @@ const (
 	GitHubPRStateClosed = "closed"
 	GitHubEnvAPIToken   = "GITHUB_TOKEN"
 	GitHubEnvUsername   = "GITHUB_USER"
+	GitHubEnvRepository = "GITHUB_REPOSITORY"
 	GitHubLabelColor    = "dedede"
 )
 
@@ -587,7 +588,16 @@ func (g *GitHubOptions) autodiscover() {
 	if username := os.Getenv(GitHubEnvUsername); username != "" {
 		g.Username = username
 	}
-	// TODO: Read settings from GitHub Actions env vars
+
+	if envRepository := os.Getenv(GitHubEnvRepository); envRepository != "" {
+		// GITHUB_REPOSITORY=apricote/releaser-pleaser
+		parts := strings.Split(envRepository, "/")
+		if len(parts) == 2 {
+			g.Owner = parts[0]
+			g.Repo = parts[1]
+			g.Repository = envRepository
+		}
+	}
 }
 
 type GitHubOptions struct {

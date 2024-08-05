@@ -1,0 +1,24 @@
+name: 'releaser-pleaser'
+description: 'automated releases based on conventional commits'
+author: Julian Tölle
+branding:
+  icon: 'package'
+  color: 'red'
+inputs:
+  branch:
+    default: main
+    description: "This branch is used as the target for releases."
+  token:
+    description: 'GitHub token for creating and grooming release PRs, defaults to using secrets.GITHUB_TOKEN'
+    required: false
+    default: ${{ github.token }}
+outputs: {}
+runs:
+  using: 'docker'
+  image: ghcr.io/apricote/releaser-pleaser:v0.1.0
+  args:
+    - run
+    - --forge=github
+    - --branch=${{ inputs.branch }}
+  env:
+    GITHUB_TOKEN: ${{ inputs.token }}
