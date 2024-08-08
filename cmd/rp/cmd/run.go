@@ -232,7 +232,7 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 	}
 
 	versionBump := rp.VersionBumpFromChangesets(changesets)
-	nextVersion, err := releases.NextVersion(versionBump, releaseOverrides.NextVersionType)
+	nextVersion, err := rp.SemVerNextVersion(releases, versionBump, releaseOverrides.NextVersionType)
 	if err != nil {
 		return err
 	}
@@ -352,7 +352,12 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 		logger.InfoContext(ctx, "opened pull request", "pr.title", pr.Title, "pr.id", pr.ID)
 	} else {
 		pr.SetTitle(flagBranch, nextVersion)
-		err = pr.SetDescription(changelogEntry)
+
+		overrides, err := pr.GetOverrides()
+		if err != nil {
+			return err
+		}
+		err = pr.SetDescription(changelogEntry, overrides)
 		if err != nil {
 			return err
 		}
