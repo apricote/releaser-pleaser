@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"text/template"
 
 	"github.com/yuin/goldmark/ast"
@@ -47,7 +48,7 @@ func NewReleasePullRequest(head, branch, version, changelogEntry string) (*Relea
 	}
 
 	rp.SetTitle(branch, version)
-	if err := rp.SetDescription(changelogEntry); err != nil {
+	if err := rp.SetDescription(changelogEntry, ReleaseOverrides{}); err != nil {
 		return nil, err
 	}
 
@@ -115,7 +116,6 @@ const (
 )
 
 const (
-	MarkdownSectionOverrides = "overrides"
 	MarkdownSectionChangelog = "changelog"
 )
 
@@ -190,51 +190,6 @@ func (pr *ReleasePullRequest) parseDescription(overrides ReleaseOverrides) (Rele
 	return overrides, nil
 }
 
-func (pr *ReleasePullRequest) overridesText() (string, error) {
-	source := []byte(pr.Description)
-	gm := markdown.New()
-	descriptionAST := gm.Parser().Parse(text.NewReader(source))
-
-	var section *east.Section
-
-	err := ast.Walk(descriptionAST, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		if !entering {
-			return ast.WalkContinue, nil
-		}
-
-		if n.Type() != ast.TypeBlock || n.Kind() != east.KindSection {
-			return ast.WalkContinue, nil
-		}
-
-		anySection, ok := n.(*east.Section)
-		if !ok {
-			return ast.WalkStop, fmt.Errorf("node has unexpected type: %T", n)
-		}
-
-		if anySection.Name != MarkdownSectionOverrides {
-			return ast.WalkContinue, nil
-		}
-
-		section = anySection
-		return ast.WalkStop, nil
-	})
-	if err != nil {
-		return "", err
-	}
-
-	if section == nil {
-		return "", nil
-	}
-
-	outputBuffer := new(bytes.Buffer)
-	err = gm.Renderer().Render(outputBuffer, source, section)
-	if err != nil {
-		return "", err
-	}
-
-	return outputBuffer.String(), nil
-}
-
 func (pr *ReleasePullRequest) ChangelogText() (string, error) {
 	source := []byte(pr.Description)
 	gm := markdown.New()
@@ -289,11 +244,11 @@ func textFromLines(source []byte, n ast.Node) string {
 		content = append(content, line.Value(source)...)
 	}
 
-	return string(content)
+	return strings.TrimSpace(string(content))
 }
 
 func (pr *ReleasePullRequest) SetTitle(branch, version string) {
-	pr.Title = fmt.Sprintf("chore(%s): release %s", branch, version)
+	pr.Title = fmt.Sprintf(TitleFormat, branch, version)
 }
 
 func (pr *ReleasePullRequest) Version() (string, error) {
@@ -305,14 +260,9 @@ func (pr *ReleasePullRequest) Version() (string, error) {
 	return matches[2], nil
 }
 
-func (pr *ReleasePullRequest) SetDescription(changelogEntry string) error {
-	overrides, err := pr.overridesText()
-	if err != nil {
-		return err
-	}
-
+func (pr *ReleasePullRequest) SetDescription(changelogEntry string, overrides ReleaseOverrides) error {
 	var description bytes.Buffer
-	err = releasePRTemplate.Execute(&description, map[string]any{
+	err := releasePRTemplate.Execute(&description, map[string]any{
 		"Changelog": changelogEntry,
 		"Overrides": overrides,
 	})

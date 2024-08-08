@@ -49,121 +49,96 @@ func TestReleasePullRequest_SetDescription(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		pr             *ReleasePullRequest
 		changelogEntry string
+		overrides      ReleaseOverrides
 		want           string
 		wantErr        assert.ErrorAssertionFunc
 	}{
 		{
-			name:           "empty description",
-			pr:             &ReleasePullRequest{},
+			name:           "no overrides",
 			changelogEntry: `## v1.0.0`,
-			want: `---
-
-<!-- section-start changelog -->
+			overrides:      ReleaseOverrides{},
+			want: `<!-- section-start changelog -->
 ## v1.0.0
 <!-- section-end changelog -->
 
 ---
 
-## releaser-pleaser Instructions
+<details>
+  <summary><h4>PR by <a href="https://github.com/apricote/releaser-pleaser">releaser-pleaser</a> 🤖</h4></summary>
 
-<!-- section-start overrides -->
-> If you want to modify the proposed release, add you overrides here. You can learn more about the options in the docs.
+If you want to modify the proposed release, add you overrides here. You can learn more about the options in the docs.
 
-### Prefix
+## Release Notes
+
+### Prefix / Start
+
+This will be added to the start of the release notes.
 
 ` + "```" + `rp-prefix
 ` + "```" + `
 
-### Suffix
+### Suffix / End
+
+This will be added to the end of the release notes.
 
 ` + "```" + `rp-suffix
 ` + "```" + `
 
-<!-- section-end overrides -->
-
-
-#### PR by [releaser-pleaser](https://github.com/apricote/releaser-pleaser)
+</details>
 `,
 			wantErr: assert.NoError,
 		},
 		{
-			name: "existing overrides",
-			pr: &ReleasePullRequest{
-				Description: `---
-
-<!-- section-start changelog -->
-## v0.1.0
-
-### Features
-
-- bedazzle
-<!-- section-end changelog -->
-
----
-
-## releaser-pleaser Instructions
-
-<!-- section-start overrides -->
-> If you want to modify the proposed release, add you overrides here. You can learn more about the options in the docs.
-
-### Prefix
-
-` + "```" + `rp-prefix
-This release is awesome!
-` + "```" + `
-
-### Suffix
-
-` + "```" + `rp-suffix
-` + "```" + `
-
-<!-- section-end overrides -->
-
-#### PR by [releaser-pleaser](https://github.com/apricote/releaser-pleaser)
-`,
-			},
+			name:           "existing overrides",
 			changelogEntry: `## v1.0.0`,
-			want: `---
-
-<!-- section-start changelog -->
+			overrides: ReleaseOverrides{
+				Prefix: "This release is awesome!",
+				Suffix: "Fooo",
+			},
+			want: `<!-- section-start changelog -->
 ## v1.0.0
 <!-- section-end changelog -->
 
 ---
 
-## releaser-pleaser Instructions
+<details>
+  <summary><h4>PR by <a href="https://github.com/apricote/releaser-pleaser">releaser-pleaser</a> 🤖</h4></summary>
 
-<!-- section-start overrides -->
-> If you want to modify the proposed release, add you overrides here. You can learn more about the options in the docs.
+If you want to modify the proposed release, add you overrides here. You can learn more about the options in the docs.
 
-### Prefix
+## Release Notes
+
+### Prefix / Start
+
+This will be added to the start of the release notes.
 
 ` + "```" + `rp-prefix
 This release is awesome!
 ` + "```" + `
 
-### Suffix
+### Suffix / End
+
+This will be added to the end of the release notes.
 
 ` + "```" + `rp-suffix
+Fooo
 ` + "```" + `
 
-<!-- section-end overrides -->
-
-#### PR by [releaser-pleaser](https://github.com/apricote/releaser-pleaser)
+</details>
 `,
 			wantErr: assert.NoError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.pr.SetDescription(tt.changelogEntry)
+			pr := &ReleasePullRequest{}
+			err := pr.SetDescription(tt.changelogEntry, tt.overrides)
 			if !tt.wantErr(t, err) {
 				return
 			}
 
-			assert.Equal(t, tt.want, tt.pr.Description)
+			assert.Equal(t, tt.want, pr.Description)
 		})
 	}
 }
