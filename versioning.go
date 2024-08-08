@@ -13,7 +13,11 @@ type Releases struct {
 	Stable *Tag
 }
 
-func (r Releases) NextVersion(versionBump conventionalcommits.VersionBump, nextVersionType NextVersionType) (string, error) {
+type VersioningStrategy = func(Releases, conventionalcommits.VersionBump, NextVersionType) (string, error)
+
+var _ VersioningStrategy = SemVerNextVersion
+
+func SemVerNextVersion(r Releases, versionBump conventionalcommits.VersionBump, nextVersionType NextVersionType) (string, error) {
 	latest, err := parseSemverWithDefault(r.Latest)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse latest version: %w", err)

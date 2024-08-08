@@ -232,7 +232,7 @@ func reconcileReleasePR(ctx context.Context, forge rp.Forge, changesets []rp.Cha
 	}
 
 	versionBump := rp.VersionBumpFromChangesets(changesets)
-	nextVersion, err := releases.NextVersion(versionBump, releaseOverrides.NextVersionType)
+	nextVersion, err := rp.SemVerNextVersion(releases, versionBump, releaseOverrides.NextVersionType)
 	if err != nil {
 		return err
 	}
