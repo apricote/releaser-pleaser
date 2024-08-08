@@ -308,7 +308,7 @@ func (g *GitHub) Changesets(ctx context.Context, commits []Commit) ([]Changeset,
 		log = log.With("pullrequest.id", pullrequest.GetID())
 
 		// TODO: Parse PR description for overrides
-		changelogEntries, _, err := AnalyzeCommits([]Commit{commit})
+		changelogEntries, err := NewConventionalCommitsParser().AnalyzeCommits([]Commit{commit})
 		if err != nil {
 			log.Warn("unable to parse changelog entries", "error", err)
 			continue

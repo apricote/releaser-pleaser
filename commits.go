@@ -15,24 +15,36 @@ type AnalyzedCommit struct {
 	BreakingChange bool
 }
 
-func AnalyzeCommits(commits []Commit) ([]AnalyzedCommit, conventionalcommits.VersionBump, error) {
+type CommitParser interface {
+	Analyze(commits []Commit) ([]AnalyzedCommit, error)
+}
+
+type ConventionalCommitsParser struct {
+	machine conventionalcommits.Machine
+}
+
+func NewConventionalCommitsParser() *ConventionalCommitsParser {
 	parserMachine := parser.NewMachine(
 		parser.WithBestEffort(),
 		parser.WithTypes(conventionalcommits.TypesConventional),
 	)
 
+	return &ConventionalCommitsParser{
+		machine: parserMachine,
+	}
+}
+
+func (c *ConventionalCommitsParser) AnalyzeCommits(commits []Commit) ([]AnalyzedCommit, error) {
 	analyzedCommits := make([]AnalyzedCommit, 0, len(commits))
 
-	highestVersionBump := conventionalcommits.UnknownVersion
-
 	for _, commit := range commits {
-		msg, err := parserMachine.Parse([]byte(commit.Message))
+		msg, err := c.machine.Parse([]byte(commit.Message))
 		if err != nil {
-			return nil, conventionalcommits.UnknownVersion, fmt.Errorf("failed to parse message of commit %q: %w", commit.Hash, err)
+			return nil, fmt.Errorf("failed to parse message of commit %q: %w", commit.Hash, err)
 		}
 		conventionalCommit, ok := msg.(*conventionalcommits.ConventionalCommit)
 		if !ok {
-			return nil, conventionalcommits.UnknownVersion, fmt.Errorf("unable to get ConventionalCommit from parser result: %T", msg)
+			return nil, fmt.Errorf("unable to get ConventionalCommit from parser result: %T", msg)
 		}
 
 		commitVersionBump := conventionalCommit.VersionBump(conventionalcommits.DefaultStrategy)
@@ -47,11 +59,7 @@ func AnalyzeCommits(commits []Commit) ([]AnalyzedCommit, conventionalcommits.Ver
 			})
 		}
 
-		if commitVersionBump > highestVersionBump {
-			// Get max version bump from all releasable commits
-			highestVersionBump = commitVersionBump
-		}
 	}
 
-	return analyzedCommits, highestVersionBump, nil
+	return analyzedCommits, nil
 }
