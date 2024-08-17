@@ -35,7 +35,7 @@ type ReleasePullRequest struct {
 	ID          int
 	Title       string
 	Description string
-	Labels      []string
+	Labels      []Label
 
 	Head          string
 	ReleaseCommit *Commit
@@ -44,7 +44,7 @@ type ReleasePullRequest struct {
 func NewReleasePullRequest(head, branch, version, changelogEntry string) (*ReleasePullRequest, error) {
 	rp := &ReleasePullRequest{
 		Head:   head,
-		Labels: []string{LabelReleasePending},
+		Labels: []Label{LabelReleasePending},
 	}
 
 	rp.SetTitle(branch, version)
@@ -89,18 +89,20 @@ func (n NextVersionType) String() string {
 	}
 }
 
-// PR Labels
-const (
-	LabelNextVersionTypeNormal = "rp-next-version::normal"
-	LabelNextVersionTypeRC     = "rp-next-version::rc"
-	LabelNextVersionTypeBeta   = "rp-next-version::beta"
-	LabelNextVersionTypeAlpha  = "rp-next-version::alpha"
+// Label is the string identifier of a pull/merge request label on the forge.
+type Label string
 
-	LabelReleasePending = "rp-release::pending"
-	LabelReleaseTagged  = "rp-release::tagged"
+const (
+	LabelNextVersionTypeNormal Label = "rp-next-version::normal"
+	LabelNextVersionTypeRC     Label = "rp-next-version::rc"
+	LabelNextVersionTypeBeta   Label = "rp-next-version::beta"
+	LabelNextVersionTypeAlpha  Label = "rp-next-version::alpha"
+
+	LabelReleasePending Label = "rp-release::pending"
+	LabelReleaseTagged  Label = "rp-release::tagged"
 )
 
-var Labels = []string{
+var KnownLabels = []Label{
 	LabelNextVersionTypeNormal,
 	LabelNextVersionTypeRC,
 	LabelNextVersionTypeBeta,

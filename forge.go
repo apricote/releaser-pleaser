@@ -49,20 +49,35 @@ type Forge interface {
 	// Changesets looks up the Pull/Merge Requests for each commit, returning its parsed metadata.
 	Changesets(context.Context, []Commit) ([]Changeset, error)
 
-	EnsureLabelsExist(context.Context, []string) error
+	// EnsureLabelsExist verifies that all desired labels are available on the repository. If labels are missing, they
+	// are created them.
+	EnsureLabelsExist(context.Context, []Label) error
 
 	// PullRequestForBranch returns the open pull request between the branch and ForgeOptions.BaseBranch. If no open PR
 	// exists, it returns nil.
 	PullRequestForBranch(context.Context, string) (*ReleasePullRequest, error)
 
+	// CreatePullRequest opens a new pull/merge request for the ReleasePullRequest.
 	CreatePullRequest(context.Context, *ReleasePullRequest) error
+
+	// UpdatePullRequest updates the pull/merge request identified through the ID of
+	// the ReleasePullRequest to the current description and title.
 	UpdatePullRequest(context.Context, *ReleasePullRequest) error
-	SetPullRequestLabels(ctx context.Context, pr *ReleasePullRequest, remove, add []string) error
+
+	// SetPullRequestLabels updates the pull/merge request identified through the ID of
+	// the ReleasePullRequest to the current labels.
+	SetPullRequestLabels(ctx context.Context, pr *ReleasePullRequest, remove, add []Label) error
+
+	// ClosePullRequest closes the pull/merge request identified through the ID of
+	// the ReleasePullRequest, as it is no longer required.
 	ClosePullRequest(context.Context, *ReleasePullRequest) error
 
-	PendingReleases(context.Context) ([]*ReleasePullRequest, error)
+	// PendingReleases returns a list of ReleasePullRequest. The list should contain all pull/merge requests that are
+	// merged and have the matching label.
+	PendingReleases(context.Context, Label) ([]*ReleasePullRequest, error)
 
-	CreateRelease(ctx context.Context, commit Commit, title, changelog string, prelease, latest bool) error
+	// CreateRelease creates a release on the Forge, pointing at the commit with the passed in details.
+	CreateRelease(ctx context.Context, commit Commit, title, changelog string, prerelease, latest bool) error
 }
 
 type ForgeOptions struct {
@@ -326,7 +341,7 @@ func (g *GitHub) Changesets(ctx context.Context, commits []Commit) ([]Changeset,
 	return changesets, nil
 }
 
-func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []string) error {
+func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []Label) error {
 	existingLabels := make([]string, 0, len(labels))
 
 	page := 1
@@ -354,12 +369,12 @@ func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []string) error {
 	}
 
 	for _, label := range labels {
-		if !slices.Contains(existingLabels, label) {
+		if !slices.Contains(existingLabels, string(label)) {
 			g.log.Info("creating label in repository", "label.name", label)
 			_, _, err := g.client.Issues.CreateLabel(
 				ctx, g.options.Owner, g.options.Repo,
 				&github.Label{
-					Name:  &label,
+					Name:  Pointer(string(label)),
 					Color: Pointer(GitHubLabelColor),
 				},
 			)
@@ -422,7 +437,7 @@ func (g *GitHub) CreatePullRequest(ctx context.Context, pr *ReleasePullRequest) 
 	// TODO: String ID?
 	pr.ID = ghPR.GetNumber()
 
-	err = g.SetPullRequestLabels(ctx, pr, []string{}, pr.Labels)
+	err = g.SetPullRequestLabels(ctx, pr, []Label{}, pr.Labels)
 	if err != nil {
 		return err
 	}
@@ -445,20 +460,25 @@ func (g *GitHub) UpdatePullRequest(ctx context.Context, pr *ReleasePullRequest) 
 	return nil
 }
 
-func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *ReleasePullRequest, remove, add []string) error {
+func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *ReleasePullRequest, remove, add []Label) error {
 	for _, label := range remove {
 		_, err := g.client.Issues.RemoveLabelForIssue(
 			ctx, g.options.Owner, g.options.Repo,
-			pr.ID, label,
+			pr.ID, string(label),
 		)
 		if err != nil {
 			return err
 		}
 	}
 
+	addString := make([]string, 0, len(add))
+	for _, label := range add {
+		addString = append(addString, string(label))
+	}
+
 	_, _, err := g.client.Issues.AddLabelsToIssue(
 		ctx, g.options.Owner, g.options.Repo,
-		pr.ID, add,
+		pr.ID, addString,
 	)
 	if err != nil {
 		return err
@@ -481,7 +501,7 @@ func (g *GitHub) ClosePullRequest(ctx context.Context, pr *ReleasePullRequest) e
 	return nil
 }
 
-func (g *GitHub) PendingReleases(ctx context.Context) ([]*ReleasePullRequest, error) {
+func (g *GitHub) PendingReleases(ctx context.Context, pendingLabel Label) ([]*ReleasePullRequest, error) {
 	page := 1
 
 	var prs []*ReleasePullRequest
@@ -509,7 +529,7 @@ func (g *GitHub) PendingReleases(ctx context.Context) ([]*ReleasePullRequest, er
 
 		for _, pr := range ghPRs {
 			pending := slices.ContainsFunc(pr.Labels, func(l *github.Label) bool {
-				return l.GetName() == LabelReleasePending
+				return l.GetName() == string(pendingLabel)
 			})
 			if !pending {
 				continue
@@ -559,9 +579,12 @@ func (g *GitHub) CreateRelease(ctx context.Context, commit Commit, title, change
 }
 
 func gitHubPRToReleasePullRequest(pr *github.PullRequest) *ReleasePullRequest {
-	labels := make([]string, 0, len(pr.Labels))
+	labels := make([]Label, 0, len(pr.Labels))
 	for _, label := range pr.Labels {
-		labels = append(labels, label.GetName())
+		labelName := Label(label.GetName())
+		if slices.Contains(KnownLabels, Label(label.GetName())) {
+			labels = append(labels, labelName)
+		}
 	}
 
 	var releaseCommit *Commit

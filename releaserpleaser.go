@@ -30,7 +30,7 @@ func New(forge Forge, logger *slog.Logger, targetBranch string) *ReleaserPleaser
 
 func (rp *ReleaserPleaser) EnsureLabels(ctx context.Context) error {
 	// TODO: Wrap Error
-	return rp.forge.EnsureLabelsExist(ctx, Labels)
+	return rp.forge.EnsureLabelsExist(ctx, KnownLabels)
 }
 
 func (rp *ReleaserPleaser) Run(ctx context.Context) error {
@@ -65,7 +65,7 @@ func (rp *ReleaserPleaser) runCreatePendingReleases(ctx context.Context) error {
 	logger := rp.logger.With("method", "runCreatePendingReleases")
 
 	logger.InfoContext(ctx, "checking for pending releases")
-	prs, err := rp.forge.PendingReleases(ctx)
+	prs, err := rp.forge.PendingReleases(ctx, LabelReleasePending)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (rp *ReleaserPleaser) createPendingRelease(ctx context.Context, pr *Release
 	logger.DebugContext(ctx, "created release", "release.title", version, "release.url", rp.forge.ReleaseURL(version))
 
 	logger.DebugContext(ctx, "updating pr labels")
-	err = rp.forge.SetPullRequestLabels(ctx, pr, []string{LabelReleasePending}, []string{LabelReleaseTagged})
+	err = rp.forge.SetPullRequestLabels(ctx, pr, []Label{LabelReleasePending}, []Label{LabelReleaseTagged})
 	if err != nil {
 		return err
 	}
