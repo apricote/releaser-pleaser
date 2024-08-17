@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/spf13/cobra"
 
 	rp "github.com/apricote/releaser-pleaser"
@@ -13,10 +15,11 @@ var runCmd = &cobra.Command{
 }
 
 var (
-	flagForge  string
-	flagBranch string
-	flagOwner  string
-	flagRepo   string
+	flagForge      string
+	flagBranch     string
+	flagOwner      string
+	flagRepo       string
+	flagExtraFiles string
 )
 
 func init() {
@@ -28,6 +31,7 @@ func init() {
 	runCmd.PersistentFlags().StringVar(&flagBranch, "branch", "main", "")
 	runCmd.PersistentFlags().StringVar(&flagOwner, "owner", "", "")
 	runCmd.PersistentFlags().StringVar(&flagRepo, "repo", "", "")
+	runCmd.PersistentFlags().StringVar(&flagExtraFiles, "extra-files", "", "")
 }
 
 func run(cmd *cobra.Command, _ []string) error {
@@ -59,7 +63,31 @@ func run(cmd *cobra.Command, _ []string) error {
 		})
 	}
 
-	releaserPleaser := rp.New(forge, logger, flagBranch, rp.NewConventionalCommitsParser(), rp.SemVerNextVersion)
+	extraFiles := parseExtraFiles(flagExtraFiles)
+
+	releaserPleaser := rp.New(
+		forge,
+		logger,
+		flagBranch,
+		rp.NewConventionalCommitsParser(),
+		rp.SemVerNextVersion,
+		extraFiles,
+		[]rp.Updater{&rp.GenericUpdater{}},
+	)
 
 	return releaserPleaser.Run(ctx)
+}
+
+func parseExtraFiles(input string) []string {
+	lines := strings.Split(input, "\n")
+
+	extraFiles := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) > 0 {
+			extraFiles = append(extraFiles, line)
+		}
+	}
+
+	return extraFiles
 }

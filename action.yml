@@ -12,14 +12,19 @@ inputs:
     description: 'GitHub token for creating and grooming release PRs, defaults to using secrets.GITHUB_TOKEN'
     required: false
     default: ${{ github.token }}
+  extra-files:
+    description: 'List of files that are scanned for version references.'
+    required: false
+    default: ""
 outputs: {}
 runs:
   using: 'docker'
-  image: ghcr.io/apricote/releaser-pleaser:v0.1.0
+  image: ghcr.io/apricote/releaser-pleaser:v0.1.0 # x-releaser-pleaser-version
   args:
     - run
     - --forge=github
     - --branch=${{ inputs.branch }}
+    - --extra-files="${{ inputs.extra-files }}"
   env:
     GITHUB_TOKEN: ${{ inputs.token }}
     GITHUB_USER: "oauth2"
