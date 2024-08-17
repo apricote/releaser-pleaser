@@ -14,9 +14,8 @@ import (
 )
 
 const (
-	ChangelogFile       = "CHANGELOG.md"
-	ChangelogFileBuffer = "CHANGELOG.md.tmp"
-	ChangelogHeader     = "# Changelog"
+	ChangelogFile   = "CHANGELOG.md"
+	ChangelogHeader = "# Changelog"
 )
 
 var (

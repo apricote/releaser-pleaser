@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	CommitSearchDepth = 50 // TODO: Increase
-	GitRemoteName     = "origin"
+	GitRemoteName = "origin"
 )
 
 type Tag struct {
