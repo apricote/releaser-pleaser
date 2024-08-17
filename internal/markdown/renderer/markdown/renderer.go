@@ -149,7 +149,7 @@ func (r *Renderer) writeByte(w io.Writer, c byte) error {
 	return nil
 }
 
-// WriteString writes a string to an io.Writer, ensuring that appropriate indentation and prefices are added at the
+// WriteString writes a string to an io.Writer, ensuring that appropriate indentation and prefixes are added at the
 // beginning of each line.
 func (r *Renderer) writeString(w io.Writer, s string) (int, error) {
 	n, err := r.write(w, []byte(s))
@@ -178,7 +178,7 @@ func (r *Renderer) popPrefix() {
 
 // OpenBlock ensures that each block begins on a new line, and that blank lines are inserted before blocks as
 // indicated by node.HasPreviousBlankLines.
-func (r *Renderer) openBlock(w util.BufWriter, source []byte, node ast.Node) error {
+func (r *Renderer) openBlock(w util.BufWriter, _ []byte, node ast.Node) error {
 	r.openBlocks = append(r.openBlocks, blockState{
 		node:  node,
 		fresh: true,
@@ -222,7 +222,7 @@ func (r *Renderer) closeBlock(w io.Writer) error {
 }
 
 // RenderDocument renders an *ast.Document node to the given BufWriter.
-func (r *Renderer) renderDocument(w util.BufWriter, source []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
+func (r *Renderer) renderDocument(_ util.BufWriter, _ []byte, _ ast.Node, _ bool) (ast.WalkStatus, error) {
 	r.listStack, r.prefixStack, r.prefix, r.atNewline = nil, nil, nil, false
 	return ast.WalkContinue, nil
 }
@@ -594,7 +594,7 @@ func (r *Renderer) renderCodeSpan(w util.BufWriter, source []byte, node ast.Node
 }
 
 // RenderEmphasis renders an *ast.Emphasis node to the given BufWriter.
-func (r *Renderer) renderEmphasis(w util.BufWriter, source []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
+func (r *Renderer) renderEmphasis(w util.BufWriter, _ []byte, node ast.Node, _ bool) (ast.WalkStatus, error) {
 	em := node.(*ast.Emphasis)
 	if _, err := r.writeString(w, strings.Repeat("*", em.Level)); err != nil {
 		return ast.WalkStop, fmt.Errorf(": %w", err)
@@ -663,7 +663,7 @@ func (r *Renderer) renderLinkOrImage(w util.BufWriter, open string, dest, title 
 }
 
 // RenderImage renders an *ast.Image node to the given BufWriter.
-func (r *Renderer) renderImage(w util.BufWriter, source []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
+func (r *Renderer) renderImage(w util.BufWriter, _ []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
 	img := node.(*ast.Image)
 	if err := r.renderLinkOrImage(w, "![", img.Destination, img.Title, enter); err != nil {
 		return ast.WalkStop, fmt.Errorf(": %w", err)
@@ -672,7 +672,7 @@ func (r *Renderer) renderImage(w util.BufWriter, source []byte, node ast.Node, e
 }
 
 // RenderLink renders an *ast.Link node to the given BufWriter.
-func (r *Renderer) renderLink(w util.BufWriter, source []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
+func (r *Renderer) renderLink(w util.BufWriter, _ []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
 	link := node.(*ast.Link)
 	if err := r.renderLinkOrImage(w, "[", link.Destination, link.Title, enter); err != nil {
 		return ast.WalkStop, fmt.Errorf(": %w", err)
@@ -724,7 +724,7 @@ func (r *Renderer) renderText(w util.BufWriter, source []byte, node ast.Node, en
 }
 
 // RenderString renders an *ast.String node to the given BufWriter.
-func (r *Renderer) renderString(w util.BufWriter, source []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
+func (r *Renderer) renderString(w util.BufWriter, _ []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
 	if !enter {
 		return ast.WalkContinue, nil
 	}
@@ -801,7 +801,7 @@ func (r *Renderer) renderTableRow(w util.BufWriter, source []byte, node ast.Node
 	return ast.WalkContinue, nil
 }
 
-func (r *Renderer) renderTableCell(w util.BufWriter, source []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
+func (r *Renderer) renderTableCell(w util.BufWriter, _ []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
 	if !enter {
 		if node.NextSibling() != nil {
 			if _, err := r.writeString(w, " | "); err != nil {
@@ -813,14 +813,14 @@ func (r *Renderer) renderTableCell(w util.BufWriter, source []byte, node ast.Nod
 	return ast.WalkContinue, nil
 }
 
-func (r *Renderer) renderStrikethrough(w util.BufWriter, source []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
+func (r *Renderer) renderStrikethrough(w util.BufWriter, _ []byte, _ ast.Node, _ bool) (ast.WalkStatus, error) {
 	if _, err := r.writeString(w, "~~"); err != nil {
 		return ast.WalkStop, fmt.Errorf(": %w", err)
 	}
 	return ast.WalkContinue, nil
 }
 
-func (r *Renderer) renderTaskCheckBox(w util.BufWriter, source []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
+func (r *Renderer) renderTaskCheckBox(w util.BufWriter, _ []byte, node ast.Node, enter bool) (ast.WalkStatus, error) {
 	if enter {
 		var fill byte = ' '
 		if task := node.(*exast.TaskCheckBox); task.IsChecked {

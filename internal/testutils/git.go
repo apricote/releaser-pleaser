@@ -61,9 +61,9 @@ func WithCommit(message string, options ...CommitOption) Commit {
 		for _, fileInfo := range opts.files {
 			file, err := wt.Filesystem.Create(fileInfo.path)
 			require.NoError(t, err, "failed to create file %q", fileInfo.path)
-			defer file.Close()
 
 			_, err = file.Write([]byte(fileInfo.content))
+			file.Close()
 			require.NoError(t, err, "failed to write content to file %q", fileInfo.path)
 		}
 
