@@ -17,11 +17,6 @@ const (
 	GitRemoteName     = "origin"
 )
 
-type Commit struct {
-	Hash    string
-	Message string
-}
-
 type Tag struct {
 	Hash string
 	Name string

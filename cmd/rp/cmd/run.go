@@ -59,7 +59,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		})
 	}
 
-	releaserPleaser := rp.New(forge, logger, flagBranch)
+	releaserPleaser := rp.New(forge, logger, flagBranch, rp.NewConventionalCommitsParser(), rp.SemVerNextVersion)
 
 	return releaserPleaser.Run(ctx)
 }

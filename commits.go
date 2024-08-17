@@ -7,6 +7,19 @@ import (
 	"github.com/leodido/go-conventionalcommits/parser"
 )
 
+type Commit struct {
+	Hash    string
+	Message string
+
+	PullRequest *PullRequest
+}
+
+type PullRequest struct {
+	ID          int
+	Title       string
+	Description string
+}
+
 type AnalyzedCommit struct {
 	Commit
 	Type           string
@@ -34,7 +47,7 @@ func NewConventionalCommitsParser() *ConventionalCommitsParser {
 	}
 }
 
-func (c *ConventionalCommitsParser) AnalyzeCommits(commits []Commit) ([]AnalyzedCommit, error) {
+func (c *ConventionalCommitsParser) Analyze(commits []Commit) ([]AnalyzedCommit, error) {
 	analyzedCommits := make([]AnalyzedCommit, 0, len(commits))
 
 	for _, commit := range commits {

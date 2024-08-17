@@ -31,6 +31,9 @@ func init() {
 	}
 }
 
+// ReleasePullRequest
+//
+// TODO: Reuse [PullRequest]
 type ReleasePullRequest struct {
 	ID          int
 	Title       string
@@ -58,7 +61,7 @@ func NewReleasePullRequest(head, branch, version, changelogEntry string) (*Relea
 type ReleaseOverrides struct {
 	Prefix string
 	Suffix string
-	// TODO: Doing the changelog for normal releases after previews requires to know about this while fetching the changesets
+	// TODO: Doing the changelog for normal releases after previews requires to know about this while fetching the commits
 	NextVersionType NextVersionType
 }
 

@@ -111,7 +111,7 @@ func TestAnalyzeCommits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			analyzedCommits, err := NewConventionalCommitsParser().AnalyzeCommits(tt.commits)
+			analyzedCommits, err := NewConventionalCommitsParser().Analyze(tt.commits)
 			if !tt.wantErr(t, err) {
 				return
 			}

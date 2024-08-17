@@ -69,24 +69,22 @@ func SemVerNextVersion(r Releases, versionBump conventionalcommits.VersionBump, 
 	return "v" + next.String(), nil
 }
 
-func VersionBumpFromChangesets(changesets []Changeset) conventionalcommits.VersionBump {
+func VersionBumpFromCommits(commits []AnalyzedCommit) conventionalcommits.VersionBump {
 	bump := conventionalcommits.UnknownVersion
 
-	for _, changeset := range changesets {
-		for _, entry := range changeset.ChangelogEntries {
-			entryBump := conventionalcommits.UnknownVersion
-			switch {
-			case entry.BreakingChange:
-				entryBump = conventionalcommits.MajorVersion
-			case entry.Type == "feat":
-				entryBump = conventionalcommits.MinorVersion
-			case entry.Type == "fix":
-				entryBump = conventionalcommits.PatchVersion
-			}
+	for _, commit := range commits {
+		entryBump := conventionalcommits.UnknownVersion
+		switch {
+		case commit.BreakingChange:
+			entryBump = conventionalcommits.MajorVersion
+		case commit.Type == "feat":
+			entryBump = conventionalcommits.MinorVersion
+		case commit.Type == "fix":
+			entryBump = conventionalcommits.PatchVersion
+		}
 
-			if entryBump > bump {
-				bump = entryBump
-			}
+		if entryBump > bump {
+			bump = entryBump
 		}
 	}
 

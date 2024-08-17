@@ -333,86 +333,56 @@ func TestReleases_NextVersion(t *testing.T) {
 	}
 }
 
-func TestVersionBumpFromChangesets(t *testing.T) {
+func TestVersionBumpFromCommits(t *testing.T) {
 	tests := []struct {
-		name       string
-		changesets []Changeset
-		want       conventionalcommits.VersionBump
+		name            string
+		analyzedCommits []AnalyzedCommit
+		want            conventionalcommits.VersionBump
 	}{
 		{
-			name:       "no entries (unknown)",
-			changesets: []Changeset{},
-			want:       conventionalcommits.UnknownVersion,
+			name:            "no entries (unknown)",
+			analyzedCommits: []AnalyzedCommit{},
+			want:            conventionalcommits.UnknownVersion,
 		},
 		{
-			name:       "non-release type (unknown)",
-			changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{{Type: "docs"}}}},
-			want:       conventionalcommits.UnknownVersion,
+			name:            "non-release type (unknown)",
+			analyzedCommits: []AnalyzedCommit{{Type: "docs"}},
+			want:            conventionalcommits.UnknownVersion,
 		},
 		{
-			name:       "single breaking (major)",
-			changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{{BreakingChange: true}}}},
-			want:       conventionalcommits.MajorVersion,
+			name:            "single breaking (major)",
+			analyzedCommits: []AnalyzedCommit{{BreakingChange: true}},
+			want:            conventionalcommits.MajorVersion,
 		},
 		{
-			name:       "single feat (minor)",
-			changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{{Type: "feat"}}}},
-			want:       conventionalcommits.MinorVersion,
+			name:            "single feat (minor)",
+			analyzedCommits: []AnalyzedCommit{{Type: "feat"}},
+			want:            conventionalcommits.MinorVersion,
 		},
 		{
-			name:       "single fix (patch)",
-			changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{{Type: "fix"}}}},
-			want:       conventionalcommits.PatchVersion,
+			name:            "single fix (patch)",
+			analyzedCommits: []AnalyzedCommit{{Type: "fix"}},
+			want:            conventionalcommits.PatchVersion,
 		},
 		{
-			name: "multiple changesets (major)",
-			changesets: []Changeset{
-				{ChangelogEntries: []AnalyzedCommit{{Type: "fix"}}},
-				{ChangelogEntries: []AnalyzedCommit{{BreakingChange: true}}},
-			},
-			want: conventionalcommits.MajorVersion,
+			name:            "multiple entries (major)",
+			analyzedCommits: []AnalyzedCommit{{Type: "fix"}, {BreakingChange: true}},
+			want:            conventionalcommits.MajorVersion,
 		},
 		{
-			name: "multiple changesets (minor)",
-			changesets: []Changeset{
-				{ChangelogEntries: []AnalyzedCommit{{Type: "fix"}}},
-				{ChangelogEntries: []AnalyzedCommit{{Type: "feat"}}},
-			},
-			want: conventionalcommits.MinorVersion,
+			name:            "multiple entries (minor)",
+			analyzedCommits: []AnalyzedCommit{{Type: "fix"}, {Type: "feat"}},
+			want:            conventionalcommits.MinorVersion,
 		},
 		{
-			name: "multiple changesets (patch)",
-			changesets: []Changeset{
-				{ChangelogEntries: []AnalyzedCommit{{Type: "docs"}}},
-				{ChangelogEntries: []AnalyzedCommit{{Type: "fix"}}},
-			},
-			want: conventionalcommits.PatchVersion,
-		},
-		{
-			name: "multiple entries in one changeset (major)",
-			changesets: []Changeset{
-				{ChangelogEntries: []AnalyzedCommit{{Type: "fix"}, {BreakingChange: true}}},
-			},
-			want: conventionalcommits.MajorVersion,
-		},
-		{
-			name: "multiple entries in one changeset (minor)",
-			changesets: []Changeset{
-				{ChangelogEntries: []AnalyzedCommit{{Type: "fix"}, {Type: "feat"}}},
-			},
-			want: conventionalcommits.MinorVersion,
-		},
-		{
-			name: "multiple entries in one changeset (patch)",
-			changesets: []Changeset{
-				{ChangelogEntries: []AnalyzedCommit{{Type: "docs"}, {Type: "fix"}}},
-			},
-			want: conventionalcommits.PatchVersion,
+			name:            "multiple entries (patch)",
+			analyzedCommits: []AnalyzedCommit{{Type: "docs"}, {Type: "fix"}},
+			want:            conventionalcommits.PatchVersion,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, VersionBumpFromChangesets(tt.changesets), "VersionBumpFromChangesets(%v)", tt.changesets)
+			assert.Equalf(t, tt.want, VersionBumpFromCommits(tt.analyzedCommits), "VersionBumpFromCommits(%v)", tt.analyzedCommits)
 		})
 	}
 }

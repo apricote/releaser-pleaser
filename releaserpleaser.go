@@ -18,13 +18,17 @@ type ReleaserPleaser struct {
 	forge        Forge
 	logger       *slog.Logger
 	targetBranch string
+	commitParser CommitParser
+	nextVersion  VersioningStrategy
 }
 
-func New(forge Forge, logger *slog.Logger, targetBranch string) *ReleaserPleaser {
+func New(forge Forge, logger *slog.Logger, targetBranch string, commitParser CommitParser, versioningStrategy VersioningStrategy) *ReleaserPleaser {
 	return &ReleaserPleaser{
 		forge:        forge,
 		logger:       logger,
 		targetBranch: targetBranch,
+		commitParser: commitParser,
+		nextVersion:  versioningStrategy,
 	}
 }
 
@@ -154,12 +158,13 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 
 	logger.InfoContext(ctx, "Found releasable commits", "length", len(releasableCommits))
 
-	changesets, err := rp.forge.Changesets(ctx, releasableCommits)
+	// TODO: Handle commit overrides
+	analyzedCommits, err := rp.commitParser.Analyze(releasableCommits)
 	if err != nil {
 		return err
 	}
 
-	logger.InfoContext(ctx, "Found changesets", "length", len(changesets))
+	logger.InfoContext(ctx, "Analyzed commits", "length", len(analyzedCommits))
 
 	rpBranch := fmt.Sprintf(PullRequestBranchFormat, rp.targetBranch)
 	rpBranchRef := plumbing.NewBranchReferenceName(rpBranch)
@@ -177,15 +182,15 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		logger.InfoContext(ctx, "found existing release pull request", "pr.id", pr.ID, "pr.title", pr.Title)
 	}
 
-	if len(changesets) == 0 {
+	if len(analyzedCommits) == 0 {
 		if pr != nil {
-			logger.InfoContext(ctx, "closing existing pull requests, no changesets available", "pr.id", pr.ID, "pr.title", pr.Title)
+			logger.InfoContext(ctx, "closing existing pull requests, no commits available", "pr.id", pr.ID, "pr.title", pr.Title)
 			err = rp.forge.ClosePullRequest(ctx, pr)
 			if err != nil {
 				return err
 			}
 		} else {
-			logger.InfoContext(ctx, "No changesets available for release")
+			logger.InfoContext(ctx, "No commits available for release")
 		}
 
 		return nil
@@ -199,8 +204,9 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		}
 	}
 
-	versionBump := VersionBumpFromChangesets(changesets)
-	nextVersion, err := SemVerNextVersion(releases, versionBump, releaseOverrides.NextVersionType)
+	versionBump := VersionBumpFromCommits(analyzedCommits)
+	// TODO: Set version in release pr
+	nextVersion, err := rp.nextVersion(releases, versionBump, releaseOverrides.NextVersionType)
 	if err != nil {
 		return err
 	}
@@ -235,7 +241,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return fmt.Errorf("failed to update files with new version: %w", err)
 	}
 
-	changelogEntry, err := NewChangelogEntry(changesets, nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
+	changelogEntry, err := NewChangelogEntry(analyzedCommits, nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
 	if err != nil {
 		return fmt.Errorf("failed to build changelog entry: %w", err)
 	}

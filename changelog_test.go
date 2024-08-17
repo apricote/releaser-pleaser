@@ -96,11 +96,11 @@ func TestUpdateChangelogFile(t *testing.T) {
 
 func Test_NewChangelogEntry(t *testing.T) {
 	type args struct {
-		changesets []Changeset
-		version    string
-		link       string
-		prefix     string
-		suffix     string
+		analyzedCommits []AnalyzedCommit
+		version         string
+		link            string
+		prefix          string
+		suffix          string
 	}
 	tests := []struct {
 		name    string
@@ -111,9 +111,9 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "empty",
 			args: args{
-				changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{}}},
-				version:    "1.0.0",
-				link:       "https://example.com/1.0.0",
+				analyzedCommits: []AnalyzedCommit{},
+				version:         "1.0.0",
+				link:            "https://example.com/1.0.0",
 			},
 			want:    "## [1.0.0](https://example.com/1.0.0)",
 			wantErr: assert.NoError,
@@ -121,13 +121,13 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "single feature",
 			args: args{
-				changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{
+				analyzedCommits: []AnalyzedCommit{
 					{
 						Commit:      Commit{},
 						Type:        "feat",
 						Description: "Foobar!",
 					},
-				}}},
+				},
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
@@ -137,13 +137,13 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "single fix",
 			args: args{
-				changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{
+				analyzedCommits: []AnalyzedCommit{
 					{
 						Commit:      Commit{},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
-				}}},
+				},
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
@@ -153,7 +153,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "multiple commits with scopes",
 			args: args{
-				changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{
+				analyzedCommits: []AnalyzedCommit{
 					{
 						Commit:      Commit{},
 						Type:        "feat",
@@ -176,7 +176,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 						Description: "So sad!",
 						Scope:       ptr("sad"),
 					},
-				}}},
+				},
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
@@ -196,13 +196,13 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "prefix",
 			args: args{
-				changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{
+				analyzedCommits: []AnalyzedCommit{
 					{
 						Commit:      Commit{},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
-				}}},
+				},
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 				prefix:  "### Breaking Changes",
@@ -219,13 +219,13 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "suffix",
 			args: args{
-				changesets: []Changeset{{ChangelogEntries: []AnalyzedCommit{
+				analyzedCommits: []AnalyzedCommit{
 					{
 						Commit:      Commit{},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
-				}}},
+				},
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 				suffix:  "### Compatibility\n\nThis version is compatible with flux-compensator v2.2 - v2.9.",
@@ -245,7 +245,7 @@ This version is compatible with flux-compensator v2.2 - v2.9.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewChangelogEntry(tt.args.changesets, tt.args.version, tt.args.link, tt.args.prefix, tt.args.suffix)
+			got, err := NewChangelogEntry(tt.args.analyzedCommits, tt.args.version, tt.args.link, tt.args.prefix, tt.args.suffix)
 			if !tt.wantErr(t, err) {
 				return
 			}
