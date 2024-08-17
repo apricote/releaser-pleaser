@@ -39,6 +39,10 @@ jobs:
       - name: Run tests
         run: go test -v -race -coverpkg=./...  ./...
 
+      - name: Upload results to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   go-mod-tidy:
     runs-on: ubuntu-latest
