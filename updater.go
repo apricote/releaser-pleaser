@@ -1,12 +1,28 @@
 package rp
 
 import (
-	"context"
-
-	"github.com/go-git/go-git/v5"
+	"regexp"
+	"strings"
 )
 
-func RunUpdater(ctx context.Context, version string, worktree *git.Worktree) error {
-	// TODO: Implement updater for Go,Python,ExtraFilesMarkers
-	return nil
+var (
+	GenericUpdaterSemVerRegex   = regexp.MustCompile(`\d+\.\d+\.\d+(-[\w.]+)?(.*x-releaser-pleaser-version)`)
+)
+
+type ReleaseInfo struct {
+	Version        string
+	ChangelogEntry string
+}
+
+type Updater interface {
+	UpdateContent(content string, info ReleaseInfo) (string, error)
+}
+
+type GenericUpdater struct{}
+
+func (u *GenericUpdater) UpdateContent(content string, info ReleaseInfo) (string, error) {
+	// We strip the "v" prefix to avoid adding/removing it from the users input.
+	version := strings.TrimPrefix(info.Version, "v")
+
+	return GenericUpdaterSemVerRegex.ReplaceAllString(content, version+"${2}"), nil
 }

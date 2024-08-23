@@ -3,7 +3,9 @@ package rp
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -20,15 +22,19 @@ type ReleaserPleaser struct {
 	targetBranch string
 	commitParser CommitParser
 	nextVersion  VersioningStrategy
+	extraFiles   []string
+	updaters     []Updater
 }
 
-func New(forge Forge, logger *slog.Logger, targetBranch string, commitParser CommitParser, versioningStrategy VersioningStrategy) *ReleaserPleaser {
+func New(forge Forge, logger *slog.Logger, targetBranch string, commitParser CommitParser, versioningStrategy VersioningStrategy, extraFiles []string, updaters []Updater) *ReleaserPleaser {
 	return &ReleaserPleaser{
 		forge:        forge,
 		logger:       logger,
 		targetBranch: targetBranch,
 		commitParser: commitParser,
 		nextVersion:  versioningStrategy,
+		extraFiles:   extraFiles,
+		updaters:     updaters,
 	}
 }
 
@@ -236,19 +242,72 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return fmt.Errorf("failed to check out branch: %w", err)
 	}
 
-	err = RunUpdater(ctx, nextVersion, worktree)
-	if err != nil {
-		return fmt.Errorf("failed to update files with new version: %w", err)
-	}
-
 	changelogEntry, err := NewChangelogEntry(analyzedCommits, nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
 	if err != nil {
 		return fmt.Errorf("failed to build changelog entry: %w", err)
 	}
 
+	// Info for updaters
+	info := ReleaseInfo{Version: nextVersion, ChangelogEntry: changelogEntry}
+
 	err = UpdateChangelogFile(worktree, changelogEntry)
 	if err != nil {
 		return fmt.Errorf("failed to update changelog file: %w", err)
+	}
+
+	updateFile := func(path string, updaters []Updater) error {
+		file, err := worktree.Filesystem.OpenFile(path, os.O_RDWR, 0)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		content, err := io.ReadAll(file)
+		if err != nil {
+			return err
+		}
+
+		updatedContent := string(content)
+
+		for _, updater := range updaters {
+			updatedContent, err = updater.UpdateContent(updatedContent, info)
+			if err != nil {
+				return fmt.Errorf("failed to run updater %T on file %s", updater, path)
+			}
+		}
+
+		err = file.Truncate(0)
+		if err != nil {
+			return fmt.Errorf("failed to replace file content: %w", err)
+		}
+		_, err = file.Seek(0, 0)
+		if err != nil {
+			return fmt.Errorf("failed to replace file content: %w", err)
+		}
+		_, err = file.Write([]byte(updatedContent))
+		if err != nil {
+			return fmt.Errorf("failed to replace file content: %w", err)
+		}
+
+		_, err = worktree.Add(path)
+		if err != nil {
+			return fmt.Errorf("failed to add updated file to git worktree: %w", err)
+		}
+
+		return nil
+	}
+
+	for _, path := range rp.extraFiles {
+		_, err = worktree.Filesystem.Stat(path)
+		if err != nil {
+			// TODO: Check for non existing file or dirs
+			return fmt.Errorf("failed to run file updater because the file %s does not exist: %w", path, err)
+		}
+
+		err = updateFile(path, rp.updaters)
+		if err != nil {
+			return fmt.Errorf("failed to run file updater: %w", err)
+		}
 	}
 
 	releaseCommitMessage := fmt.Sprintf("chore(%s): release %s", rp.targetBranch, nextVersion)
