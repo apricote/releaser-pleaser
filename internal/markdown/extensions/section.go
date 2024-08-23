@@ -12,8 +12,10 @@ import (
 	"github.com/apricote/releaser-pleaser/internal/markdown/extensions/ast"
 )
 
-var sectionStartRegex = regexp.MustCompile(`^<!-- section-start (.+) -->`)
-var sectionEndRegex = regexp.MustCompile(`^<!-- section-end (.+) -->`)
+var (
+	sectionStartRegex = regexp.MustCompile(`^<!-- section-start (.+) -->`)
+	sectionEndRegex   = regexp.MustCompile(`^<!-- section-end (.+) -->`)
+)
 
 const (
 	sectionTrigger     = "<!--"
@@ -21,8 +23,7 @@ const (
 	SectionEndFormat   = "<!-- section-end %s -->"
 )
 
-type sectionParser struct {
-}
+type sectionParser struct{}
 
 func (s *sectionParser) Open(_ gast.Node, reader text.Reader, _ parser.Context) (gast.Node, parser.State) {
 	line, _ := reader.PeekLine()
@@ -75,8 +76,7 @@ func (s *sectionParser) Trigger() []byte {
 	return []byte(sectionTrigger)
 }
 
-type section struct {
-}
+type section struct{}
 
 // Section is an extension that allow you to use group content under a shared parent ast node.
 var Section = &section{}

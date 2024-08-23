@@ -19,7 +19,7 @@ const (
 	GitHubPerPageMax    = 100
 	GitHubPRStateOpen   = "open"
 	GitHubPRStateClosed = "closed"
-	GitHubEnvAPIToken   = "GITHUB_TOKEN"
+	GitHubEnvAPIToken   = "GITHUB_TOKEN" // nolint:gosec // Not actually a hardcoded credential
 	GitHubEnvUsername   = "GITHUB_USER"
 	GitHubEnvRepository = "GITHUB_REPOSITORY"
 	GitHubLabelColor    = "dedede"
