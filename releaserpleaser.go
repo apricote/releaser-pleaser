@@ -250,11 +250,6 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	// Info for updaters
 	info := ReleaseInfo{Version: nextVersion, ChangelogEntry: changelogEntry}
 
-	err = UpdateChangelogFile(worktree, changelogEntry)
-	if err != nil {
-		return fmt.Errorf("failed to update changelog file: %w", err)
-	}
-
 	updateFile := func(path string, updaters []Updater) error {
 		file, err := worktree.Filesystem.OpenFile(path, os.O_RDWR, 0)
 		if err != nil {
@@ -295,6 +290,11 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		}
 
 		return nil
+	}
+
+	err = updateFile(ChangelogFile, []Updater{&ChangelogUpdater{}})
+	if err != nil {
+		return fmt.Errorf("failed to update changelog file: %w", err)
 	}
 
 	for _, path := range rp.extraFiles {

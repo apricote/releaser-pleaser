@@ -1,97 +1,13 @@
 package rp
 
 import (
-	"io"
 	"testing"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	"github.com/apricote/releaser-pleaser/internal/testutils"
 )
 
 func ptr[T any](input T) *T {
 	return &input
-}
-
-func TestUpdateChangelogFile(t *testing.T) {
-	tests := []struct {
-		name            string
-		repoFn          testutils.Repo
-		entry           string
-		expectedContent string
-		wantErr         assert.ErrorAssertionFunc
-	}{
-		{
-			name:            "empty repo",
-			repoFn:          testutils.WithTestRepo(),
-			entry:           "## v1.0.0\n",
-			expectedContent: "# Changelog\n\n## v1.0.0\n",
-			wantErr:         assert.NoError,
-		},
-		{
-			name: "repo with well-formatted changelog",
-			repoFn: testutils.WithTestRepo(testutils.WithCommit("feat: add changelog", testutils.WithFile(ChangelogFile, `# Changelog
-
-## v0.0.1
-
-- Bazzle
-
-## v0.1.0
-
-### Bazuuum
-`))),
-			entry: "## v1.0.0\n\n- Version 1, juhu.\n",
-			expectedContent: `# Changelog
-
-## v1.0.0
-
-- Version 1, juhu.
-
-## v0.0.1
-
-- Bazzle
-
-## v0.1.0
-
-### Bazuuum
-`,
-			wantErr: assert.NoError,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			repo := tt.repoFn(t)
-			wt, err := repo.Worktree()
-			require.NoError(t, err, "failed to get worktree")
-
-			err = UpdateChangelogFile(wt, tt.entry)
-			if !tt.wantErr(t, err) {
-				return
-			}
-
-			wtStatus, err := wt.Status()
-			require.NoError(t, err, "failed to get worktree status")
-
-			assert.Len(t, wtStatus, 1, "worktree status does not have the expected entry number")
-
-			changelogFileStatus := wtStatus.File(ChangelogFile)
-
-			assert.Equal(t, git.Unmodified, changelogFileStatus.Worktree, "unexpected file status in worktree")
-			assert.Equal(t, git.Added, changelogFileStatus.Staging, "unexpected file status in staging")
-
-			changelogFile, err := wt.Filesystem.Open(ChangelogFile)
-			require.NoError(t, err)
-			defer changelogFile.Close()
-
-			changelogFileContent, err := io.ReadAll(changelogFile)
-			require.NoError(t, err)
-
-			assert.Equal(t, tt.expectedContent, string(changelogFileContent))
-		})
-	}
 }
 
 func Test_NewChangelogEntry(t *testing.T) {
