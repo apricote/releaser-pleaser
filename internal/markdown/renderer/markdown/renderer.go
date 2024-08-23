@@ -331,7 +331,7 @@ func (r *Renderer) renderFencedCodeBlock(w util.BufWriter, source []byte, node a
 		return ast.WalkStop, fmt.Errorf(": %w", err)
 	}
 	if err := r.writeByte(w, '\n'); err != nil {
-		return ast.WalkStop, nil
+		return ast.WalkStop, fmt.Errorf(": %w", err)
 	}
 
 	// Write the contents of the fenced code block.

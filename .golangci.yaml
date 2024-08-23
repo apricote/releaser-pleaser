@@ -1,0 +1,27 @@
+linters:
+  presets:
+    - bugs
+    - error
+    - import
+    - metalinter
+    - module
+    - unused
+
+  enable:
+    - testifylint
+
+  disable:
+    # preset error
+    # These should probably be cleaned up at some point if we want to publish part of this as a library.
+    - err113 # Very annoying to define static errors everywhere
+    - wrapcheck # Very annoying to wrap errors everywhere
+    # preset import
+    - depguard
+
+linters-settings:
+  gci:
+    sections:
+      - standard
+      - default
+      - localmodule
+

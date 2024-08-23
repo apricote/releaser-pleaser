@@ -155,6 +155,9 @@ func (pr *ReleasePullRequest) parseVersioningFlags(overrides ReleaseOverrides) R
 			overrides.NextVersionType = NextVersionTypeBeta
 		case LabelNextVersionTypeAlpha:
 			overrides.NextVersionType = NextVersionTypeAlpha
+		case LabelReleasePending, LabelReleaseTagged:
+			// These labels have no effect on the versioning.
+			break
 		}
 	}
 

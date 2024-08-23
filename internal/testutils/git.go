@@ -11,25 +11,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	author = &object.Signature{
-		Name: "releaser-pleaser",
-		When: time.Date(2020, 01, 01, 01, 01, 01, 01, time.UTC),
-	}
-)
+var author = &object.Signature{
+	Name: "releaser-pleaser",
+	When: time.Date(2020, 01, 01, 01, 01, 01, 01, time.UTC),
+}
 
 type CommitOption func(*commitOptions)
+
 type commitOptions struct {
 	cleanFiles bool
 	files      []commitFile
 	tags       []string
 }
+
 type commitFile struct {
 	path    string
 	content string
 }
 
 type Commit func(*testing.T, *git.Repository) error
+
 type Repo func(*testing.T) *git.Repository
 
 func WithCommit(message string, options ...CommitOption) Commit {
@@ -83,7 +84,6 @@ func WithCommit(message string, options ...CommitOption) Commit {
 		}
 
 		return nil
-
 	}
 }
 

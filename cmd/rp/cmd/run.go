@@ -51,9 +51,9 @@ func run(cmd *cobra.Command, _ []string) error {
 		BaseBranch: flagBranch,
 	}
 
-	switch flagForge {
-	//case "gitlab":
-	//f = rp.NewGitLab(forgeOptions)
+	switch flagForge { // nolint:gocritic // Will become a proper switch once gitlab is added
+	// case "gitlab":
+	// f = rp.NewGitLab(forgeOptions)
 	case "github":
 		logger.DebugContext(ctx, "using forge GitHub")
 		forge = rp.NewGitHub(logger, &rp.GitHubOptions{
