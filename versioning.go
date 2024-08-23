@@ -45,6 +45,9 @@ func SemVerNextVersion(r Releases, versionBump conventionalcommits.VersionBump, 
 	case conventionalcommits.MajorVersion:
 		err = next.IncrementMajor()
 	}
+	if err != nil {
+		return "", err
+	}
 
 	switch nextVersionType {
 	case NextVersionTypeUndefined, NextVersionTypeNormal:
@@ -60,10 +63,6 @@ func SemVerNextVersion(r Releases, versionBump conventionalcommits.VersionBump, 
 		}
 
 		setPRVersion(&next, nextVersionType.String(), id)
-	}
-
-	if err != nil {
-		return "", err
 	}
 
 	return "v" + next.String(), nil
