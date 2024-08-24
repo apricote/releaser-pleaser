@@ -24,7 +24,7 @@ runs:
     - run
     - --forge=github
     - --branch=${{ inputs.branch }}
-    - --extra-files="${{ inputs.extra-files }}"
+    - --extra-files=${{ inputs.extra-files }}
   env:
     GITHUB_TOKEN: ${{ inputs.token }}
     GITHUB_USER: "oauth2"
