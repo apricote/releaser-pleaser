@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.2.0-beta.2](https://github.com/apricote/releaser-pleaser/releases/tag/v0.2.0-beta.2)
+### Features
+
+- update version references in any files (#14)
+
+### Bug Fixes
+
+- **ci**: building release image fails (#21)
+- **ci**: ko pipeline permissions (#23)
+
 ## [v0.2.0-beta.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.2.0-beta.1)
 ### Features
 
