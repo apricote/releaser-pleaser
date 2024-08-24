@@ -22,3 +22,5 @@ jobs:
         uses: ./
         with:
           token: ${{ secrets.RELEASER_PLEASER_TOKEN }}
+          extra-files: |
+            action.yml
