@@ -4,5 +4,5 @@ multilingual = false
 src = "."
 title = "releaser-pleaser"
 
-[build]
-build-dir = "book"
+[output.html]
+git-repository-url = "https://github.com/apricote/releaser-pleaser"
