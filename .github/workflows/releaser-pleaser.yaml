@@ -3,8 +3,8 @@ name: releaser-pleaser
 on:
   push:
     branches: [main]
-  # TODO: use pull_request_target to avoid tainting the actual release PR with code from open feature pull requests
-  pull_request:
+  # Using pull_request_target to avoid tainting the actual release PR with code from open feature pull requests
+  pull_request_target:
     types:
       - edited
       - labeled
@@ -14,10 +14,13 @@ permissions: {}
 
 jobs:
   releaser-pleaser:
+    # TODO: if: push or pull_request.closed
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Set up Go
         uses: actions/setup-go@v5
