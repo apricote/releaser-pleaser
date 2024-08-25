@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.2.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.2.0)
+### Features
+
+- update version references in any files (#14)
+- **cli**: add --version flag (#29)
+
+### Bug Fixes
+
+- **ci**: building release image fails (#21)
+- **ci**: ko pipeline permissions (#23)
+- **action**: invalid quoting for extra-files arg (#25)
+
 ## [v0.2.0-beta.2](https://github.com/apricote/releaser-pleaser/releases/tag/v0.2.0-beta.2)
 ### Features
 
