@@ -3,6 +3,7 @@ name: releaser-pleaser
 on:
   push:
     branches: [main]
+  # TODO: use pull_request_target to avoid tainting the actual release PR with code from open feature pull requests
   pull_request:
     types:
       - edited
@@ -18,6 +19,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # Build container image from current commit and replace image ref in `action.yml`
+      # Without this, any new flags in `action.yml` would break the job in this repository until the new
+      # version is released. But a new version can only be released if this job works.
+      - uses: ko-build/setup-ko@v0.7
+      - run: ko build --bare --local --tags ci github.com/apricote/releaser-pleaser/cmd/rp
+
+      - run: mkdir -p .github/actions/releaser-pleaser
+      - run: "sed -i 's|image: .*$|image: ghcr.io/apricote/releaser-pleaser:ci|g' action.yml"
+
+      # Dogfood the action to make sure it works for users.
       - name: releaser-pleaser
         uses: ./
         with:
