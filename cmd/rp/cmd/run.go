@@ -8,7 +8,6 @@ import (
 	rp "github.com/apricote/releaser-pleaser"
 )
 
-// runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:  "run",
 	RunE: run,
@@ -24,8 +23,6 @@ var (
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-
-	// Here you will define your flags and configuration settings.
 
 	runCmd.PersistentFlags().StringVar(&flagForge, "forge", "", "")
 	runCmd.PersistentFlags().StringVar(&flagBranch, "branch", "main", "")
