@@ -5,17 +5,19 @@ branding:
   icon: 'package'
   color: 'red'
 inputs:
+  # Remember to update docs/reference/github-action.md
   branch:
     default: main
     description: "This branch is used as the target for releases."
   token:
-    description: 'GitHub token for creating and grooming release PRs, defaults to using secrets.GITHUB_TOKEN'
+    description: 'GitHub token for creating and updating release PRs, defaults to using secrets.GITHUB_TOKEN'
     required: false
     default: ${{ github.token }}
   extra-files:
     description: 'List of files that are scanned for version references.'
     required: false
     default: ""
+  # Remember to update docs/reference/github-action.md
 outputs: {}
 runs:
   using: 'docker'
