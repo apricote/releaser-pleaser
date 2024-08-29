@@ -140,7 +140,7 @@ func (g *GitHub) CommitsSince(ctx context.Context, tag *git.Tag) ([]git.Commit, 
 func (g *GitHub) commitsSinceTag(ctx context.Context, tag *git.Tag) ([]*github.RepositoryCommit, error) {
 	head := g.options.BaseBranch
 	log := g.log.With("base", tag.Hash, "head", head)
-	log.Debug("comparing commits", "base", tag.Hash, "head", head)
+	log.Debug("comparing commits")
 
 	repositoryCommits, err := all(
 		func(listOptions github.ListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
