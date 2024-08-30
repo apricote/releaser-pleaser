@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"runtime/debug"
@@ -24,7 +23,6 @@ func version() string {
 
 	buildInfo, ok := debug.ReadBuildInfo()
 	if ok {
-		fmt.Println(buildInfo.String())
 		for _, setting := range buildInfo.Settings {
 			switch setting.Key {
 			case "vcs.revision":
