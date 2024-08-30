@@ -1,17 +1,19 @@
-package rp
+package versioning
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/leodido/go-conventionalcommits"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/apricote/releaser-pleaser/internal/commitparser"
+	"github.com/apricote/releaser-pleaser/internal/git"
 )
 
 func TestReleases_NextVersion(t *testing.T) {
 	type args struct {
-		releases        Releases
-		versionBump     conventionalcommits.VersionBump
+		releases        git.Releases
+		versionBump     VersionBump
 		nextVersionType NextVersionType
 	}
 	tests := []struct {
@@ -23,11 +25,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "simple bump (major)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.MajorVersion,
+				versionBump:     MajorVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			want:    "v2.0.0",
@@ -36,11 +38,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "simple bump (minor)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.MinorVersion,
+				versionBump:     MinorVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			want:    "v1.2.0",
@@ -49,11 +51,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "simple bump (patch)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.PatchVersion,
+				versionBump:     PatchVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			want:    "v1.1.2",
@@ -62,11 +64,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "normal to prerelease  (major)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.MajorVersion,
+				versionBump:     MajorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "v2.0.0-rc.0",
@@ -75,11 +77,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "normal to prerelease  (minor)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.MinorVersion,
+				versionBump:     MinorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "v1.2.0-rc.0",
@@ -88,11 +90,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "normal to prerelease  (patch)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.PatchVersion,
+				versionBump:     PatchVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "v1.1.2-rc.0",
@@ -101,11 +103,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "prerelease bump (major)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v2.0.0-rc.0"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v2.0.0-rc.0"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.MajorVersion,
+				versionBump:     MajorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "v2.0.0-rc.1",
@@ -114,11 +116,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "prerelease bump (minor)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.2.0-rc.0"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.2.0-rc.0"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.MinorVersion,
+				versionBump:     MinorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "v1.2.0-rc.1",
@@ -127,11 +129,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "prerelease bump (patch)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.2-rc.0"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.2-rc.0"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.PatchVersion,
+				versionBump:     PatchVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "v1.1.2-rc.1",
@@ -140,11 +142,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "prerelease different bump (major)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.2.0-rc.0"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.2.0-rc.0"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.MajorVersion,
+				versionBump:     MajorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "v2.0.0-rc.1",
@@ -153,11 +155,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "prerelease different bump (minor)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.2-rc.0"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.2-rc.0"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
-				versionBump:     conventionalcommits.MinorVersion,
+				versionBump:     MinorVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "v1.2.0-rc.1",
@@ -166,11 +168,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "prerelease to prerelease",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1-alpha.2"},
-					Stable: &Tag{Name: "v1.1.0"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1-alpha.2"},
+					Stable: &git.Tag{Name: "v1.1.0"},
 				},
-				versionBump:     conventionalcommits.PatchVersion,
+				versionBump:     PatchVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "v1.1.1-rc.0",
@@ -179,11 +181,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "prerelease to normal (explicit)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1-alpha.2"},
-					Stable: &Tag{Name: "v1.1.0"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1-alpha.2"},
+					Stable: &git.Tag{Name: "v1.1.0"},
 				},
-				versionBump:     conventionalcommits.PatchVersion,
+				versionBump:     PatchVersion,
 				nextVersionType: NextVersionTypeNormal,
 			},
 			want:    "v1.1.1",
@@ -192,11 +194,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "prerelease to normal (implicit)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1-alpha.2"},
-					Stable: &Tag{Name: "v1.1.0"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1-alpha.2"},
+					Stable: &git.Tag{Name: "v1.1.0"},
 				},
-				versionBump:     conventionalcommits.PatchVersion,
+				versionBump:     PatchVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			want:    "v1.1.1",
@@ -205,11 +207,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "nil tag (major)",
 			args: args{
-				releases: Releases{
+				releases: git.Releases{
 					Latest: nil,
 					Stable: nil,
 				},
-				versionBump:     conventionalcommits.MajorVersion,
+				versionBump:     MajorVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			want:    "v1.0.0",
@@ -218,11 +220,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "nil tag (minor)",
 			args: args{
-				releases: Releases{
+				releases: git.Releases{
 					Latest: nil,
 					Stable: nil,
 				},
-				versionBump:     conventionalcommits.MinorVersion,
+				versionBump:     MinorVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			want:    "v0.1.0",
@@ -231,11 +233,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "nil tag (patch)",
 			args: args{
-				releases: Releases{
+				releases: git.Releases{
 					Latest: nil,
 					Stable: nil,
 				},
-				versionBump:     conventionalcommits.PatchVersion,
+				versionBump:     PatchVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			want:    "v0.0.1",
@@ -244,11 +246,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "nil stable release (major)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1-rc.0"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1-rc.0"},
 					Stable: nil,
 				},
-				versionBump:     conventionalcommits.MajorVersion,
+				versionBump:     MajorVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			want:    "v2.0.0",
@@ -257,11 +259,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "nil stable release (minor)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1-rc.0"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1-rc.0"},
 					Stable: nil,
 				},
-				versionBump:     conventionalcommits.MinorVersion,
+				versionBump:     MinorVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			want:    "v1.2.0",
@@ -270,11 +272,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "nil stable release (patch)",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1-rc.0"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1-rc.0"},
 					Stable: nil,
 				},
-				versionBump:     conventionalcommits.PatchVersion,
+				versionBump:     PatchVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			// TODO: Is this actually correct our should it be v1.1.1?
@@ -284,11 +286,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "error on invalid tag semver",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "foodazzle"},
-					Stable: &Tag{Name: "foodazzle"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "foodazzle"},
+					Stable: &git.Tag{Name: "foodazzle"},
 				},
-				versionBump:     conventionalcommits.PatchVersion,
+				versionBump:     PatchVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "",
@@ -297,11 +299,11 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "error on invalid tag prerelease",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1-rc.foo"},
-					Stable: &Tag{Name: "v1.1.1-rc.foo"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1-rc.foo"},
+					Stable: &git.Tag{Name: "v1.1.1-rc.foo"},
 				},
-				versionBump:     conventionalcommits.PatchVersion,
+				versionBump:     PatchVersion,
 				nextVersionType: NextVersionTypeRC,
 			},
 			want:    "",
@@ -310,12 +312,12 @@ func TestReleases_NextVersion(t *testing.T) {
 		{
 			name: "error on invalid bump",
 			args: args{
-				releases: Releases{
-					Latest: &Tag{Name: "v1.1.1"},
-					Stable: &Tag{Name: "v1.1.1"},
+				releases: git.Releases{
+					Latest: &git.Tag{Name: "v1.1.1"},
+					Stable: &git.Tag{Name: "v1.1.1"},
 				},
 
-				versionBump:     conventionalcommits.UnknownVersion,
+				versionBump:     UnknownVersion,
 				nextVersionType: NextVersionTypeUndefined,
 			},
 			want:    "",
@@ -336,53 +338,53 @@ func TestReleases_NextVersion(t *testing.T) {
 func TestVersionBumpFromCommits(t *testing.T) {
 	tests := []struct {
 		name            string
-		analyzedCommits []AnalyzedCommit
-		want            conventionalcommits.VersionBump
+		analyzedCommits []commitparser.AnalyzedCommit
+		want            VersionBump
 	}{
 		{
 			name:            "no entries (unknown)",
-			analyzedCommits: []AnalyzedCommit{},
-			want:            conventionalcommits.UnknownVersion,
+			analyzedCommits: []commitparser.AnalyzedCommit{},
+			want:            UnknownVersion,
 		},
 		{
 			name:            "non-release type (unknown)",
-			analyzedCommits: []AnalyzedCommit{{Type: "docs"}},
-			want:            conventionalcommits.UnknownVersion,
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "docs"}},
+			want:            UnknownVersion,
 		},
 		{
 			name:            "single breaking (major)",
-			analyzedCommits: []AnalyzedCommit{{BreakingChange: true}},
-			want:            conventionalcommits.MajorVersion,
+			analyzedCommits: []commitparser.AnalyzedCommit{{BreakingChange: true}},
+			want:            MajorVersion,
 		},
 		{
 			name:            "single feat (minor)",
-			analyzedCommits: []AnalyzedCommit{{Type: "feat"}},
-			want:            conventionalcommits.MinorVersion,
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "feat"}},
+			want:            MinorVersion,
 		},
 		{
 			name:            "single fix (patch)",
-			analyzedCommits: []AnalyzedCommit{{Type: "fix"}},
-			want:            conventionalcommits.PatchVersion,
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "fix"}},
+			want:            PatchVersion,
 		},
 		{
 			name:            "multiple entries (major)",
-			analyzedCommits: []AnalyzedCommit{{Type: "fix"}, {BreakingChange: true}},
-			want:            conventionalcommits.MajorVersion,
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "fix"}, {BreakingChange: true}},
+			want:            MajorVersion,
 		},
 		{
 			name:            "multiple entries (minor)",
-			analyzedCommits: []AnalyzedCommit{{Type: "fix"}, {Type: "feat"}},
-			want:            conventionalcommits.MinorVersion,
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "fix"}, {Type: "feat"}},
+			want:            MinorVersion,
 		},
 		{
 			name:            "multiple entries (patch)",
-			analyzedCommits: []AnalyzedCommit{{Type: "docs"}, {Type: "fix"}},
-			want:            conventionalcommits.PatchVersion,
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "docs"}, {Type: "fix"}},
+			want:            PatchVersion,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, VersionBumpFromCommits(tt.analyzedCommits), "VersionBumpFromCommits(%v)", tt.analyzedCommits)
+			assert.Equalf(t, tt.want, BumpFromCommits(tt.analyzedCommits), "BumpFromCommits(%v)", tt.analyzedCommits)
 		})
 	}
 }

@@ -1,4 +1,4 @@
-package rp
+package releasepr
 
 import (
 	"testing"

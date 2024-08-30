@@ -1,23 +1,18 @@
-package rp
+package versioning
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/leodido/go-conventionalcommits"
+
+	"github.com/apricote/releaser-pleaser/internal/commitparser"
+	"github.com/apricote/releaser-pleaser/internal/git"
 )
 
-type Releases struct {
-	Latest *Tag
-	Stable *Tag
-}
+var _ Strategy = SemVerNextVersion
 
-type VersioningStrategy = func(Releases, conventionalcommits.VersionBump, NextVersionType) (string, error)
-
-var _ VersioningStrategy = SemVerNextVersion
-
-func SemVerNextVersion(r Releases, versionBump conventionalcommits.VersionBump, nextVersionType NextVersionType) (string, error) {
+func SemVerNextVersion(r git.Releases, versionBump VersionBump, nextVersionType NextVersionType) (string, error) {
 	latest, err := parseSemverWithDefault(r.Latest)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse latest version: %w", err)
@@ -36,13 +31,13 @@ func SemVerNextVersion(r Releases, versionBump conventionalcommits.VersionBump, 
 	}
 
 	switch versionBump {
-	case conventionalcommits.UnknownVersion:
+	case UnknownVersion:
 		return "", fmt.Errorf("invalid latest bump (unknown)")
-	case conventionalcommits.PatchVersion:
+	case PatchVersion:
 		err = next.IncrementPatch()
-	case conventionalcommits.MinorVersion:
+	case MinorVersion:
 		err = next.IncrementMinor()
-	case conventionalcommits.MajorVersion:
+	case MajorVersion:
 		err = next.IncrementMajor()
 	}
 	if err != nil {
@@ -68,18 +63,18 @@ func SemVerNextVersion(r Releases, versionBump conventionalcommits.VersionBump, 
 	return "v" + next.String(), nil
 }
 
-func VersionBumpFromCommits(commits []AnalyzedCommit) conventionalcommits.VersionBump {
-	bump := conventionalcommits.UnknownVersion
+func BumpFromCommits(commits []commitparser.AnalyzedCommit) VersionBump {
+	bump := UnknownVersion
 
 	for _, commit := range commits {
-		entryBump := conventionalcommits.UnknownVersion
+		entryBump := UnknownVersion
 		switch {
 		case commit.BreakingChange:
-			entryBump = conventionalcommits.MajorVersion
+			entryBump = MajorVersion
 		case commit.Type == "feat":
-			entryBump = conventionalcommits.MinorVersion
+			entryBump = MinorVersion
 		case commit.Type == "fix":
-			entryBump = conventionalcommits.PatchVersion
+			entryBump = PatchVersion
 		}
 
 		if entryBump > bump {
@@ -97,7 +92,7 @@ func setPRVersion(version *semver.Version, prType string, count uint64) {
 	}
 }
 
-func parseSemverWithDefault(tag *Tag) (semver.Version, error) {
+func parseSemverWithDefault(tag *git.Tag) (semver.Version, error) {
 	version := "v0.0.0"
 	if tag != nil {
 		version = tag.Name

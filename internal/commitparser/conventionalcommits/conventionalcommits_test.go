@@ -1,27 +1,30 @@
-package rp
+package conventionalcommits
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/apricote/releaser-pleaser/internal/commitparser"
+	"github.com/apricote/releaser-pleaser/internal/git"
 )
 
 func TestAnalyzeCommits(t *testing.T) {
 	tests := []struct {
 		name            string
-		commits         []Commit
-		expectedCommits []AnalyzedCommit
+		commits         []git.Commit
+		expectedCommits []commitparser.AnalyzedCommit
 		wantErr         assert.ErrorAssertionFunc
 	}{
 		{
 			name:            "empty commits",
-			commits:         []Commit{},
-			expectedCommits: []AnalyzedCommit{},
+			commits:         []git.Commit{},
+			expectedCommits: []commitparser.AnalyzedCommit{},
 			wantErr:         assert.NoError,
 		},
 		{
 			name: "malformed commit message",
-			commits: []Commit{
+			commits: []git.Commit{
 				{
 					Message: "aksdjaklsdjka",
 				},
@@ -31,17 +34,17 @@ func TestAnalyzeCommits(t *testing.T) {
 		},
 		{
 			name: "drops unreleasable",
-			commits: []Commit{
+			commits: []git.Commit{
 				{
 					Message: "chore: foobar",
 				},
 			},
-			expectedCommits: []AnalyzedCommit{},
+			expectedCommits: []commitparser.AnalyzedCommit{},
 			wantErr:         assert.NoError,
 		},
 		{
 			name: "highest bump (patch)",
-			commits: []Commit{
+			commits: []git.Commit{
 				{
 					Message: "chore: foobar",
 				},
@@ -49,9 +52,9 @@ func TestAnalyzeCommits(t *testing.T) {
 					Message: "fix: blabla",
 				},
 			},
-			expectedCommits: []AnalyzedCommit{
+			expectedCommits: []commitparser.AnalyzedCommit{
 				{
-					Commit:      Commit{Message: "fix: blabla"},
+					Commit:      git.Commit{Message: "fix: blabla"},
 					Type:        "fix",
 					Description: "blabla",
 				},
@@ -60,7 +63,7 @@ func TestAnalyzeCommits(t *testing.T) {
 		},
 		{
 			name: "highest bump (minor)",
-			commits: []Commit{
+			commits: []git.Commit{
 				{
 					Message: "fix: blabla",
 				},
@@ -68,14 +71,14 @@ func TestAnalyzeCommits(t *testing.T) {
 					Message: "feat: foobar",
 				},
 			},
-			expectedCommits: []AnalyzedCommit{
+			expectedCommits: []commitparser.AnalyzedCommit{
 				{
-					Commit:      Commit{Message: "fix: blabla"},
+					Commit:      git.Commit{Message: "fix: blabla"},
 					Type:        "fix",
 					Description: "blabla",
 				},
 				{
-					Commit:      Commit{Message: "feat: foobar"},
+					Commit:      git.Commit{Message: "feat: foobar"},
 					Type:        "feat",
 					Description: "foobar",
 				},
@@ -85,7 +88,7 @@ func TestAnalyzeCommits(t *testing.T) {
 
 		{
 			name: "highest bump (major)",
-			commits: []Commit{
+			commits: []git.Commit{
 				{
 					Message: "fix: blabla",
 				},
@@ -93,14 +96,14 @@ func TestAnalyzeCommits(t *testing.T) {
 					Message: "feat!: foobar",
 				},
 			},
-			expectedCommits: []AnalyzedCommit{
+			expectedCommits: []commitparser.AnalyzedCommit{
 				{
-					Commit:      Commit{Message: "fix: blabla"},
+					Commit:      git.Commit{Message: "fix: blabla"},
 					Type:        "fix",
 					Description: "blabla",
 				},
 				{
-					Commit:         Commit{Message: "feat!: foobar"},
+					Commit:         git.Commit{Message: "feat!: foobar"},
 					Type:           "feat",
 					Description:    "foobar",
 					BreakingChange: true,
@@ -111,7 +114,7 @@ func TestAnalyzeCommits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			analyzedCommits, err := NewConventionalCommitsParser().Analyze(tt.commits)
+			analyzedCommits, err := NewParser().Analyze(tt.commits)
 			if !tt.wantErr(t, err) {
 				return
 			}
