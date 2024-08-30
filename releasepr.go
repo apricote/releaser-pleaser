@@ -59,9 +59,8 @@ func NewReleasePullRequest(head, branch, version, changelogEntry string) (*Relea
 }
 
 type ReleaseOverrides struct {
-	Prefix string
-	Suffix string
-	// TODO: Doing the changelog for normal releases after previews requires to know about this while fetching the commits
+	Prefix          string
+	Suffix          string
 	NextVersionType NextVersionType
 }
 
@@ -89,6 +88,17 @@ func (n NextVersionType) String() string {
 		return "alpha"
 	default:
 		return ""
+	}
+}
+
+func (n NextVersionType) IsPrerelease() bool {
+	switch n {
+	case NextVersionTypeRC, NextVersionTypeBeta, NextVersionTypeAlpha:
+		return true
+	case NextVersionTypeUndefined, NextVersionTypeNormal:
+		return false
+	default:
+		return false
 	}
 }
 

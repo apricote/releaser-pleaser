@@ -178,7 +178,15 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		logger.InfoContext(ctx, "no latest tag found")
 	}
 
-	releasableCommits, err := rp.forge.CommitsSince(ctx, releases.Stable)
+	// By default, we want to show everything that has happened since the last stable release
+	lastReleaseCommit := releases.Stable
+	if releaseOverrides.NextVersionType.IsPrerelease() {
+		// if the new release will be a prerelease,
+		// only show changes since the latest release (stable or prerelease)
+		lastReleaseCommit = releases.Latest
+	}
+
+	releasableCommits, err := rp.forge.CommitsSince(ctx, lastReleaseCommit)
 	if err != nil {
 		return err
 	}
