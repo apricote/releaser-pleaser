@@ -143,6 +143,27 @@ func (rp *ReleaserPleaser) createPendingRelease(ctx context.Context, pr *Release
 func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	logger := rp.logger.With("method", "runReconcileReleasePR")
 
+	rpBranch := fmt.Sprintf(PullRequestBranchFormat, rp.targetBranch)
+	rpBranchRef := plumbing.NewBranchReferenceName(rpBranch)
+
+	pr, err := rp.forge.PullRequestForBranch(ctx, rpBranch)
+	if err != nil {
+		return err
+	}
+
+	var releaseOverrides ReleaseOverrides
+
+	if pr != nil {
+		logger = logger.With("pr.id", pr.ID, "pr.title", pr.Title)
+		logger.InfoContext(ctx, "found existing release pull request")
+
+		releaseOverrides, err = pr.GetOverrides()
+		if err != nil {
+			return err
+		}
+
+	}
+
 	releases, err := rp.forge.LatestTags(ctx)
 	if err != nil {
 		return err
@@ -172,22 +193,6 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 
 	logger.InfoContext(ctx, "Analyzed commits", "length", len(analyzedCommits))
 
-	rpBranch := fmt.Sprintf(PullRequestBranchFormat, rp.targetBranch)
-	rpBranchRef := plumbing.NewBranchReferenceName(rpBranch)
-	// Check Forge for open PR
-	// Get any modifications from open PR
-	// Clone Repo
-	// Run Updaters + Changelog
-	// Upsert PR
-	pr, err := rp.forge.PullRequestForBranch(ctx, rpBranch)
-	if err != nil {
-		return err
-	}
-
-	if pr != nil {
-		logger.InfoContext(ctx, "found existing release pull request", "pr.id", pr.ID, "pr.title", pr.Title)
-	}
-
 	if len(analyzedCommits) == 0 {
 		if pr != nil {
 			logger.InfoContext(ctx, "closing existing pull requests, no commits available", "pr.id", pr.ID, "pr.title", pr.Title)
@@ -200,14 +205,6 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		}
 
 		return nil
-	}
-
-	var releaseOverrides ReleaseOverrides
-	if pr != nil {
-		releaseOverrides, err = pr.GetOverrides()
-		if err != nil {
-			return err
-		}
 	}
 
 	versionBump := VersionBumpFromCommits(analyzedCommits)
