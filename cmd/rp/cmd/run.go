@@ -6,6 +6,11 @@ import (
 	"github.com/spf13/cobra"
 
 	rp "github.com/apricote/releaser-pleaser"
+	"github.com/apricote/releaser-pleaser/internal/commitparser/conventionalcommits"
+	"github.com/apricote/releaser-pleaser/internal/forge"
+	"github.com/apricote/releaser-pleaser/internal/forge/github"
+	"github.com/apricote/releaser-pleaser/internal/updater"
+	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
 
 var runCmd = &cobra.Command{
@@ -41,9 +46,9 @@ func run(cmd *cobra.Command, _ []string) error {
 		"repo", flagRepo,
 	)
 
-	var forge rp.Forge
+	var f forge.Forge
 
-	forgeOptions := rp.ForgeOptions{
+	forgeOptions := forge.Options{
 		Repository: flagRepo,
 		BaseBranch: flagBranch,
 	}
@@ -53,23 +58,23 @@ func run(cmd *cobra.Command, _ []string) error {
 	// f = rp.NewGitLab(forgeOptions)
 	case "github":
 		logger.DebugContext(ctx, "using forge GitHub")
-		forge = rp.NewGitHub(logger, &rp.GitHubOptions{
-			ForgeOptions: forgeOptions,
-			Owner:        flagOwner,
-			Repo:         flagRepo,
+		f = github.New(logger, &github.Options{
+			Options: forgeOptions,
+			Owner:   flagOwner,
+			Repo:    flagRepo,
 		})
 	}
 
 	extraFiles := parseExtraFiles(flagExtraFiles)
 
 	releaserPleaser := rp.New(
-		forge,
+		f,
 		logger,
 		flagBranch,
-		rp.NewConventionalCommitsParser(),
-		rp.SemVerNextVersion,
+		conventionalcommits.NewParser(),
+		versioning.SemVerNextVersion,
 		extraFiles,
-		[]rp.Updater{&rp.GenericUpdater{}},
+		[]updater.NewUpdater{updater.Generic},
 	)
 
 	return releaserPleaser.Run(ctx)

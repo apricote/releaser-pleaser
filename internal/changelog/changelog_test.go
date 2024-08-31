@@ -1,9 +1,12 @@
-package rp
+package changelog
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/apricote/releaser-pleaser/internal/commitparser"
+	"github.com/apricote/releaser-pleaser/internal/git"
 )
 
 func ptr[T any](input T) *T {
@@ -12,7 +15,7 @@ func ptr[T any](input T) *T {
 
 func Test_NewChangelogEntry(t *testing.T) {
 	type args struct {
-		analyzedCommits []AnalyzedCommit
+		analyzedCommits []commitparser.AnalyzedCommit
 		version         string
 		link            string
 		prefix          string
@@ -27,7 +30,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "empty",
 			args: args{
-				analyzedCommits: []AnalyzedCommit{},
+				analyzedCommits: []commitparser.AnalyzedCommit{},
 				version:         "1.0.0",
 				link:            "https://example.com/1.0.0",
 			},
@@ -37,9 +40,9 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "single feature",
 			args: args{
-				analyzedCommits: []AnalyzedCommit{
+				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      Commit{},
+						Commit:      git.Commit{},
 						Type:        "feat",
 						Description: "Foobar!",
 					},
@@ -53,9 +56,9 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "single fix",
 			args: args{
-				analyzedCommits: []AnalyzedCommit{
+				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      Commit{},
+						Commit:      git.Commit{},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
@@ -69,25 +72,25 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "multiple commits with scopes",
 			args: args{
-				analyzedCommits: []AnalyzedCommit{
+				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      Commit{},
+						Commit:      git.Commit{},
 						Type:        "feat",
 						Description: "Blabla!",
 					},
 					{
-						Commit:      Commit{},
+						Commit:      git.Commit{},
 						Type:        "feat",
 						Description: "So awesome!",
 						Scope:       ptr("awesome"),
 					},
 					{
-						Commit:      Commit{},
+						Commit:      git.Commit{},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
 					{
-						Commit:      Commit{},
+						Commit:      git.Commit{},
 						Type:        "fix",
 						Description: "So sad!",
 						Scope:       ptr("sad"),
@@ -112,9 +115,9 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "prefix",
 			args: args{
-				analyzedCommits: []AnalyzedCommit{
+				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      Commit{},
+						Commit:      git.Commit{},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
@@ -135,9 +138,9 @@ func Test_NewChangelogEntry(t *testing.T) {
 		{
 			name: "suffix",
 			args: args{
-				analyzedCommits: []AnalyzedCommit{
+				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      Commit{},
+						Commit:      git.Commit{},
 						Type:        "fix",
 						Description: "Foobar!",
 					},

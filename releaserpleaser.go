@@ -3,13 +3,15 @@ package rp
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
-	"os"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/apricote/releaser-pleaser/internal/changelog"
+	"github.com/apricote/releaser-pleaser/internal/commitparser"
+	"github.com/apricote/releaser-pleaser/internal/forge"
+	"github.com/apricote/releaser-pleaser/internal/git"
+	"github.com/apricote/releaser-pleaser/internal/releasepr"
+	"github.com/apricote/releaser-pleaser/internal/updater"
+	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
 
 const (
@@ -17,16 +19,16 @@ const (
 )
 
 type ReleaserPleaser struct {
-	forge        Forge
+	forge        forge.Forge
 	logger       *slog.Logger
 	targetBranch string
-	commitParser CommitParser
-	nextVersion  VersioningStrategy
+	commitParser commitparser.CommitParser
+	nextVersion  versioning.Strategy
 	extraFiles   []string
-	updaters     []Updater
+	updaters     []updater.NewUpdater
 }
 
-func New(forge Forge, logger *slog.Logger, targetBranch string, commitParser CommitParser, versioningStrategy VersioningStrategy, extraFiles []string, updaters []Updater) *ReleaserPleaser {
+func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.NewUpdater) *ReleaserPleaser {
 	return &ReleaserPleaser{
 		forge:        forge,
 		logger:       logger,
@@ -40,7 +42,8 @@ func New(forge Forge, logger *slog.Logger, targetBranch string, commitParser Com
 
 func (rp *ReleaserPleaser) EnsureLabels(ctx context.Context) error {
 	// TODO: Wrap Error
-	return rp.forge.EnsureLabelsExist(ctx, KnownLabels)
+
+	return rp.forge.EnsureLabelsExist(ctx, releasepr.KnownLabels)
 }
 
 func (rp *ReleaserPleaser) Run(ctx context.Context) error {
@@ -75,7 +78,7 @@ func (rp *ReleaserPleaser) runCreatePendingReleases(ctx context.Context) error {
 	logger := rp.logger.With("method", "runCreatePendingReleases")
 
 	logger.InfoContext(ctx, "checking for pending releases")
-	prs, err := rp.forge.PendingReleases(ctx, LabelReleasePending)
+	prs, err := rp.forge.PendingReleases(ctx, releasepr.LabelReleasePending)
 	if err != nil {
 		return err
 	}
@@ -97,7 +100,7 @@ func (rp *ReleaserPleaser) runCreatePendingReleases(ctx context.Context) error {
 	return nil
 }
 
-func (rp *ReleaserPleaser) createPendingRelease(ctx context.Context, pr *ReleasePullRequest) error {
+func (rp *ReleaserPleaser) createPendingRelease(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
 	logger := rp.logger.With(
 		"method", "createPendingRelease",
 		"pr.id", pr.ID,
@@ -129,7 +132,7 @@ func (rp *ReleaserPleaser) createPendingRelease(ctx context.Context, pr *Release
 	logger.DebugContext(ctx, "created release", "release.title", version, "release.url", rp.forge.ReleaseURL(version))
 
 	logger.DebugContext(ctx, "updating pr labels")
-	err = rp.forge.SetPullRequestLabels(ctx, pr, []Label{LabelReleasePending}, []Label{LabelReleaseTagged})
+	err = rp.forge.SetPullRequestLabels(ctx, pr, []releasepr.Label{releasepr.LabelReleasePending}, []releasepr.Label{releasepr.LabelReleaseTagged})
 	if err != nil {
 		return err
 	}
@@ -144,14 +147,13 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	logger := rp.logger.With("method", "runReconcileReleasePR")
 
 	rpBranch := fmt.Sprintf(PullRequestBranchFormat, rp.targetBranch)
-	rpBranchRef := plumbing.NewBranchReferenceName(rpBranch)
 
 	pr, err := rp.forge.PullRequestForBranch(ctx, rpBranch)
 	if err != nil {
 		return err
 	}
 
-	var releaseOverrides ReleaseOverrides
+	var releaseOverrides releasepr.ReleaseOverrides
 
 	if pr != nil {
 		logger = logger.With("pr.id", pr.ID, "pr.title", pr.Title)
@@ -215,7 +217,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return nil
 	}
 
-	versionBump := VersionBumpFromCommits(analyzedCommits)
+	versionBump := versioning.BumpFromCommits(analyzedCommits)
 	// TODO: Set version in release pr
 	nextVersion, err := rp.nextVersion(releases, versionBump, releaseOverrides.NextVersionType)
 	if err != nil {
@@ -224,161 +226,68 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	logger.InfoContext(ctx, "next version", "version", nextVersion)
 
 	logger.DebugContext(ctx, "cloning repository", "clone.url", rp.forge.CloneURL())
-	repo, err := CloneRepo(ctx, rp.forge.CloneURL(), rp.targetBranch, rp.forge.GitAuth())
+	repo, err := git.CloneRepo(ctx, logger, rp.forge.CloneURL(), rp.targetBranch, rp.forge.GitAuth())
 	if err != nil {
 		return fmt.Errorf("failed to clone repository: %w", err)
 	}
-	worktree, err := repo.Worktree()
-	if err != nil {
+
+	if err = repo.DeleteBranch(ctx, rpBranch); err != nil {
 		return err
 	}
 
-	if branch, _ := repo.Branch(rpBranch); branch != nil {
-		logger.DebugContext(ctx, "deleting previous releaser-pleaser branch locally", "branch.name", rpBranch)
-		if err = repo.DeleteBranch(rpBranch); err != nil {
-			return err
-		}
+	if err = repo.Checkout(ctx, rpBranch); err != nil {
+		return err
 	}
 
-	if err = worktree.Checkout(&git.CheckoutOptions{
-		Branch: rpBranchRef,
-		Create: true,
-	}); err != nil {
-		return fmt.Errorf("failed to check out branch: %w", err)
-	}
-
-	changelogEntry, err := NewChangelogEntry(analyzedCommits, nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
+	changelogEntry, err := changelog.NewChangelogEntry(analyzedCommits, nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
 	if err != nil {
 		return fmt.Errorf("failed to build changelog entry: %w", err)
 	}
 
 	// Info for updaters
-	info := ReleaseInfo{Version: nextVersion, ChangelogEntry: changelogEntry}
+	info := updater.ReleaseInfo{Version: nextVersion, ChangelogEntry: changelogEntry}
 
-	updateFile := func(path string, updaters []Updater) error {
-		file, err := worktree.Filesystem.OpenFile(path, os.O_RDWR, 0)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-
-		content, err := io.ReadAll(file)
-		if err != nil {
-			return err
-		}
-
-		updatedContent := string(content)
-
-		for _, updater := range updaters {
-			updatedContent, err = updater.UpdateContent(updatedContent, info)
-			if err != nil {
-				return fmt.Errorf("failed to run updater %T on file %s", updater, path)
-			}
-		}
-
-		err = file.Truncate(0)
-		if err != nil {
-			return fmt.Errorf("failed to replace file content: %w", err)
-		}
-		_, err = file.Seek(0, 0)
-		if err != nil {
-			return fmt.Errorf("failed to replace file content: %w", err)
-		}
-		_, err = file.Write([]byte(updatedContent))
-		if err != nil {
-			return fmt.Errorf("failed to replace file content: %w", err)
-		}
-
-		_, err = worktree.Add(path)
-		if err != nil {
-			return fmt.Errorf("failed to add updated file to git worktree: %w", err)
-		}
-
-		return nil
-	}
-
-	err = updateFile(ChangelogFile, []Updater{&ChangelogUpdater{}})
+	err = repo.UpdateFile(ctx, updater.ChangelogFile, updater.WithInfo(info, updater.Changelog))
 	if err != nil {
 		return fmt.Errorf("failed to update changelog file: %w", err)
 	}
 
 	for _, path := range rp.extraFiles {
-		_, err = worktree.Filesystem.Stat(path)
-		if err != nil {
-			// TODO: Check for non existing file or dirs
-			return fmt.Errorf("failed to run file updater because the file %s does not exist: %w", path, err)
-		}
-
-		err = updateFile(path, rp.updaters)
+		// TODO: Check for missing files
+		err = repo.UpdateFile(ctx, path, updater.WithInfo(info, rp.updaters...))
 		if err != nil {
 			return fmt.Errorf("failed to run file updater: %w", err)
 		}
 	}
 
 	releaseCommitMessage := fmt.Sprintf("chore(%s): release %s", rp.targetBranch, nextVersion)
-	releaseCommitHash, err := worktree.Commit(releaseCommitMessage, &git.CommitOptions{
-		Author:    GitSignature(),
-		Committer: GitSignature(),
-	})
+	releaseCommit, err := repo.Commit(ctx, releaseCommitMessage)
 	if err != nil {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 
-	logger.InfoContext(ctx, "created release commit", "commit.hash", releaseCommitHash.String(), "commit.message", releaseCommitMessage)
-
-	newReleasePRChanges := true
+	logger.InfoContext(ctx, "created release commit", "commit.hash", releaseCommit.Hash, "commit.message", releaseCommit.Message)
 
 	// Check if anything changed in comparison to the remote branch (if exists)
-	if remoteRef, err := repo.Reference(plumbing.NewRemoteReferenceName(GitRemoteName, rpBranch), false); err != nil {
-		if err.Error() != "reference not found" {
-			// "reference not found" is expected and we should always push
-			return err
-		}
-	} else {
-		remoteCommit, err := repo.CommitObject(remoteRef.Hash())
-		if err != nil {
-			return err
-		}
-
-		localCommit, err := repo.CommitObject(releaseCommitHash)
-		if err != nil {
-			return err
-		}
-
-		diff, err := localCommit.PatchContext(ctx, remoteCommit)
-		if err != nil {
-			return err
-		}
-
-		newReleasePRChanges = len(diff.FilePatches()) > 0
+	newReleasePRChanges, err := repo.HasChangesWithRemote(ctx, rpBranch)
+	if err != nil {
+		return err
 	}
 
 	if newReleasePRChanges {
-		pushRefSpec := config.RefSpec(fmt.Sprintf(
-			"+%s:%s",
-			rpBranchRef,
-			// This needs to be the local branch name, not the remotes/origin ref
-			// See https://stackoverflow.com/a/75727620
-			rpBranchRef,
-		))
-		logger.DebugContext(ctx, "pushing branch", "commit.hash", releaseCommitHash.String(), "branch.name", rpBranch, "refspec", pushRefSpec.String())
-		if err = repo.PushContext(ctx, &git.PushOptions{
-			RemoteName: GitRemoteName,
-			RefSpecs:   []config.RefSpec{pushRefSpec},
-			Force:      true,
-			Auth:       rp.forge.GitAuth(),
-		}); err != nil {
+		err = repo.ForcePush(ctx, rpBranch)
+		if err != nil {
 			return fmt.Errorf("failed to push branch: %w", err)
 		}
 
-		logger.InfoContext(ctx, "pushed branch", "commit.hash", releaseCommitHash.String(), "branch.name", rpBranch, "refspec", pushRefSpec.String())
+		logger.InfoContext(ctx, "pushed branch", "commit.hash", releaseCommit.Hash, "branch.name", rpBranch)
 	} else {
 		logger.InfoContext(ctx, "file content is already up-to-date in remote branch, skipping push")
 	}
 
 	// Open/Update PR
 	if pr == nil {
-		pr, err = NewReleasePullRequest(rpBranch, rp.targetBranch, nextVersion, changelogEntry)
+		pr, err = releasepr.NewReleasePullRequest(rpBranch, rp.targetBranch, nextVersion, changelogEntry)
 		if err != nil {
 			return err
 		}

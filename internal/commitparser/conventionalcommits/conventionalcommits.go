@@ -1,54 +1,32 @@
-package rp
+package conventionalcommits
 
 import (
 	"fmt"
 
 	"github.com/leodido/go-conventionalcommits"
 	"github.com/leodido/go-conventionalcommits/parser"
+
+	"github.com/apricote/releaser-pleaser/internal/commitparser"
+	"github.com/apricote/releaser-pleaser/internal/git"
 )
 
-type Commit struct {
-	Hash    string
-	Message string
-
-	PullRequest *PullRequest
-}
-
-type PullRequest struct {
-	ID          int
-	Title       string
-	Description string
-}
-
-type AnalyzedCommit struct {
-	Commit
-	Type           string
-	Description    string
-	Scope          *string
-	BreakingChange bool
-}
-
-type CommitParser interface {
-	Analyze(commits []Commit) ([]AnalyzedCommit, error)
-}
-
-type ConventionalCommitsParser struct {
+type Parser struct {
 	machine conventionalcommits.Machine
 }
 
-func NewConventionalCommitsParser() *ConventionalCommitsParser {
+func NewParser() *Parser {
 	parserMachine := parser.NewMachine(
 		parser.WithBestEffort(),
 		parser.WithTypes(conventionalcommits.TypesConventional),
 	)
 
-	return &ConventionalCommitsParser{
+	return &Parser{
 		machine: parserMachine,
 	}
 }
 
-func (c *ConventionalCommitsParser) Analyze(commits []Commit) ([]AnalyzedCommit, error) {
-	analyzedCommits := make([]AnalyzedCommit, 0, len(commits))
+func (c *Parser) Analyze(commits []git.Commit) ([]commitparser.AnalyzedCommit, error) {
+	analyzedCommits := make([]commitparser.AnalyzedCommit, 0, len(commits))
 
 	for _, commit := range commits {
 		msg, err := c.machine.Parse([]byte(commit.Message))
@@ -63,7 +41,7 @@ func (c *ConventionalCommitsParser) Analyze(commits []Commit) ([]AnalyzedCommit,
 		commitVersionBump := conventionalCommit.VersionBump(conventionalcommits.DefaultStrategy)
 		if commitVersionBump > conventionalcommits.UnknownVersion {
 			// We only care about releasable commits
-			analyzedCommits = append(analyzedCommits, AnalyzedCommit{
+			analyzedCommits = append(analyzedCommits, commitparser.AnalyzedCommit{
 				Commit:         commit,
 				Type:           conventionalCommit.Type,
 				Description:    conventionalCommit.Description,

@@ -1,4 +1,4 @@
-package rp
+package github
 
 import (
 	"context"
@@ -13,75 +13,27 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v63/github"
+
+	"github.com/apricote/releaser-pleaser/internal/forge"
+	"github.com/apricote/releaser-pleaser/internal/git"
+	"github.com/apricote/releaser-pleaser/internal/pointer"
+	"github.com/apricote/releaser-pleaser/internal/releasepr"
 )
 
 const (
-	GitHubPerPageMax    = 100
-	GitHubPRStateOpen   = "open"
-	GitHubPRStateClosed = "closed"
-	GitHubEnvAPIToken   = "GITHUB_TOKEN" // nolint:gosec // Not actually a hardcoded credential
-	GitHubEnvUsername   = "GITHUB_USER"
-	GitHubEnvRepository = "GITHUB_REPOSITORY"
-	GitHubLabelColor    = "dedede"
+	PerPageMax    = 100
+	PRStateOpen   = "open"
+	PRStateClosed = "closed"
+	EnvAPIToken   = "GITHUB_TOKEN" // nolint:gosec // Not actually a hardcoded credential
+	EnvUsername   = "GITHUB_USER"
+	EnvRepository = "GITHUB_REPOSITORY"
+	LabelColor    = "dedede"
 )
 
-type Forge interface {
-	RepoURL() string
-	CloneURL() string
-	ReleaseURL(version string) string
-
-	GitAuth() transport.AuthMethod
-
-	// LatestTags returns the last stable tag created on the main branch. If there is a more recent pre-release tag,
-	// that is also returned. If no tag is found, it returns nil.
-	LatestTags(context.Context) (Releases, error)
-
-	// CommitsSince returns all commits to main branch after the Tag. The tag can be `nil`, in which case this
-	// function should return all commits.
-	CommitsSince(context.Context, *Tag) ([]Commit, error)
-
-	// EnsureLabelsExist verifies that all desired labels are available on the repository. If labels are missing, they
-	// are created them.
-	EnsureLabelsExist(context.Context, []Label) error
-
-	// PullRequestForBranch returns the open pull request between the branch and ForgeOptions.BaseBranch. If no open PR
-	// exists, it returns nil.
-	PullRequestForBranch(context.Context, string) (*ReleasePullRequest, error)
-
-	// CreatePullRequest opens a new pull/merge request for the ReleasePullRequest.
-	CreatePullRequest(context.Context, *ReleasePullRequest) error
-
-	// UpdatePullRequest updates the pull/merge request identified through the ID of
-	// the ReleasePullRequest to the current description and title.
-	UpdatePullRequest(context.Context, *ReleasePullRequest) error
-
-	// SetPullRequestLabels updates the pull/merge request identified through the ID of
-	// the ReleasePullRequest to the current labels.
-	SetPullRequestLabels(ctx context.Context, pr *ReleasePullRequest, remove, add []Label) error
-
-	// ClosePullRequest closes the pull/merge request identified through the ID of
-	// the ReleasePullRequest, as it is no longer required.
-	ClosePullRequest(context.Context, *ReleasePullRequest) error
-
-	// PendingReleases returns a list of ReleasePullRequest. The list should contain all pull/merge requests that are
-	// merged and have the matching label.
-	PendingReleases(context.Context, Label) ([]*ReleasePullRequest, error)
-
-	// CreateRelease creates a release on the Forge, pointing at the commit with the passed in details.
-	CreateRelease(ctx context.Context, commit Commit, title, changelog string, prerelease, latest bool) error
-}
-
-type ForgeOptions struct {
-	Repository string
-	BaseBranch string
-}
-
-var _ Forge = &GitHub{}
-
-// var _ Forge = &GitLab{}
+var _ forge.Forge = &GitHub{}
 
 type GitHub struct {
-	options *GitHubOptions
+	options *Options
 
 	client *github.Client
 	log    *slog.Logger
@@ -106,24 +58,24 @@ func (g *GitHub) GitAuth() transport.AuthMethod {
 	}
 }
 
-func (g *GitHub) LatestTags(ctx context.Context) (Releases, error) {
+func (g *GitHub) LatestTags(ctx context.Context) (git.Releases, error) {
 	g.log.DebugContext(ctx, "listing all tags in github repository")
 
 	page := 1
 
-	var releases Releases
+	var releases git.Releases
 
 	for {
 		tags, resp, err := g.client.Repositories.ListTags(
 			ctx, g.options.Owner, g.options.Repo,
-			&github.ListOptions{Page: page, PerPage: GitHubPerPageMax},
+			&github.ListOptions{Page: page, PerPage: PerPageMax},
 		)
 		if err != nil {
-			return Releases{}, err
+			return git.Releases{}, err
 		}
 
 		for _, ghTag := range tags {
-			tag := &Tag{
+			tag := &git.Tag{
 				Hash: ghTag.GetCommit().GetSHA(),
 				Name: ghTag.GetName(),
 			}
@@ -160,7 +112,7 @@ func (g *GitHub) LatestTags(ctx context.Context) (Releases, error) {
 	return releases, nil
 }
 
-func (g *GitHub) CommitsSince(ctx context.Context, tag *Tag) ([]Commit, error) {
+func (g *GitHub) CommitsSince(ctx context.Context, tag *git.Tag) ([]git.Commit, error) {
 	var repositoryCommits []*github.RepositoryCommit
 	var err error
 	if tag != nil {
@@ -173,9 +125,9 @@ func (g *GitHub) CommitsSince(ctx context.Context, tag *Tag) ([]Commit, error) {
 		return nil, err
 	}
 
-	var commits = make([]Commit, 0, len(repositoryCommits))
+	var commits = make([]git.Commit, 0, len(repositoryCommits))
 	for _, ghCommit := range repositoryCommits {
-		commit := Commit{
+		commit := git.Commit{
 			Hash:    ghCommit.GetSHA(),
 			Message: ghCommit.GetCommit().GetMessage(),
 		}
@@ -190,7 +142,7 @@ func (g *GitHub) CommitsSince(ctx context.Context, tag *Tag) ([]Commit, error) {
 	return commits, nil
 }
 
-func (g *GitHub) commitsSinceTag(ctx context.Context, tag *Tag) ([]*github.RepositoryCommit, error) {
+func (g *GitHub) commitsSinceTag(ctx context.Context, tag *git.Tag) ([]*github.RepositoryCommit, error) {
 	head := g.options.BaseBranch
 	log := g.log.With("base", tag.Hash, "head", head)
 	log.Debug("comparing commits", "base", tag.Hash, "head", head)
@@ -204,7 +156,7 @@ func (g *GitHub) commitsSinceTag(ctx context.Context, tag *Tag) ([]*github.Repos
 			ctx, g.options.Owner, g.options.Repo,
 			tag.Hash, head, &github.ListOptions{
 				Page:    page,
-				PerPage: GitHubPerPageMax,
+				PerPage: PerPageMax,
 			})
 		if err != nil {
 			return nil, err
@@ -244,7 +196,7 @@ func (g *GitHub) commitsSinceInit(ctx context.Context) ([]*github.RepositoryComm
 				SHA: head,
 				ListOptions: github.ListOptions{
 					Page:    page,
-					PerPage: GitHubPerPageMax,
+					PerPage: PerPageMax,
 				},
 			})
 		if err != nil {
@@ -254,7 +206,7 @@ func (g *GitHub) commitsSinceInit(ctx context.Context) ([]*github.RepositoryComm
 		if repositoryCommits == nil && resp.LastPage > 0 {
 			// Pre-initialize slice on first request
 			log.Debug("found commits", "pages", resp.LastPage)
-			repositoryCommits = make([]*github.RepositoryCommit, 0, resp.LastPage*GitHubPerPageMax)
+			repositoryCommits = make([]*github.RepositoryCommit, 0, resp.LastPage*PerPageMax)
 		}
 
 		repositoryCommits = append(repositoryCommits, commits...)
@@ -269,7 +221,7 @@ func (g *GitHub) commitsSinceInit(ctx context.Context) ([]*github.RepositoryComm
 	return repositoryCommits, nil
 }
 
-func (g *GitHub) prForCommit(ctx context.Context, commit Commit) (*PullRequest, error) {
+func (g *GitHub) prForCommit(ctx context.Context, commit git.Commit) (*git.PullRequest, error) {
 	// We naively look up the associated PR for each commit through the "List pull requests associated with a commit"
 	// endpoint. This requires len(commits) requests.
 	// Using the "List pull requests" endpoint might be faster, as it allows us to fetch 100 arbitrary PRs per request,
@@ -285,7 +237,7 @@ func (g *GitHub) prForCommit(ctx context.Context, commit Commit) (*PullRequest, 
 			ctx, g.options.Owner, g.options.Repo,
 			commit.Hash, &github.ListOptions{
 				Page:    page,
-				PerPage: GitHubPerPageMax,
+				PerPage: PerPageMax,
 			})
 		if err != nil {
 			return nil, err
@@ -314,7 +266,7 @@ func (g *GitHub) prForCommit(ctx context.Context, commit Commit) (*PullRequest, 
 	return gitHubPRToPullRequest(pullrequest), nil
 }
 
-func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []Label) error {
+func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []releasepr.Label) error {
 	existingLabels := make([]string, 0, len(labels))
 
 	page := 1
@@ -325,7 +277,7 @@ func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []Label) error {
 			ctx, g.options.Owner, g.options.Repo,
 			&github.ListOptions{
 				Page:    page,
-				PerPage: GitHubPerPageMax,
+				PerPage: PerPageMax,
 			})
 		if err != nil {
 			return err
@@ -347,8 +299,8 @@ func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []Label) error {
 			_, _, err := g.client.Issues.CreateLabel(
 				ctx, g.options.Owner, g.options.Repo,
 				&github.Label{
-					Name:  Pointer(string(label)),
-					Color: Pointer(GitHubLabelColor),
+					Name:  pointer.Pointer(string(label)),
+					Color: pointer.Pointer(LabelColor),
 				},
 			)
 			if err != nil {
@@ -360,13 +312,13 @@ func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []Label) error {
 	return nil
 }
 
-func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*ReleasePullRequest, error) {
+func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*releasepr.ReleasePullRequest, error) {
 	page := 1
 
 	for {
 		prs, resp, err := g.client.PullRequests.ListPullRequestsWithCommit(ctx, g.options.Owner, g.options.Repo, branch, &github.ListOptions{
 			Page:    page,
-			PerPage: GitHubPerPageMax,
+			PerPage: PerPageMax,
 		})
 		if err != nil {
 			var ghErr *github.ErrorResponse
@@ -379,7 +331,7 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 		}
 
 		for _, pr := range prs {
-			if pr.GetBase().GetRef() == g.options.BaseBranch && pr.GetHead().GetRef() == branch && pr.GetState() == GitHubPRStateOpen {
+			if pr.GetBase().GetRef() == g.options.BaseBranch && pr.GetHead().GetRef() == branch && pr.GetState() == PRStateOpen {
 				return gitHubPRToReleasePullRequest(pr), nil
 			}
 		}
@@ -393,7 +345,7 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*Rele
 	return nil, nil
 }
 
-func (g *GitHub) CreatePullRequest(ctx context.Context, pr *ReleasePullRequest) error {
+func (g *GitHub) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
 	ghPR, _, err := g.client.PullRequests.Create(
 		ctx, g.options.Owner, g.options.Repo,
 		&github.NewPullRequest{
@@ -410,7 +362,7 @@ func (g *GitHub) CreatePullRequest(ctx context.Context, pr *ReleasePullRequest) 
 	// TODO: String ID?
 	pr.ID = ghPR.GetNumber()
 
-	err = g.SetPullRequestLabels(ctx, pr, []Label{}, pr.Labels)
+	err = g.SetPullRequestLabels(ctx, pr, []releasepr.Label{}, pr.Labels)
 	if err != nil {
 		return err
 	}
@@ -418,7 +370,7 @@ func (g *GitHub) CreatePullRequest(ctx context.Context, pr *ReleasePullRequest) 
 	return nil
 }
 
-func (g *GitHub) UpdatePullRequest(ctx context.Context, pr *ReleasePullRequest) error {
+func (g *GitHub) UpdatePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
 	_, _, err := g.client.PullRequests.Edit(
 		ctx, g.options.Owner, g.options.Repo,
 		pr.ID, &github.PullRequest{
@@ -433,7 +385,7 @@ func (g *GitHub) UpdatePullRequest(ctx context.Context, pr *ReleasePullRequest) 
 	return nil
 }
 
-func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *ReleasePullRequest, remove, add []Label) error {
+func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *releasepr.ReleasePullRequest, remove, add []releasepr.Label) error {
 	for _, label := range remove {
 		_, err := g.client.Issues.RemoveLabelForIssue(
 			ctx, g.options.Owner, g.options.Repo,
@@ -460,11 +412,11 @@ func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *ReleasePullReques
 	return nil
 }
 
-func (g *GitHub) ClosePullRequest(ctx context.Context, pr *ReleasePullRequest) error {
+func (g *GitHub) ClosePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
 	_, _, err := g.client.PullRequests.Edit(
 		ctx, g.options.Owner, g.options.Repo,
 		pr.ID, &github.PullRequest{
-			State: Pointer(GitHubPRStateClosed),
+			State: pointer.Pointer(PRStateClosed),
 		},
 	)
 	if err != nil {
@@ -474,20 +426,20 @@ func (g *GitHub) ClosePullRequest(ctx context.Context, pr *ReleasePullRequest) e
 	return nil
 }
 
-func (g *GitHub) PendingReleases(ctx context.Context, pendingLabel Label) ([]*ReleasePullRequest, error) {
+func (g *GitHub) PendingReleases(ctx context.Context, pendingLabel releasepr.Label) ([]*releasepr.ReleasePullRequest, error) {
 	page := 1
 
-	var prs []*ReleasePullRequest
+	var prs []*releasepr.ReleasePullRequest
 
 	for {
 		ghPRs, resp, err := g.client.PullRequests.List(
 			ctx, g.options.Owner, g.options.Repo,
 			&github.PullRequestListOptions{
-				State: GitHubPRStateClosed,
+				State: PRStateClosed,
 				Base:  g.options.BaseBranch,
 				ListOptions: github.ListOptions{
 					Page:    page,
-					PerPage: GitHubPerPageMax,
+					PerPage: PerPageMax,
 				},
 			})
 		if err != nil {
@@ -497,7 +449,7 @@ func (g *GitHub) PendingReleases(ctx context.Context, pendingLabel Label) ([]*Re
 		if prs == nil && resp.LastPage > 0 {
 			// Pre-initialize slice on first request
 			g.log.Debug("found pending releases", "pages", resp.LastPage)
-			prs = make([]*ReleasePullRequest, 0, (resp.LastPage-1)*GitHubPerPageMax)
+			prs = make([]*releasepr.ReleasePullRequest, 0, (resp.LastPage-1)*PerPageMax)
 		}
 
 		for _, pr := range ghPRs {
@@ -526,7 +478,7 @@ func (g *GitHub) PendingReleases(ctx context.Context, pendingLabel Label) ([]*Re
 	return prs, nil
 }
 
-func (g *GitHub) CreateRelease(ctx context.Context, commit Commit, title, changelog string, preRelease, latest bool) error {
+func (g *GitHub) CreateRelease(ctx context.Context, commit git.Commit, title, changelog string, preRelease, latest bool) error {
 	makeLatest := ""
 	if latest {
 		makeLatest = "true"
@@ -551,29 +503,29 @@ func (g *GitHub) CreateRelease(ctx context.Context, commit Commit, title, change
 	return nil
 }
 
-func gitHubPRToPullRequest(pr *github.PullRequest) *PullRequest {
-	return &PullRequest{
+func gitHubPRToPullRequest(pr *github.PullRequest) *git.PullRequest {
+	return &git.PullRequest{
 		ID:          pr.GetNumber(),
 		Title:       pr.GetTitle(),
 		Description: pr.GetBody(),
 	}
 }
 
-func gitHubPRToReleasePullRequest(pr *github.PullRequest) *ReleasePullRequest {
-	labels := make([]Label, 0, len(pr.Labels))
+func gitHubPRToReleasePullRequest(pr *github.PullRequest) *releasepr.ReleasePullRequest {
+	labels := make([]releasepr.Label, 0, len(pr.Labels))
 	for _, label := range pr.Labels {
-		labelName := Label(label.GetName())
-		if slices.Contains(KnownLabels, Label(label.GetName())) {
+		labelName := releasepr.Label(label.GetName())
+		if slices.Contains(releasepr.KnownLabels, releasepr.Label(label.GetName())) {
 			labels = append(labels, labelName)
 		}
 	}
 
-	var releaseCommit *Commit
+	var releaseCommit *git.Commit
 	if pr.MergeCommitSHA != nil {
-		releaseCommit = &Commit{Hash: pr.GetMergeCommitSHA()}
+		releaseCommit = &git.Commit{Hash: pr.GetMergeCommitSHA()}
 	}
 
-	return &ReleasePullRequest{
+	return &releasepr.ReleasePullRequest{
 		ID:          pr.GetNumber(),
 		Title:       pr.GetTitle(),
 		Description: pr.GetBody(),
@@ -584,16 +536,16 @@ func gitHubPRToReleasePullRequest(pr *github.PullRequest) *ReleasePullRequest {
 	}
 }
 
-func (g *GitHubOptions) autodiscover() {
-	if apiToken := os.Getenv(GitHubEnvAPIToken); apiToken != "" {
+func (g *Options) autodiscover() {
+	if apiToken := os.Getenv(EnvAPIToken); apiToken != "" {
 		g.APIToken = apiToken
 	}
 	// TODO: Check if there is a better solution for cloning/pushing locally
-	if username := os.Getenv(GitHubEnvUsername); username != "" {
+	if username := os.Getenv(EnvUsername); username != "" {
 		g.Username = username
 	}
 
-	if envRepository := os.Getenv(GitHubEnvRepository); envRepository != "" {
+	if envRepository := os.Getenv(EnvRepository); envRepository != "" {
 		// GITHUB_REPOSITORY=apricote/releaser-pleaser
 		parts := strings.Split(envRepository, "/")
 		if len(parts) == 2 {
@@ -604,8 +556,8 @@ func (g *GitHubOptions) autodiscover() {
 	}
 }
 
-type GitHubOptions struct {
-	ForgeOptions
+type Options struct {
+	forge.Options
 
 	Owner string
 	Repo  string
@@ -614,7 +566,7 @@ type GitHubOptions struct {
 	Username string
 }
 
-func NewGitHub(log *slog.Logger, options *GitHubOptions) *GitHub {
+func New(log *slog.Logger, options *Options) *GitHub {
 	options.autodiscover()
 
 	client := github.NewClient(nil)
@@ -630,30 +582,4 @@ func NewGitHub(log *slog.Logger, options *GitHubOptions) *GitHub {
 	}
 
 	return gh
-}
-
-type GitLab struct {
-	options ForgeOptions
-}
-
-func (g *GitLab) autodiscover() {
-	// Read settings from GitLab-CI env vars
-}
-
-func NewGitLab(options ForgeOptions) *GitLab {
-	gl := &GitLab{
-		options: options,
-	}
-
-	gl.autodiscover()
-
-	return gl
-}
-
-func (g *GitLab) RepoURL() string {
-	return fmt.Sprintf("https://gitlab.com/%s", g.options.Repository)
-}
-
-func Pointer[T any](value T) *T {
-	return &value
 }

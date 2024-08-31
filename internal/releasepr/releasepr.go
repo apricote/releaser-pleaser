@@ -1,4 +1,4 @@
-package rp
+package releasepr
 
 import (
 	"bytes"
@@ -12,8 +12,10 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
 
+	"github.com/apricote/releaser-pleaser/internal/git"
 	"github.com/apricote/releaser-pleaser/internal/markdown"
-	east "github.com/apricote/releaser-pleaser/internal/markdown/extensions/ast"
+	ast2 "github.com/apricote/releaser-pleaser/internal/markdown/extensions/ast"
+	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
 
 var (
@@ -33,7 +35,7 @@ func init() {
 
 // ReleasePullRequest
 //
-// TODO: Reuse [PullRequest]
+// TODO: Reuse [git.PullRequest]
 type ReleasePullRequest struct {
 	ID          int
 	Title       string
@@ -41,8 +43,11 @@ type ReleasePullRequest struct {
 	Labels      []Label
 
 	Head          string
-	ReleaseCommit *Commit
+	ReleaseCommit *git.Commit
 }
+
+// Label is the string identifier of a pull/merge request label on the forge.
+type Label string
 
 func NewReleasePullRequest(head, branch, version, changelogEntry string) (*ReleasePullRequest, error) {
 	rp := &ReleasePullRequest{
@@ -61,49 +66,8 @@ func NewReleasePullRequest(head, branch, version, changelogEntry string) (*Relea
 type ReleaseOverrides struct {
 	Prefix          string
 	Suffix          string
-	NextVersionType NextVersionType
+	NextVersionType versioning.NextVersionType
 }
-
-type NextVersionType int
-
-const (
-	NextVersionTypeUndefined NextVersionType = iota
-	NextVersionTypeNormal
-	NextVersionTypeRC
-	NextVersionTypeBeta
-	NextVersionTypeAlpha
-)
-
-func (n NextVersionType) String() string {
-	switch n {
-	case NextVersionTypeUndefined:
-		return "undefined"
-	case NextVersionTypeNormal:
-		return "normal"
-	case NextVersionTypeRC:
-		return "rc"
-	case NextVersionTypeBeta:
-		return "beta"
-	case NextVersionTypeAlpha:
-		return "alpha"
-	default:
-		return ""
-	}
-}
-
-func (n NextVersionType) IsPrerelease() bool {
-	switch n {
-	case NextVersionTypeRC, NextVersionTypeBeta, NextVersionTypeAlpha:
-		return true
-	case NextVersionTypeUndefined, NextVersionTypeNormal:
-		return false
-	default:
-		return false
-	}
-}
-
-// Label is the string identifier of a pull/merge request label on the forge.
-type Label string
 
 const (
 	LabelNextVersionTypeNormal Label = "rp-next-version::normal"
@@ -158,13 +122,13 @@ func (pr *ReleasePullRequest) parseVersioningFlags(overrides ReleaseOverrides) R
 		switch label {
 		// Versioning
 		case LabelNextVersionTypeNormal:
-			overrides.NextVersionType = NextVersionTypeNormal
+			overrides.NextVersionType = versioning.NextVersionTypeNormal
 		case LabelNextVersionTypeRC:
-			overrides.NextVersionType = NextVersionTypeRC
+			overrides.NextVersionType = versioning.NextVersionTypeRC
 		case LabelNextVersionTypeBeta:
-			overrides.NextVersionType = NextVersionTypeBeta
+			overrides.NextVersionType = versioning.NextVersionTypeBeta
 		case LabelNextVersionTypeAlpha:
-			overrides.NextVersionType = NextVersionTypeAlpha
+			overrides.NextVersionType = versioning.NextVersionTypeAlpha
 		case LabelReleasePending, LabelReleaseTagged:
 			// These labels have no effect on the versioning.
 			break
@@ -213,18 +177,18 @@ func (pr *ReleasePullRequest) ChangelogText() (string, error) {
 	gm := markdown.New()
 	descriptionAST := gm.Parser().Parse(text.NewReader(source))
 
-	var section *east.Section
+	var section *ast2.Section
 
 	err := ast.Walk(descriptionAST, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
 		}
 
-		if n.Type() != ast.TypeBlock || n.Kind() != east.KindSection {
+		if n.Type() != ast.TypeBlock || n.Kind() != ast2.KindSection {
 			return ast.WalkContinue, nil
 		}
 
-		anySection, ok := n.(*east.Section)
+		anySection, ok := n.(*ast2.Section)
 		if !ok {
 			return ast.WalkStop, fmt.Errorf("node has unexpected type: %T", n)
 		}

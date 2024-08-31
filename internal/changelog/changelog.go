@@ -1,15 +1,12 @@
-package rp
+package changelog
 
 import (
 	"bytes"
 	_ "embed"
 	"html/template"
 	"log"
-)
 
-const (
-	ChangelogFile   = "CHANGELOG.md"
-	ChangelogHeader = "# Changelog"
+	"github.com/apricote/releaser-pleaser/internal/commitparser"
 )
 
 var (
@@ -27,9 +24,9 @@ func init() {
 	}
 }
 
-func NewChangelogEntry(commits []AnalyzedCommit, version, link, prefix, suffix string) (string, error) {
-	features := make([]AnalyzedCommit, 0)
-	fixes := make([]AnalyzedCommit, 0)
+func NewChangelogEntry(commits []commitparser.AnalyzedCommit, version, link, prefix, suffix string) (string, error) {
+	features := make([]commitparser.AnalyzedCommit, 0)
+	fixes := make([]commitparser.AnalyzedCommit, 0)
 
 	for _, commit := range commits {
 		switch commit.Type {
@@ -54,5 +51,4 @@ func NewChangelogEntry(commits []AnalyzedCommit, version, link, prefix, suffix s
 	}
 
 	return changelog.String(), nil
-
 }
