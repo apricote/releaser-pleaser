@@ -19,4 +19,4 @@
 
 {{- if .Suffix }}
 {{ .Suffix }}
-{{ end -}}
+{{ end }}

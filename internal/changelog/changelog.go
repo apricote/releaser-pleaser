@@ -5,8 +5,10 @@ import (
 	_ "embed"
 	"html/template"
 	"log"
+	"log/slog"
 
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
+	"github.com/apricote/releaser-pleaser/internal/markdown"
 )
 
 var (
@@ -24,7 +26,7 @@ func init() {
 	}
 }
 
-func NewChangelogEntry(commits []commitparser.AnalyzedCommit, version, link, prefix, suffix string) (string, error) {
+func NewChangelogEntry(logger *slog.Logger, commits []commitparser.AnalyzedCommit, version, link, prefix, suffix string) (string, error) {
 	features := make([]commitparser.AnalyzedCommit, 0)
 	fixes := make([]commitparser.AnalyzedCommit, 0)
 
@@ -50,5 +52,11 @@ func NewChangelogEntry(commits []commitparser.AnalyzedCommit, version, link, pre
 		return "", err
 	}
 
-	return changelog.String(), nil
+	formatted, err := markdown.Format(changelog.String())
+	if err != nil {
+		logger.Warn("failed to format changelog entry, using unformatted", "error", err)
+		return changelog.String(), nil
+	}
+
+	return formatted, nil
 }
