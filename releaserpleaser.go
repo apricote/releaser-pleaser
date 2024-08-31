@@ -239,7 +239,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return err
 	}
 
-	changelogEntry, err := changelog.NewChangelogEntry(analyzedCommits, nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
+	changelogEntry, err := changelog.NewChangelogEntry(logger, analyzedCommits, nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
 	if err != nil {
 		return fmt.Errorf("failed to build changelog entry: %w", err)
 	}

@@ -1,6 +1,7 @@
 package changelog
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 				version:         "1.0.0",
 				link:            "https://example.com/1.0.0",
 			},
-			want:    "## [1.0.0](https://example.com/1.0.0)",
+			want:    "## [1.0.0](https://example.com/1.0.0)\n",
 			wantErr: assert.NoError,
 		},
 		{
@@ -50,7 +51,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
-			want:    "## [1.0.0](https://example.com/1.0.0)\n### Features\n\n- Foobar!\n",
+			want:    "## [1.0.0](https://example.com/1.0.0)\n\n### Features\n\n- Foobar!\n",
 			wantErr: assert.NoError,
 		},
 		{
@@ -66,7 +67,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
-			want:    "## [1.0.0](https://example.com/1.0.0)\n### Bug Fixes\n\n- Foobar!\n",
+			want:    "## [1.0.0](https://example.com/1.0.0)\n\n### Bug Fixes\n\n- Foobar!\n",
 			wantErr: assert.NoError,
 		},
 		{
@@ -100,6 +101,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 				link:    "https://example.com/1.0.0",
 			},
 			want: `## [1.0.0](https://example.com/1.0.0)
+
 ### Features
 
 - Blabla!
@@ -127,6 +129,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 				prefix:  "### Breaking Changes",
 			},
 			want: `## [1.0.0](https://example.com/1.0.0)
+
 ### Breaking Changes
 
 ### Bug Fixes
@@ -150,6 +153,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 				suffix:  "### Compatibility\n\nThis version is compatible with flux-compensator v2.2 - v2.9.",
 			},
 			want: `## [1.0.0](https://example.com/1.0.0)
+
 ### Bug Fixes
 
 - Foobar!
@@ -164,7 +168,7 @@ This version is compatible with flux-compensator v2.2 - v2.9.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewChangelogEntry(tt.args.analyzedCommits, tt.args.version, tt.args.link, tt.args.prefix, tt.args.suffix)
+			got, err := NewChangelogEntry(slog.Default(), tt.args.analyzedCommits, tt.args.version, tt.args.link, tt.args.prefix, tt.args.suffix)
 			if !tt.wantErr(t, err) {
 				return
 			}
