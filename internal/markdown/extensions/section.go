@@ -1,11 +1,13 @@
 package extensions
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/yuin/goldmark"
 	gast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 
@@ -76,6 +78,43 @@ func (s *sectionParser) Trigger() []byte {
 	return []byte(sectionTrigger)
 }
 
+type SectionMarkdownRenderer struct{}
+
+func NewSectionMarkdownRenderer() renderer.NodeRenderer {
+	return &SectionMarkdownRenderer{}
+}
+
+func (s SectionMarkdownRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
+	reg.Register(ast.KindSection, s.renderSection)
+}
+
+func (s SectionMarkdownRenderer) renderSection(w util.BufWriter, _ []byte, node gast.Node, enter bool) (gast.WalkStatus, error) {
+	n := node.(*ast.Section)
+
+	if enter {
+		// Add blank previous line if applicable
+		if node.PreviousSibling() != nil && node.HasBlankPreviousLines() {
+			if _, err := w.WriteRune('\n'); err != nil {
+				return gast.WalkStop, err
+			}
+		}
+
+		if _, err := fmt.Fprintf(w, SectionStartFormat, n.Name); err != nil {
+			return gast.WalkStop, fmt.Errorf(": %w", err)
+		}
+	} else {
+		if _, err := fmt.Fprintf(w, SectionEndFormat, n.Name); err != nil {
+			return gast.WalkStop, fmt.Errorf(": %w", err)
+		}
+
+		if _, err := w.WriteRune('\n'); err != nil {
+			return gast.WalkStop, err
+		}
+	}
+
+	return gast.WalkContinue, nil
+}
+
 type section struct{}
 
 // Section is an extension that allow you to use group content under a shared parent ast node.
@@ -84,5 +123,8 @@ var Section = &section{}
 func (e *section) Extend(m goldmark.Markdown) {
 	m.Parser().AddOptions(parser.WithBlockParsers(
 		util.Prioritized(NewSectionParser(), 0),
+	))
+	m.Renderer().AddOptions(renderer.WithNodeRenderers(
+		util.Prioritized(NewSectionMarkdownRenderer(), 500),
 	))
 }
