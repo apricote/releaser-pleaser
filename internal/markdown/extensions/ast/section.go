@@ -7,7 +7,8 @@ import (
 // A Section struct represents a section of elements.
 type Section struct {
 	gast.BaseBlock
-	Name string
+	Name   string
+	Hidden bool
 }
 
 // Dump implements Node.Dump.
@@ -24,6 +25,10 @@ var KindSection = gast.NewNodeKind("Section")
 // Kind implements Node.Kind.
 func (n *Section) Kind() gast.NodeKind {
 	return KindSection
+}
+
+func (n *Section) HideInOutput() {
+	n.Hidden = true
 }
 
 // NewSection returns a new Section node.

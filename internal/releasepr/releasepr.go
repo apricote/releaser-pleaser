@@ -6,15 +6,10 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"strings"
 	"text/template"
-
-	"github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/text"
 
 	"github.com/apricote/releaser-pleaser/internal/git"
 	"github.com/apricote/releaser-pleaser/internal/markdown"
-	ast2 "github.com/apricote/releaser-pleaser/internal/markdown/extensions/ast"
 	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
 
@@ -140,31 +135,11 @@ func (pr *ReleasePullRequest) parseVersioningFlags(overrides ReleaseOverrides) R
 
 func (pr *ReleasePullRequest) parseDescription(overrides ReleaseOverrides) (ReleaseOverrides, error) {
 	source := []byte(pr.Description)
-	descriptionAST := markdown.New().Parser().Parse(text.NewReader(source))
 
-	err := ast.Walk(descriptionAST, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		if !entering {
-			return ast.WalkContinue, nil
-		}
-
-		if n.Type() != ast.TypeBlock || n.Kind() != ast.KindFencedCodeBlock {
-			return ast.WalkContinue, nil
-		}
-
-		codeBlock, ok := n.(*ast.FencedCodeBlock)
-		if !ok {
-			return ast.WalkStop, fmt.Errorf("node has unexpected type: %T", n)
-		}
-
-		switch string(codeBlock.Language(source)) {
-		case DescriptionLanguagePrefix:
-			overrides.Prefix = textFromLines(source, codeBlock)
-		case DescriptionLanguageSuffix:
-			overrides.Suffix = textFromLines(source, codeBlock)
-		}
-
-		return ast.WalkContinue, nil
-	})
+	err := markdown.WalkAST(source,
+		markdown.GetCodeBlockText(source, DescriptionLanguagePrefix, &overrides.Prefix),
+		markdown.GetCodeBlockText(source, DescriptionLanguageSuffix, &overrides.Suffix),
+	)
 	if err != nil {
 		return ReleaseOverrides{}, err
 	}
@@ -174,59 +149,15 @@ func (pr *ReleasePullRequest) parseDescription(overrides ReleaseOverrides) (Rele
 
 func (pr *ReleasePullRequest) ChangelogText() (string, error) {
 	source := []byte(pr.Description)
-	gm := markdown.New()
-	descriptionAST := gm.Parser().Parse(text.NewReader(source))
 
-	var section *ast2.Section
-
-	err := ast.Walk(descriptionAST, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
-		if !entering {
-			return ast.WalkContinue, nil
-		}
-
-		if n.Type() != ast.TypeBlock || n.Kind() != ast2.KindSection {
-			return ast.WalkContinue, nil
-		}
-
-		anySection, ok := n.(*ast2.Section)
-		if !ok {
-			return ast.WalkStop, fmt.Errorf("node has unexpected type: %T", n)
-		}
-
-		if anySection.Name != MarkdownSectionChangelog {
-			return ast.WalkContinue, nil
-		}
-
-		section = anySection
-		return ast.WalkStop, nil
-	})
+	var sectionText string
+	err := markdown.WalkAST(source, markdown.GetSectionText(source, MarkdownSectionChangelog, &sectionText))
 	if err != nil {
 		return "", err
 	}
 
-	if section == nil {
-		return "", nil
-	}
+	return sectionText, nil
 
-	outputBuffer := new(bytes.Buffer)
-	err = gm.Renderer().Render(outputBuffer, source, section)
-	if err != nil {
-		return "", err
-	}
-
-	return outputBuffer.String(), nil
-}
-
-func textFromLines(source []byte, n ast.Node) string {
-	content := make([]byte, 0)
-
-	l := n.Lines().Len()
-	for i := 0; i < l; i++ {
-		line := n.Lines().At(i)
-		content = append(content, line.Value(source)...)
-	}
-
-	return strings.TrimSpace(string(content))
 }
 
 func (pr *ReleasePullRequest) SetTitle(branch, version string) {

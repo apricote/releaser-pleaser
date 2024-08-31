@@ -21,8 +21,8 @@ var (
 
 const (
 	sectionTrigger     = "<!--"
-	SectionStartFormat = "<!-- section-start %s -->"
-	SectionEndFormat   = "<!-- section-end %s -->"
+	SectionStartFormat = "<!-- section-start %s -->\n"
+	SectionEndFormat   = "\n<!-- section-end %s -->"
 )
 
 type sectionParser struct{}
@@ -91,6 +91,10 @@ func (s SectionMarkdownRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegi
 func (s SectionMarkdownRenderer) renderSection(w util.BufWriter, _ []byte, node gast.Node, enter bool) (gast.WalkStatus, error) {
 	n := node.(*ast.Section)
 
+	if n.Hidden {
+		return gast.WalkContinue, nil
+	}
+
 	if enter {
 		// Add blank previous line if applicable
 		if node.PreviousSibling() != nil && node.HasBlankPreviousLines() {
@@ -107,12 +111,10 @@ func (s SectionMarkdownRenderer) renderSection(w util.BufWriter, _ []byte, node 
 			return gast.WalkStop, fmt.Errorf(": %w", err)
 		}
 
-		if _, err := w.WriteRune('\n'); err != nil {
-			return gast.WalkStop, err
-		}
 	}
 
-	return gast.WalkContinue, nil
+	// Somehow the goldmark-markdown renderer does not flush this properly on its own
+	return gast.WalkContinue, w.Flush()
 }
 
 type section struct{}
