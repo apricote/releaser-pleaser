@@ -1,10 +1,120 @@
 package releasepr
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
+
+func TestReleasePullRequest_GetOverrides(t *testing.T) {
+	tests := []struct {
+		name    string
+		pr      ReleasePullRequest
+		want    ReleaseOverrides
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name:    "empty",
+			pr:      ReleasePullRequest{},
+			want:    ReleaseOverrides{},
+			wantErr: assert.NoError,
+		},
+		{
+			// TODO: Test for multiple version flags
+			name: "single version flag",
+			pr: ReleasePullRequest{
+				Labels: []Label{LabelNextVersionTypeAlpha},
+			},
+			want: ReleaseOverrides{
+				NextVersionType: versioning.NextVersionTypeAlpha,
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "prefix in description",
+			pr: ReleasePullRequest{
+				Description: "```rp-prefix\n## Foo\n\n- Cool thing\n```",
+			},
+			want:    ReleaseOverrides{Prefix: "## Foo\n\n- Cool thing"},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "suffix in description",
+			pr: ReleasePullRequest{
+				Description: "```rp-suffix\n## Compatibility\n\nNo compatibility guarantees.\n```",
+			},
+			want:    ReleaseOverrides{Suffix: "## Compatibility\n\nNo compatibility guarantees."},
+			wantErr: assert.NoError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.pr.GetOverrides()
+			if !tt.wantErr(t, err, fmt.Sprintf("GetOverrides()")) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "GetOverrides()")
+		})
+	}
+}
+
+func TestReleasePullRequest_ChangelogText(t *testing.T) {
+	tests := []struct {
+		name        string
+		description string
+		want        string
+		wantErr     assert.ErrorAssertionFunc
+	}{
+		{
+			name:        "no section",
+			description: "# Foo\n",
+			want:        "",
+			wantErr:     assert.NoError,
+		},
+		{
+			name: "with section",
+			description: `# Foobar
+
+<!-- section-start changelog -->
+This is the changelog
+
+## Awesome
+
+### New
+
+#### Changes
+<!-- section-end changelog -->
+
+Suffix Things
+`,
+			want: `This is the changelog
+
+## Awesome
+
+### New
+
+#### Changes
+`,
+			wantErr: assert.NoError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pr := &ReleasePullRequest{
+				Description: tt.description,
+			}
+			got, err := pr.ChangelogText()
+			if !tt.wantErr(t, err, fmt.Sprintf("ChangelogText()")) {
+				return
+			}
+			assert.Equalf(t, tt.want, got, "ChangelogText()")
+		})
+	}
+}
 
 func TestReleasePullRequest_SetTitle(t *testing.T) {
 	type args struct {
