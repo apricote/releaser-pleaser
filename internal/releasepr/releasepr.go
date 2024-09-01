@@ -28,14 +28,9 @@ func init() {
 	}
 }
 
-// ReleasePullRequest
-//
-// TODO: Reuse [git.PullRequest]
 type ReleasePullRequest struct {
-	ID          int
-	Title       string
-	Description string
-	Labels      []Label
+	git.PullRequest
+	Labels []Label
 
 	Head          string
 	ReleaseCommit *git.Commit

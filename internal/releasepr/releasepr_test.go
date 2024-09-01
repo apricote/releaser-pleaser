@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/apricote/releaser-pleaser/internal/git"
 	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
 
@@ -36,7 +37,9 @@ func TestReleasePullRequest_GetOverrides(t *testing.T) {
 		{
 			name: "prefix in description",
 			pr: ReleasePullRequest{
-				Description: "```rp-prefix\n## Foo\n\n- Cool thing\n```",
+				PullRequest: git.PullRequest{
+					Description: "```rp-prefix\n## Foo\n\n- Cool thing\n```",
+				},
 			},
 			want:    ReleaseOverrides{Prefix: "## Foo\n\n- Cool thing"},
 			wantErr: assert.NoError,
@@ -44,7 +47,9 @@ func TestReleasePullRequest_GetOverrides(t *testing.T) {
 		{
 			name: "suffix in description",
 			pr: ReleasePullRequest{
-				Description: "```rp-suffix\n## Compatibility\n\nNo compatibility guarantees.\n```",
+				PullRequest: git.PullRequest{
+					Description: "```rp-suffix\n## Compatibility\n\nNo compatibility guarantees.\n```",
+				},
 			},
 			want:    ReleaseOverrides{Suffix: "## Compatibility\n\nNo compatibility guarantees."},
 			wantErr: assert.NoError,
@@ -105,7 +110,9 @@ Suffix Things
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := &ReleasePullRequest{
-				Description: tt.description,
+				PullRequest: git.PullRequest{
+					Description: tt.description,
+				},
 			}
 			got, err := pr.ChangelogText()
 			if !tt.wantErr(t, err, fmt.Sprintf("ChangelogText()")) {
@@ -129,7 +136,11 @@ func TestReleasePullRequest_SetTitle(t *testing.T) {
 	}{
 		{
 			name: "simple update",
-			pr:   &ReleasePullRequest{Title: "foo: bar"},
+			pr: &ReleasePullRequest{
+				PullRequest: git.PullRequest{
+					Title: "foo: bar",
+				},
+			},
 			args: args{
 				branch:  "main",
 				version: "v1.0.0",

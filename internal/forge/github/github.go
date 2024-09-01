@@ -526,9 +526,7 @@ func gitHubPRToReleasePullRequest(pr *github.PullRequest) *releasepr.ReleasePull
 	}
 
 	return &releasepr.ReleasePullRequest{
-		ID:          pr.GetNumber(),
-		Title:       pr.GetTitle(),
-		Description: pr.GetBody(),
+		PullRequest: *gitHubPRToPullRequest(pr),
 		Labels:      labels,
 
 		Head:          pr.GetHead().GetRef(),
