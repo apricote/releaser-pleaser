@@ -4,7 +4,34 @@ You can customize the generated Release Notes in two ways:
 
 ## For a single commit / pull request
 
-This feature is still being worked on. Check out [#5](https://github.com/apricote/releaser-pleaser/issues/5) for the current status.
+### Editing the Release Notes
+
+After merging a non-release pull request, you can still modify how it appears in the Release Notes.
+
+To do this, add a code block named `rp-commits` in the pull request description. When this block is present, `releaser-pleaser` will use its content for generating Release Notes instead of the commit message. If the code block contains multiple lines, each line will be treated as if it came from separate pull requests. This is useful for pull requests that introduce multiple features or fix several bugs.
+
+You can update the description at any time after merging the pull request but before merging the release pull request. `releaser-pleaser` will then re-run and update the suggested Release Notes accordingly.
+
+>     ```rp-commits
+>     feat(api): add movie endpoints
+>     feat(api): add cinema endpoints
+>     fix(db): invalid schema for actor model
+>     ```
+
+Using GitHub as an example, the pull request you are trying to change the Release Notes for should look like this:
+
+![Screenshot of a pull request page on GitHub. Currently editing the description of the pull request and adding the rp-commits snippet from above.](release-notes-rp-commits.png)
+
+In turn, `releaser-pleaser` updates the release pull request like this:
+
+![Screenshot of a release pull request on GitHub. It shows the release notes with the three commits from the rp-commits example.](release-notes-rp-commits-release-pr.png)
+
+### Removing the pull request from the Release Notes
+
+If you add an empty code block, the pull request will be removed from the Release Notes.
+
+>     ```rp-commits
+>     ```
 
 ## For the release
 

@@ -39,7 +39,7 @@ func Format(input string) (string, error) {
 	return buf.String(), nil
 }
 
-func GetCodeBlockText(source []byte, language string, output *string) gast.Walker {
+func GetCodeBlockText(source []byte, language string, output *string, found *bool) gast.Walker {
 	return func(n gast.Node, entering bool) (gast.WalkStatus, error) {
 		if !entering {
 			return gast.WalkContinue, nil
@@ -56,6 +56,9 @@ func GetCodeBlockText(source []byte, language string, output *string) gast.Walke
 		}
 
 		*output = textFromLines(source, codeBlock)
+		if found != nil {
+			*found = true
+		}
 		// Stop looking after we find the first result
 		return gast.WalkStop, nil
 	}

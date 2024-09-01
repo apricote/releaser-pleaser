@@ -188,15 +188,19 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		lastReleaseCommit = releases.Latest
 	}
 
-	releasableCommits, err := rp.forge.CommitsSince(ctx, lastReleaseCommit)
+	commits, err := rp.forge.CommitsSince(ctx, lastReleaseCommit)
 	if err != nil {
 		return err
 	}
 
-	logger.InfoContext(ctx, "Found releasable commits", "length", len(releasableCommits))
+	commits, err = parsePRBodyForCommitOverrides(commits)
+	if err != nil {
+		return err
+	}
 
-	// TODO: Handle commit overrides
-	analyzedCommits, err := rp.commitParser.Analyze(releasableCommits)
+	logger.InfoContext(ctx, "Found releasable commits", "length", len(commits))
+
+	analyzedCommits, err := rp.commitParser.Analyze(commits)
 	if err != nil {
 		return err
 	}

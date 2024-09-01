@@ -132,8 +132,8 @@ func (pr *ReleasePullRequest) parseDescription(overrides ReleaseOverrides) (Rele
 	source := []byte(pr.Description)
 
 	err := markdown.WalkAST(source,
-		markdown.GetCodeBlockText(source, DescriptionLanguagePrefix, &overrides.Prefix),
-		markdown.GetCodeBlockText(source, DescriptionLanguageSuffix, &overrides.Suffix),
+		markdown.GetCodeBlockText(source, DescriptionLanguagePrefix, &overrides.Prefix, nil),
+		markdown.GetCodeBlockText(source, DescriptionLanguageSuffix, &overrides.Suffix, nil),
 	)
 	if err != nil {
 		return ReleaseOverrides{}, err
