@@ -51,10 +51,11 @@ func TestGetCodeBlockText(t *testing.T) {
 		language string
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    string
-		wantErr assert.ErrorAssertionFunc
+		name      string
+		args      args
+		wantText  string
+		wantFound bool
+		wantErr   assert.ErrorAssertionFunc
 	}{
 		{
 			name: "no code block",
@@ -62,8 +63,9 @@ func TestGetCodeBlockText(t *testing.T) {
 				source:   []byte("# Foo"),
 				language: "missing",
 			},
-			want:    "",
-			wantErr: assert.NoError,
+			wantText:  "",
+			wantFound: false,
+			wantErr:   assert.NoError,
 		},
 		{
 			name: "code block",
@@ -71,8 +73,9 @@ func TestGetCodeBlockText(t *testing.T) {
 				source:   []byte("```test\nContent\n```"),
 				language: "test",
 			},
-			want:    "Content",
-			wantErr: assert.NoError,
+			wantText:  "Content",
+			wantFound: true,
+			wantErr:   assert.NoError,
 		},
 		{
 			name: "code block with other language",
@@ -80,8 +83,9 @@ func TestGetCodeBlockText(t *testing.T) {
 				source:   []byte("```unknown\nContent\n```"),
 				language: "test",
 			},
-			want:    "",
-			wantErr: assert.NoError,
+			wantText:  "",
+			wantFound: false,
+			wantErr:   assert.NoError,
 		},
 		{
 			name: "multiple code blocks with different languages",
@@ -89,8 +93,9 @@ func TestGetCodeBlockText(t *testing.T) {
 				source:   []byte("```unknown\nContent\n```\n\n```test\n1337\n```"),
 				language: "test",
 			},
-			want:    "1337",
-			wantErr: assert.NoError,
+			wantText:  "1337",
+			wantFound: true,
+			wantErr:   assert.NoError,
 		},
 		{
 			name: "multiple code blocks with same language returns first one",
@@ -98,22 +103,25 @@ func TestGetCodeBlockText(t *testing.T) {
 				source:   []byte("```test\nContent\n```\n\n```test\n1337\n```"),
 				language: "test",
 			},
-			want:    "Content",
-			wantErr: assert.NoError,
+			wantText:  "Content",
+			wantFound: true,
+			wantErr:   assert.NoError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var got string
+			var gotText string
+			var gotFound bool
 
 			err := WalkAST(tt.args.source,
-				GetCodeBlockText(tt.args.source, tt.args.language, &got),
+				GetCodeBlockText(tt.args.source, tt.args.language, &gotText, &gotFound),
 			)
 			if !tt.wantErr(t, err) {
 				return
 			}
 
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.wantText, gotText)
+			assert.Equal(t, tt.wantFound, gotFound)
 		})
 	}
 }

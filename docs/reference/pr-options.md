@@ -28,6 +28,20 @@ Adding more than one of these labels is not allowed and the behaviour if multipl
 
 Any text in code blocks with these languages is being added to the start or end of the Release Notes and Changelog. Learn more in the [Release Notes](../guides/release-notes.md) guide.
 
+**Examples**:
+
+    ```rp-prefix
+    #### Awesome new feature!
+
+    This text is at the start of the release notes.
+    ```
+
+    ```rp-suffix
+    #### Version Compatibility
+
+    And this at the end.
+    ```
+
 ### Status
 
 **Labels**:
@@ -43,4 +57,19 @@ Users should not set these labels themselves.
 
 Not created by `releaser-pleaser`.
 
-Normal pull requests do not support any options right now.
+### Release Notes
+
+**Code Blocks**:
+
+- `rp-commits`
+
+If specified, `releaser-pleaser` will consider each line in the code block as a commit message and add all of them to the Release Notes. Learn more in the [Release Notes](../guides/release-notes.md) guide.
+
+The types of commits (`feat`, `fix`, ...) are also considered for the next version.
+
+**Examples**:
+
+    ```rp-commits
+    feat(api): add movie endpoints
+    fix(db): invalid schema for actor model
+    ```
