@@ -300,7 +300,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		logger.InfoContext(ctx, "opened pull request", "pr.title", pr.Title, "pr.id", pr.ID)
+		logger.InfoContext(ctx, "opened pull request", "pr.title", pr.Title, "pr.id", pr.ID, "pr.url", rp.forge.PullRequestURL(pr.ID))
 	} else {
 		pr.SetTitle(rp.targetBranch, nextVersion)
 
@@ -317,7 +317,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		logger.InfoContext(ctx, "updated pull request", "pr.title", pr.Title, "pr.id", pr.ID)
+		logger.InfoContext(ctx, "updated pull request", "pr.title", pr.Title, "pr.id", pr.ID, "pr.url", rp.forge.PullRequestURL(pr.ID))
 	}
 
 	return nil

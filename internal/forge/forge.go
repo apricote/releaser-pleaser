@@ -13,6 +13,7 @@ type Forge interface {
 	RepoURL() string
 	CloneURL() string
 	ReleaseURL(version string) string
+	PullRequestURL(id int) string
 
 	GitAuth() transport.AuthMethod
 

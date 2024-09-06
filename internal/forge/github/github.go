@@ -51,6 +51,10 @@ func (g *GitHub) ReleaseURL(version string) string {
 	return fmt.Sprintf("https://github.com/%s/%s/releases/tag/%s", g.options.Owner, g.options.Repo, version)
 }
 
+func (g *GitHub) PullRequestURL(id int) string {
+	return fmt.Sprintf("https://github.com/%s/%s/pull/%d", g.options.Owner, g.options.Repo, id)
+}
+
 func (g *GitHub) GitAuth() transport.AuthMethod {
 	return &http.BasicAuth{
 		Username: g.options.Username,
