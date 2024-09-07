@@ -1,6 +1,7 @@
 package conventionalcommits
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,14 +24,14 @@ func TestAnalyzeCommits(t *testing.T) {
 			wantErr:         assert.NoError,
 		},
 		{
-			name: "malformed commit message",
+			name: "skips malformed commit message",
 			commits: []git.Commit{
 				{
 					Message: "aksdjaklsdjka",
 				},
 			},
-			expectedCommits: nil,
-			wantErr:         assert.Error,
+			expectedCommits: []commitparser.AnalyzedCommit{},
+			wantErr:         assert.NoError,
 		},
 		{
 			name: "drops unreleasable",
@@ -114,7 +115,7 @@ func TestAnalyzeCommits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			analyzedCommits, err := NewParser().Analyze(tt.commits)
+			analyzedCommits, err := NewParser(slog.Default()).Analyze(tt.commits)
 			if !tt.wantErr(t, err) {
 				return
 			}
