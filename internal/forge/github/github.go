@@ -27,7 +27,6 @@ const (
 	EnvAPIToken   = "GITHUB_TOKEN" // nolint:gosec // Not actually a hardcoded credential
 	EnvUsername   = "GITHUB_USER"
 	EnvRepository = "GITHUB_REPOSITORY"
-	LabelColor    = "dedede"
 )
 
 var _ forge.Forge = &GitHub{}
@@ -298,13 +297,14 @@ func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []releasepr.Label
 	}
 
 	for _, label := range labels {
-		if !slices.Contains(existingLabels, string(label)) {
-			g.log.Info("creating label in repository", "label.name", label)
+		if !slices.Contains(existingLabels, label.Name) {
+			g.log.Info("creating label in repository", "label.name", label.Name)
 			_, _, err := g.client.Issues.CreateLabel(
 				ctx, g.options.Owner, g.options.Repo,
 				&github.Label{
-					Name:  pointer.Pointer(string(label)),
-					Color: pointer.Pointer(LabelColor),
+					Name:        pointer.Pointer(label.Name),
+					Color:       pointer.Pointer(label.Color),
+					Description: pointer.Pointer(label.Description),
 				},
 			)
 			if err != nil {
@@ -393,7 +393,7 @@ func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *releasepr.Release
 	for _, label := range remove {
 		_, err := g.client.Issues.RemoveLabelForIssue(
 			ctx, g.options.Owner, g.options.Repo,
-			pr.ID, string(label),
+			pr.ID, label.Name,
 		)
 		if err != nil {
 			return err
@@ -402,7 +402,7 @@ func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *releasepr.Release
 
 	addString := make([]string, 0, len(add))
 	for _, label := range add {
-		addString = append(addString, string(label))
+		addString = append(addString, label.Name)
 	}
 
 	_, _, err := g.client.Issues.AddLabelsToIssue(
@@ -458,7 +458,7 @@ func (g *GitHub) PendingReleases(ctx context.Context, pendingLabel releasepr.Lab
 
 		for _, pr := range ghPRs {
 			pending := slices.ContainsFunc(pr.Labels, func(l *github.Label) bool {
-				return l.GetName() == string(pendingLabel)
+				return l.GetName() == pendingLabel.Name
 			})
 			if !pending {
 				continue
@@ -518,9 +518,11 @@ func gitHubPRToPullRequest(pr *github.PullRequest) *git.PullRequest {
 func gitHubPRToReleasePullRequest(pr *github.PullRequest) *releasepr.ReleasePullRequest {
 	labels := make([]releasepr.Label, 0, len(pr.Labels))
 	for _, label := range pr.Labels {
-		labelName := releasepr.Label(label.GetName())
-		if slices.Contains(releasepr.KnownLabels, releasepr.Label(label.GetName())) {
-			labels = append(labels, labelName)
+		labelName := label.GetName()
+		if i := slices.IndexFunc(releasepr.KnownLabels, func(label releasepr.Label) bool {
+			return label.Name == labelName
+		}); i >= 0 {
+			labels = append(labels, releasepr.KnownLabels[i])
 		}
 	}
 
