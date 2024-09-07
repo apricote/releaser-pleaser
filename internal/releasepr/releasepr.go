@@ -36,9 +36,6 @@ type ReleasePullRequest struct {
 	ReleaseCommit *git.Commit
 }
 
-// Label is the string identifier of a pull/merge request label on the forge.
-type Label string
-
 func NewReleasePullRequest(head, branch, version, changelogEntry string) (*ReleasePullRequest, error) {
 	rp := &ReleasePullRequest{
 		Head:   head,
@@ -57,26 +54,6 @@ type ReleaseOverrides struct {
 	Prefix          string
 	Suffix          string
 	NextVersionType versioning.NextVersionType
-}
-
-const (
-	LabelNextVersionTypeNormal Label = "rp-next-version::normal"
-	LabelNextVersionTypeRC     Label = "rp-next-version::rc"
-	LabelNextVersionTypeBeta   Label = "rp-next-version::beta"
-	LabelNextVersionTypeAlpha  Label = "rp-next-version::alpha"
-
-	LabelReleasePending Label = "rp-release::pending"
-	LabelReleaseTagged  Label = "rp-release::tagged"
-)
-
-var KnownLabels = []Label{
-	LabelNextVersionTypeNormal,
-	LabelNextVersionTypeRC,
-	LabelNextVersionTypeBeta,
-	LabelNextVersionTypeAlpha,
-
-	LabelReleasePending,
-	LabelReleaseTagged,
 }
 
 const (
