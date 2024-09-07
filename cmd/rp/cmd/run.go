@@ -71,7 +71,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		f,
 		logger,
 		flagBranch,
-		conventionalcommits.NewParser(),
+		conventionalcommits.NewParser(logger),
 		versioning.SemVerNextVersion,
 		extraFiles,
 		[]updater.NewUpdater{updater.Generic},
