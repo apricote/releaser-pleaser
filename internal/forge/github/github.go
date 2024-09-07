@@ -64,52 +64,44 @@ func (g *GitHub) GitAuth() transport.AuthMethod {
 func (g *GitHub) LatestTags(ctx context.Context) (git.Releases, error) {
 	g.log.DebugContext(ctx, "listing all tags in github repository")
 
-	page := 1
+	tags, err := all(func(listOptions github.ListOptions) ([]*github.RepositoryTag, *github.Response, error) {
+		return g.client.Repositories.ListTags(
+			ctx, g.options.Owner, g.options.Repo,
+			&listOptions,
+		)
+	})
+	if err != nil {
+		return git.Releases{}, err
+	}
 
 	var releases git.Releases
 
-	for {
-		tags, resp, err := g.client.Repositories.ListTags(
-			ctx, g.options.Owner, g.options.Repo,
-			&github.ListOptions{Page: page, PerPage: PerPageMax},
-		)
+	for _, ghTag := range tags {
+		tag := &git.Tag{
+			Hash: ghTag.GetCommit().GetSHA(),
+			Name: ghTag.GetName(),
+		}
+
+		version, err := semver.Parse(strings.TrimPrefix(tag.Name, "v"))
 		if err != nil {
-			return git.Releases{}, err
+			g.log.WarnContext(
+				ctx, "unable to parse tag as semver, skipping",
+				"tag.name", tag.Name,
+				"tag.hash", tag.Hash,
+				"error", err,
+			)
+			continue
 		}
 
-		for _, ghTag := range tags {
-			tag := &git.Tag{
-				Hash: ghTag.GetCommit().GetSHA(),
-				Name: ghTag.GetName(),
-			}
-
-			version, err := semver.Parse(strings.TrimPrefix(tag.Name, "v"))
-			if err != nil {
-				g.log.WarnContext(
-					ctx, "unable to parse tag as semver, skipping",
-					"tag.name", tag.Name,
-					"tag.hash", tag.Hash,
-					"error", err,
-				)
-				continue
-			}
-
-			if releases.Latest == nil {
-				releases.Latest = tag
-			}
-			if len(version.Pre) == 0 {
-				// Stable version tag
-				// We return once we have found the latest stable tag, not needed to look at every single tag.
-				releases.Stable = tag
-				break
-			}
+		if releases.Latest == nil {
+			releases.Latest = tag
 		}
-
-		if page == resp.LastPage || resp.LastPage == 0 {
+		if len(version.Pre) == 0 {
+			// Stable version tag
+			// We return once we have found the latest stable tag, not needed to look at every single tag.
+			releases.Stable = tag
 			break
 		}
-
-		page = resp.NextPage
 	}
 
 	return releases, nil
@@ -150,34 +142,19 @@ func (g *GitHub) commitsSinceTag(ctx context.Context, tag *git.Tag) ([]*github.R
 	log := g.log.With("base", tag.Hash, "head", head)
 	log.Debug("comparing commits", "base", tag.Hash, "head", head)
 
-	page := 1
+	repositoryCommits, err := all(
+		func(listOptions github.ListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
+			comparison, resp, err := g.client.Repositories.CompareCommits(
+				ctx, g.options.Owner, g.options.Repo,
+				tag.Hash, head, &listOptions)
+			if err != nil {
+				return nil, nil, err
+			}
 
-	var repositoryCommits []*github.RepositoryCommit
-	for {
-		log.Debug("fetching page", "page", page)
-		comparison, resp, err := g.client.Repositories.CompareCommits(
-			ctx, g.options.Owner, g.options.Repo,
-			tag.Hash, head, &github.ListOptions{
-				Page:    page,
-				PerPage: PerPageMax,
-			})
-		if err != nil {
-			return nil, err
-		}
-
-		if repositoryCommits == nil {
-			// Pre-initialize slice on first request
-			log.Debug("found commits", "length", comparison.GetTotalCommits())
-			repositoryCommits = make([]*github.RepositoryCommit, 0, comparison.GetTotalCommits())
-		}
-
-		repositoryCommits = append(repositoryCommits, comparison.Commits...)
-
-		if page == resp.LastPage || resp.LastPage == 0 {
-			break
-		}
-
-		page = resp.NextPage
+			return comparison.Commits, resp, err
+		})
+	if err != nil {
+		return nil, err
 	}
 
 	return repositoryCommits, nil
@@ -188,37 +165,17 @@ func (g *GitHub) commitsSinceInit(ctx context.Context) ([]*github.RepositoryComm
 	log := g.log.With("head", head)
 	log.Debug("listing all commits")
 
-	page := 1
-
-	var repositoryCommits []*github.RepositoryCommit
-	for {
-		log.Debug("fetching page", "page", page)
-		commits, resp, err := g.client.Repositories.ListCommits(
-			ctx, g.options.Owner, g.options.Repo,
-			&github.CommitsListOptions{
-				SHA: head,
-				ListOptions: github.ListOptions{
-					Page:    page,
-					PerPage: PerPageMax,
-				},
-			})
-		if err != nil {
-			return nil, err
-		}
-
-		if repositoryCommits == nil && resp.LastPage > 0 {
-			// Pre-initialize slice on first request
-			log.Debug("found commits", "pages", resp.LastPage)
-			repositoryCommits = make([]*github.RepositoryCommit, 0, resp.LastPage*PerPageMax)
-		}
-
-		repositoryCommits = append(repositoryCommits, commits...)
-
-		if page == resp.LastPage || resp.LastPage == 0 {
-			break
-		}
-
-		page = resp.NextPage
+	repositoryCommits, err := all(
+		func(listOptions github.ListOptions) ([]*github.RepositoryCommit, *github.Response, error) {
+			return g.client.Repositories.ListCommits(
+				ctx, g.options.Owner, g.options.Repo,
+				&github.CommitsListOptions{
+					SHA:         head,
+					ListOptions: listOptions,
+				})
+		})
+	if err != nil {
+		return nil, err
 	}
 
 	return repositoryCommits, nil
@@ -230,76 +187,50 @@ func (g *GitHub) prForCommit(ctx context.Context, commit git.Commit) (*git.PullR
 	// Using the "List pull requests" endpoint might be faster, as it allows us to fetch 100 arbitrary PRs per request,
 	// but worst case we need to look up all PRs made in the repository ever.
 
-	log := g.log.With("commit.hash", commit.Hash)
-	page := 1
-	var associatedPRs []*github.PullRequest
+	g.log.Debug("fetching pull requests associated with commit", "commit.hash", commit.Hash)
 
-	for {
-		log.Debug("fetching pull requests associated with commit", "page", page)
-		prs, resp, err := g.client.PullRequests.ListPullRequestsWithCommit(
-			ctx, g.options.Owner, g.options.Repo,
-			commit.Hash, &github.ListOptions{
-				Page:    page,
-				PerPage: PerPageMax,
-			})
-		if err != nil {
-			return nil, err
-		}
-
-		associatedPRs = append(associatedPRs, prs...)
-
-		if page == resp.LastPage || resp.LastPage == 0 {
-			break
-		}
-		page = resp.NextPage
+	associatedPRs, err := all(
+		func(listOptions github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
+			return g.client.PullRequests.ListPullRequestsWithCommit(
+				ctx, g.options.Owner, g.options.Repo,
+				commit.Hash, &listOptions)
+		})
+	if err != nil {
+		return nil, err
 	}
 
-	var pullrequest *github.PullRequest
+	var pullRequest *github.PullRequest
 	for _, pr := range associatedPRs {
 		// We only look for the PR that has this commit set as the "merge commit" => The result of squashing this branch onto main
 		if pr.GetMergeCommitSHA() == commit.Hash {
-			pullrequest = pr
+			pullRequest = pr
 			break
 		}
 	}
-	if pullrequest == nil {
+	if pullRequest == nil {
 		return nil, nil
 	}
 
-	return gitHubPRToPullRequest(pullrequest), nil
+	return gitHubPRToPullRequest(pullRequest), nil
 }
 
 func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []releasepr.Label) error {
-	existingLabels := make([]string, 0, len(labels))
-
-	page := 1
-
-	for {
-		g.log.Debug("fetching labels on repo", "page", page)
-		ghLabels, resp, err := g.client.Issues.ListLabels(
+	g.log.Debug("fetching labels on repo")
+	ghLabels, err := all(func(listOptions github.ListOptions) ([]*github.Label, *github.Response, error) {
+		return g.client.Issues.ListLabels(
 			ctx, g.options.Owner, g.options.Repo,
-			&github.ListOptions{
-				Page:    page,
-				PerPage: PerPageMax,
-			})
-		if err != nil {
-			return err
-		}
-
-		for _, label := range ghLabels {
-			existingLabels = append(existingLabels, label.GetName())
-		}
-
-		if page == resp.LastPage || resp.LastPage == 0 {
-			break
-		}
-		page = resp.NextPage
+			&listOptions)
+	})
+	if err != nil {
+		return err
 	}
 
 	for _, label := range labels {
-		if !slices.Contains(existingLabels, label.Name) {
+		if !slices.ContainsFunc(ghLabels, func(ghLabel *github.Label) bool {
+			return ghLabel.GetName() == label.Name
+		}) {
 			g.log.Info("creating label in repository", "label.name", label.Name)
-			_, _, err := g.client.Issues.CreateLabel(
+			_, _, err = g.client.Issues.CreateLabel(
 				ctx, g.options.Owner, g.options.Repo,
 				&github.Label{
 					Name:        pointer.Pointer(label.Name),
@@ -317,33 +248,25 @@ func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []releasepr.Label
 }
 
 func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*releasepr.ReleasePullRequest, error) {
-	page := 1
 
-	for {
-		prs, resp, err := g.client.PullRequests.ListPullRequestsWithCommit(ctx, g.options.Owner, g.options.Repo, branch, &github.ListOptions{
-			Page:    page,
-			PerPage: PerPageMax,
+	prs, err := all(
+		func(listOptions github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
+			return g.client.PullRequests.ListPullRequestsWithCommit(ctx, g.options.Owner, g.options.Repo, branch, &listOptions)
 		})
-		if err != nil {
-			var ghErr *github.ErrorResponse
-			if errors.As(err, &ghErr) {
-				if ghErr.Message == fmt.Sprintf("No commit found for SHA: %s", branch) {
-					return nil, nil
-				}
-			}
-			return nil, err
-		}
-
-		for _, pr := range prs {
-			if pr.GetBase().GetRef() == g.options.BaseBranch && pr.GetHead().GetRef() == branch && pr.GetState() == PRStateOpen {
-				return gitHubPRToReleasePullRequest(pr), nil
+	if err != nil {
+		var ghErr *github.ErrorResponse
+		if errors.As(err, &ghErr) {
+			if ghErr.Message == fmt.Sprintf("No commit found for SHA: %s", branch) {
+				return nil, nil
 			}
 		}
+		return nil, err
+	}
 
-		if page == resp.LastPage || resp.LastPage == 0 {
-			break
+	for _, pr := range prs {
+		if pr.GetBase().GetRef() == g.options.BaseBranch && pr.GetHead().GetRef() == branch && pr.GetState() == PRStateOpen {
+			return gitHubPRToReleasePullRequest(pr), nil
 		}
-		page = resp.NextPage
 	}
 
 	return nil, nil
@@ -431,52 +354,36 @@ func (g *GitHub) ClosePullRequest(ctx context.Context, pr *releasepr.ReleasePull
 }
 
 func (g *GitHub) PendingReleases(ctx context.Context, pendingLabel releasepr.Label) ([]*releasepr.ReleasePullRequest, error) {
-	page := 1
-
-	var prs []*releasepr.ReleasePullRequest
-
-	for {
-		ghPRs, resp, err := g.client.PullRequests.List(
+	ghPRs, err := all(func(listOptions github.ListOptions) ([]*github.PullRequest, *github.Response, error) {
+		return g.client.PullRequests.List(
 			ctx, g.options.Owner, g.options.Repo,
 			&github.PullRequestListOptions{
-				State: PRStateClosed,
-				Base:  g.options.BaseBranch,
-				ListOptions: github.ListOptions{
-					Page:    page,
-					PerPage: PerPageMax,
-				},
+				State:       PRStateClosed,
+				Base:        g.options.BaseBranch,
+				ListOptions: listOptions,
 			})
-		if err != nil {
-			return nil, err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	prs := make([]*releasepr.ReleasePullRequest, 0, len(ghPRs))
+
+	for _, pr := range ghPRs {
+		pending := slices.ContainsFunc(pr.Labels, func(l *github.Label) bool {
+			return l.GetName() == pendingLabel.Name
+		})
+		if !pending {
+			continue
 		}
 
-		if prs == nil && resp.LastPage > 0 {
-			// Pre-initialize slice on first request
-			g.log.Debug("found pending releases", "pages", resp.LastPage)
-			prs = make([]*releasepr.ReleasePullRequest, 0, (resp.LastPage-1)*PerPageMax)
+		// pr.Merged is always nil :(
+		if pr.MergedAt == nil {
+			// Closed and not merged
+			continue
 		}
 
-		for _, pr := range ghPRs {
-			pending := slices.ContainsFunc(pr.Labels, func(l *github.Label) bool {
-				return l.GetName() == pendingLabel.Name
-			})
-			if !pending {
-				continue
-			}
-
-			// pr.Merged is always nil :(
-			if pr.MergedAt == nil {
-				// Closed and not merged
-				continue
-			}
-
-			prs = append(prs, gitHubPRToReleasePullRequest(pr))
-		}
-
-		if page == resp.LastPage || resp.LastPage == 0 {
-			break
-		}
-		page = resp.NextPage
+		prs = append(prs, gitHubPRToReleasePullRequest(pr))
 	}
 
 	return prs, nil
@@ -505,6 +412,25 @@ func (g *GitHub) CreateRelease(ctx context.Context, commit git.Commit, title, ch
 	}
 
 	return nil
+}
+
+func all[T any](f func(listOptions github.ListOptions) ([]T, *github.Response, error)) ([]T, error) {
+	results := make([]T, 0)
+	page := 1
+
+	for {
+		pageResults, resp, err := f(github.ListOptions{Page: page, PerPage: PerPageMax})
+		if err != nil {
+			return nil, err
+		}
+
+		results = append(results, pageResults...)
+
+		if page == resp.LastPage || resp.LastPage == 0 {
+			return results, nil
+		}
+		page = resp.NextPage
+	}
 }
 
 func gitHubPRToPullRequest(pr *github.PullRequest) *git.PullRequest {
