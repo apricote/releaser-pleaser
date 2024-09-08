@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -25,6 +26,7 @@ const (
 	PRStateMerged     = "merged"
 	PRStateEventClose = "close"
 	EnvAPIToken       = "GITLAB_TOKEN" // nolint:gosec // Not actually a hardcoded credential
+	EnvProjectID      = "CI_PROJECT_ID"
 )
 
 type GitLab struct {
@@ -390,14 +392,17 @@ func gitlabMRToReleasePullRequest(pr *gitlab.MergeRequest) *releasepr.ReleasePul
 	}
 }
 
-func (g *Options) autodiscover() {
+func (g *Options) autodiscover(log *slog.Logger) {
 	// Read settings from GitLab-CI env vars
 	if apiToken := os.Getenv(EnvAPIToken); apiToken != "" {
 		g.APIToken = apiToken
 	}
 
-	// TODO: Replace hardcode project-id with a better alternative
-	g.ProjectID = 60698565
+	if projectID := os.Getenv(EnvProjectID); projectID != "" {
+		var err error
+		g.ProjectID, err = strconv.ParseInt(projectID, 10, 64)
+		log.Error("failed to parse environment variable as integer", "env.name", EnvProjectID, "env.value", projectID, "err", err)
+	}
 }
 
 type Options struct {
@@ -405,14 +410,14 @@ type Options struct {
 
 	Path      string
 	Repo      string
-	ProjectID int
+	ProjectID int64
 
 	APIToken string
 }
 
 func New(log *slog.Logger, options *Options) (*GitLab, error) {
 	log = log.With("forge", "gitlab")
-	options.autodiscover()
+	options.autodiscover(log)
 
 	client, err := gitlab.NewClient(options.APIToken)
 	if err != nil {
