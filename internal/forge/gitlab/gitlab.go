@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -26,7 +25,7 @@ const (
 	PRStateMerged     = "merged"
 	PRStateEventClose = "close"
 	EnvAPIToken       = "GITLAB_TOKEN" // nolint:gosec // Not actually a hardcoded credential
-	EnvProjectID      = "CI_PROJECT_ID"
+	EnvProjectPath    = "CI_PROJECT_PATH"
 )
 
 type GitLab struct {
@@ -37,19 +36,19 @@ type GitLab struct {
 }
 
 func (g *GitLab) RepoURL() string {
-	return fmt.Sprintf("https://gitlab.com/%s", g.options.Repository)
+	return fmt.Sprintf("https://gitlab.com/%s", g.options.Path)
 }
 
 func (g *GitLab) CloneURL() string {
-	return fmt.Sprintf("https://gitlab.com/%s/%s.git", g.options.Path, g.options.Repo)
+	return fmt.Sprintf("https://gitlab.com/%s.git", g.options.Path)
 }
 
 func (g *GitLab) ReleaseURL(version string) string {
-	return fmt.Sprintf("https://gitlab.com/%s/%s/-/releases/%s", g.options.Path, g.options.Repo, version)
+	return fmt.Sprintf("https://gitlab.com/%s/-/releases/%s", g.options.Path, version)
 }
 
 func (g *GitLab) PullRequestURL(id int) string {
-	return fmt.Sprintf("https://gitlab.com/%s/%s/-/merge_requests/%d", g.options.Path, g.options.Repo, id)
+	return fmt.Sprintf("https://gitlab.com/%s/-/merge_requests/%d", g.options.Path, id)
 }
 
 func (g *GitLab) GitAuth() transport.AuthMethod {
@@ -64,7 +63,7 @@ func (g *GitLab) LatestTags(ctx context.Context) (git.Releases, error) {
 	g.log.DebugContext(ctx, "listing all tags in gitlab repository")
 
 	tags, err := all(func(listOptions gitlab.ListOptions) ([]*gitlab.Tag, *gitlab.Response, error) {
-		return g.client.Tags.ListTags(g.options.ProjectID, &gitlab.ListTagsOptions{
+		return g.client.Tags.ListTags(g.options.Path, &gitlab.ListTagsOptions{
 			OrderBy:     pointer.Pointer("updated"),
 			ListOptions: listOptions,
 		}, gitlab.WithContext(ctx))
@@ -122,7 +121,7 @@ func (g *GitLab) CommitsSince(ctx context.Context, tag *git.Tag) ([]git.Commit, 
 	log.Debug("listing commits", "ref.name", refName)
 
 	gitLabCommits, err := all(func(listOptions gitlab.ListOptions) ([]*gitlab.Commit, *gitlab.Response, error) {
-		return g.client.Commits.ListCommits(g.options.ProjectID, &gitlab.ListCommitsOptions{
+		return g.client.Commits.ListCommits(g.options.Path, &gitlab.ListCommitsOptions{
 			RefName:     &refName,
 			ListOptions: listOptions,
 		}, gitlab.WithContext(ctx))
@@ -158,7 +157,7 @@ func (g *GitLab) prForCommit(ctx context.Context, commit git.Commit) (*git.PullR
 
 	log.Debug("fetching pull requests associated with commit")
 	associatedMRs, _, err := g.client.Commits.ListMergeRequestsByCommit(
-		g.options.ProjectID, commit.Hash,
+		g.options.Path, commit.Hash,
 		gitlab.WithContext(ctx),
 	)
 	if err != nil {
@@ -184,7 +183,7 @@ func (g *GitLab) prForCommit(ctx context.Context, commit git.Commit) (*git.PullR
 func (g *GitLab) EnsureLabelsExist(ctx context.Context, labels []releasepr.Label) error {
 	g.log.Debug("fetching labels on repo")
 	glLabels, err := all(func(listOptions gitlab.ListOptions) ([]*gitlab.Label, *gitlab.Response, error) {
-		return g.client.Labels.ListLabels(g.options.ProjectID, &gitlab.ListLabelsOptions{
+		return g.client.Labels.ListLabels(g.options.Path, &gitlab.ListLabelsOptions{
 			ListOptions: listOptions,
 		}, gitlab.WithContext(ctx))
 	})
@@ -197,7 +196,7 @@ func (g *GitLab) EnsureLabelsExist(ctx context.Context, labels []releasepr.Label
 			return glLabel.Name == label.Name
 		}) {
 			g.log.Info("creating label in repository", "label.name", label)
-			_, _, err := g.client.Labels.CreateLabel(g.options.ProjectID, &gitlab.CreateLabelOptions{
+			_, _, err := g.client.Labels.CreateLabel(g.options.Path, &gitlab.CreateLabelOptions{
 				Name:        pointer.Pointer(label.Name),
 				Color:       pointer.Pointer("#" + label.Color),
 				Description: pointer.Pointer(label.Description),
@@ -215,7 +214,7 @@ func (g *GitLab) EnsureLabelsExist(ctx context.Context, labels []releasepr.Label
 func (g *GitLab) PullRequestForBranch(ctx context.Context, branch string) (*releasepr.ReleasePullRequest, error) {
 	// There should only be a single open merge request from branch into g.options.BaseBranch at any given moment.
 	// We can skip pagination and just return the first result.
-	mrs, _, err := g.client.MergeRequests.ListProjectMergeRequests(g.options.ProjectID, &gitlab.ListProjectMergeRequestsOptions{
+	mrs, _, err := g.client.MergeRequests.ListProjectMergeRequests(g.options.Path, &gitlab.ListProjectMergeRequestsOptions{
 		State:        pointer.Pointer(PRStateOpen),
 		SourceBranch: pointer.Pointer(branch),
 		TargetBranch: pointer.Pointer(g.options.BaseBranch),
@@ -241,7 +240,7 @@ func (g *GitLab) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePul
 		labels = append(labels, label.Name)
 	}
 
-	glMR, _, err := g.client.MergeRequests.CreateMergeRequest(g.options.ProjectID, &gitlab.CreateMergeRequestOptions{
+	glMR, _, err := g.client.MergeRequests.CreateMergeRequest(g.options.Path, &gitlab.CreateMergeRequestOptions{
 		Title:        &pr.Title,
 		Description:  &pr.Description,
 		SourceBranch: &pr.Head,
@@ -258,7 +257,7 @@ func (g *GitLab) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePul
 }
 
 func (g *GitLab) UpdatePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
-	_, _, err := g.client.MergeRequests.UpdateMergeRequest(g.options.ProjectID, pr.ID, &gitlab.UpdateMergeRequestOptions{
+	_, _, err := g.client.MergeRequests.UpdateMergeRequest(g.options.Path, pr.ID, &gitlab.UpdateMergeRequestOptions{
 		Title:       &pr.Title,
 		Description: &pr.Description,
 	}, gitlab.WithContext(ctx))
@@ -281,7 +280,7 @@ func (g *GitLab) SetPullRequestLabels(ctx context.Context, pr *releasepr.Release
 		addLabels = append(addLabels, label.Name)
 	}
 
-	_, _, err := g.client.MergeRequests.UpdateMergeRequest(g.options.ProjectID, pr.ID, &gitlab.UpdateMergeRequestOptions{
+	_, _, err := g.client.MergeRequests.UpdateMergeRequest(g.options.Path, pr.ID, &gitlab.UpdateMergeRequestOptions{
 		RemoveLabels: &removeLabels,
 		AddLabels:    &addLabels,
 	}, gitlab.WithContext(ctx))
@@ -294,7 +293,7 @@ func (g *GitLab) SetPullRequestLabels(ctx context.Context, pr *releasepr.Release
 }
 
 func (g *GitLab) ClosePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
-	_, _, err := g.client.MergeRequests.UpdateMergeRequest(g.options.ProjectID, pr.ID, &gitlab.UpdateMergeRequestOptions{
+	_, _, err := g.client.MergeRequests.UpdateMergeRequest(g.options.Path, pr.ID, &gitlab.UpdateMergeRequestOptions{
 		StateEvent: pointer.Pointer(PRStateEventClose),
 	}, gitlab.WithContext(ctx))
 
@@ -328,7 +327,7 @@ func (g *GitLab) PendingReleases(ctx context.Context, pendingLabel releasepr.Lab
 }
 
 func (g *GitLab) CreateRelease(ctx context.Context, commit git.Commit, title, changelog string, _, _ bool) error {
-	_, _, err := g.client.Releases.CreateRelease(g.options.ProjectID, &gitlab.CreateReleaseOptions{
+	_, _, err := g.client.Releases.CreateRelease(g.options.Path, &gitlab.CreateReleaseOptions{
 		Name:        &title,
 		TagName:     &title,
 		Description: &changelog,
@@ -392,32 +391,28 @@ func gitlabMRToReleasePullRequest(pr *gitlab.MergeRequest) *releasepr.ReleasePul
 	}
 }
 
-func (g *Options) autodiscover(log *slog.Logger) {
+func (g *Options) autodiscover() {
 	// Read settings from GitLab-CI env vars
 	if apiToken := os.Getenv(EnvAPIToken); apiToken != "" {
 		g.APIToken = apiToken
 	}
 
-	if projectID := os.Getenv(EnvProjectID); projectID != "" {
-		var err error
-		g.ProjectID, err = strconv.ParseInt(projectID, 10, 64)
-		log.Error("failed to parse environment variable as integer", "env.name", EnvProjectID, "env.value", projectID, "err", err)
+	if projectPath := os.Getenv(EnvProjectPath); projectPath != "" {
+		g.Path = projectPath
 	}
 }
 
 type Options struct {
 	forge.Options
 
-	Path      string
-	Repo      string
-	ProjectID int64
+	Path string
 
 	APIToken string
 }
 
 func New(log *slog.Logger, options *Options) (*GitLab, error) {
 	log = log.With("forge", "gitlab")
-	options.autodiscover(log)
+	options.autodiscover()
 
 	client, err := gitlab.NewClient(options.APIToken)
 	if err != nil {
