@@ -3,6 +3,7 @@ package conventionalcommits
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/leodido/go-conventionalcommits"
 	"github.com/leodido/go-conventionalcommits/parser"
@@ -32,7 +33,7 @@ func (c *Parser) Analyze(commits []git.Commit) ([]commitparser.AnalyzedCommit, e
 	analyzedCommits := make([]commitparser.AnalyzedCommit, 0, len(commits))
 
 	for _, commit := range commits {
-		msg, err := c.machine.Parse([]byte(commit.Message))
+		msg, err := c.machine.Parse([]byte(strings.TrimSpace(commit.Message)))
 		if err != nil {
 			c.logger.Warn("failed to parse message of commit, skipping", "commit.hash", commit.Hash, "err", err)
 			continue
