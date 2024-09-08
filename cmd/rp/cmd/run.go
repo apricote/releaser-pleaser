@@ -62,8 +62,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		logger.DebugContext(ctx, "using forge GitLab")
 		f, err = gitlab.New(logger, &gitlab.Options{
 			Options: forgeOptions,
-			Path:    flagOwner,
-			Repo:    flagRepo,
+			Path:    fmt.Sprintf("%s/%s", flagOwner, flagRepo),
 		})
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to create client", "err", err)
