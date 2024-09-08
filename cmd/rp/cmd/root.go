@@ -11,7 +11,7 @@ import (
 var logger *slog.Logger
 
 var rootCmd = &cobra.Command{
-	Use:     "releaser-pleaser",
+	Use:     "rp",
 	Short:   "",
 	Long:    ``,
 	Version: version(),
