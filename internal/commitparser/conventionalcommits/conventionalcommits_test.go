@@ -34,6 +34,19 @@ func TestAnalyzeCommits(t *testing.T) {
 			wantErr:         assert.NoError,
 		},
 		{
+			// GitLab seems to create commits with pattern "scope: message\n" if no body is added.
+			// This has previously caused a parser error "missing a blank line".
+			// We added a workaround with `strings.TrimSpace()` and this test make sure that it does not break again.
+			name: "handles title with new line",
+			commits: []git.Commit{
+				{
+					Message: "aksdjaklsdjka",
+				},
+			},
+			expectedCommits: []commitparser.AnalyzedCommit{},
+			wantErr:         assert.NoError,
+		},
+		{
 			name: "drops unreleasable",
 			commits: []git.Commit{
 				{
