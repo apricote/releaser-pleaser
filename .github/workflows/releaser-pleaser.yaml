@@ -43,3 +43,4 @@ jobs:
           token: ${{ secrets.RELEASER_PLEASER_TOKEN }}
           extra-files: |
             action.yml
+            templates/run.yml
