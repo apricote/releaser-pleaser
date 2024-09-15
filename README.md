@@ -1,7 +1,14 @@
 # releaser-pleaser
 
-`releaser-pleaser` is a tool designed to automate versioning and changelog management for your projects. Building on the concepts of [
-`release-please`](https://github.com/googleapis/release-please), it streamlines the release process through GitHub Actions or GitLab CI.
+<p align="center">
+  <code>releaser-pleaser</code> is a tool designed to automate versioning and changelog management for your projects. Building on the concepts of <a href="https://github.com/googleapis/release-please"><code>release-please</code></a>, it streamlines the release process through GitHub Actions or GitLab CI.
+</p>
+
+<p align="center">
+  <a href="https://apricote.github.io/releaser-pleaser" target="_blank"><img src="https://img.shields.io/badge/Documentation-brightgreen?style=flat-square" alt="Badge: Documentation"/></a>
+  <a href="https://github.com/apricote/releaser-pleaser/releases" target="_blank"><img src="https://img.shields.io/github/v/release/apricote/releaser-pleaser?sort=semver&display_name=release&style=flat-square&color=green" alt="Badge: Stable Release"/></a>
+  <img src="https://img.shields.io/badge/License-GPL--3.0-green?style=flat-square" alt="Badge: License GPL-3.0"/>
+</p>
 
 ## Features
 
@@ -14,10 +21,6 @@
 - **Prerelease Support**: Offers options to create alpha, beta, or release candidate versions.
 
 `releaser-pleaser` simplifies release management, allowing maintainers to focus on development while ensuring consistent and well-documented releases.
-
-## Status
-
-This project is still under active development. You can not reasonably use it right now and not all features advertised above work. Keep your eyes open for any releases.
 
 ## Relation to `release-please`
 
