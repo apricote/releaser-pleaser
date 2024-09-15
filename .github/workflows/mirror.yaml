@@ -5,7 +5,7 @@ on:
     tags: ["*"]
 
 jobs:
-  gitlab.com:
+  gitlab-com:
     runs-on: ubuntu-latest
     env:
       REMOTE: mirror
