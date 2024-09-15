@@ -1,0 +1,15 @@
+stages: [release]
+
+# For the GitLab CI/CD component to be usable, it needs to be published in
+# the CI/CD catalog. This happens on new releases.
+# As the primary tagging happens on GitHub, we only react to pushed tags
+# and create a corresponding GitLab Release.
+create-release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script: echo "Creating release $CI_COMMIT_TAG"
+  rules:
+    - if: $CI_COMMIT_TAG
+  release:
+    tag_name: "$CI_COMMIT_TAG"
+    description: "$CI_COMMIT_TAG_MESSAGE"
