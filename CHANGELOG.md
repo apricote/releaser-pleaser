@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.4.0-beta.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.4.0-beta.0)
+
+### Features
+
+- add support for GitLab repositories (#49)
+
+### Bug Fixes
+
+- **parser**: continue on unparsable commit message (#48)
+- **cli**: command name in help output (#52)
+- **parser**: invalid handling of empty lines (#53)
+
 ## [v0.3.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.3.0)
 
 ### :sparkles: Highlights
