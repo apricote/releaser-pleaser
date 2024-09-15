@@ -1,0 +1,28 @@
+name: mirror
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+
+jobs:
+  gitlab.com:
+    runs-on: ubuntu-latest
+    env:
+      REMOTE: mirror
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Need all to fetch all tags so we can push them
+          fetch-depth: 0
+
+      - name: Add Remote
+        env:
+          CLONE_URL: "https://releaser-pleaser:${{ secrets.GITLAB_COM_PUSH_TOKEN }}@gitlab.com/apricote/releaser-pleaser.git"
+        run: git remote add $REMOTE $CLONE_URL
+
+      - name: Push Branches
+        run: git push --force --all --verbose $REMOTE
+
+      - name: Push Tags
+        run: git push --force --tags --verbose $REMOTE
