@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.4.0-beta.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.4.0-beta.1)
+
+### Features
+
+- add shell to container image (#59)
+- **gitlab**: add CI/CD component (#55)
+
+### Bug Fixes
+
+- multiple extra-files are not evaluated properly (#61)
+
 ## [v0.4.0-beta.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.4.0-beta.0)
 
 ### Features
