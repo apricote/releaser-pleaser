@@ -1,3 +1,6 @@
 defaultPlatforms:
   - linux/arm64
   - linux/amd64
+
+# Need a shell for gitlab-ci
+defaultBaseImage: cgr.dev/chainguard/busybox
