@@ -16,6 +16,7 @@
 - [Customizing Release Notes](guides/release-notes.md)
 - [Pre-releases](guides/pre-releases.md)
 - [Workflow Permissions on GitHub](guides/github-workflow-permissions.md)
+- [Updating arbitrary files](guides/updating-arbitrary-files.md)
 
 # Reference
 
