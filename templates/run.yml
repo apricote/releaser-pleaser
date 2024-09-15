@@ -33,4 +33,4 @@ releaser-pleaser:
       rp run \
         --forge=gitlab \
         --branch=$[[ inputs.branch ]] \
-        --extra-files=$[[ inputs.extra-files ]]
+        --extra-files="$[[ inputs.extra-files ]]"

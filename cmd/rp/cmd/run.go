@@ -95,6 +95,12 @@ func run(cmd *cobra.Command, _ []string) error {
 }
 
 func parseExtraFiles(input string) []string {
+	// We quote the arg to avoid issues with the expected newlines in the value.
+	// Need to remove those quotes before parsing the data
+	input = strings.Trim(input, `"`)
+	// In some situations we get a "\n" sequence, where we actually expect new lines,
+	// replace the two characters with an actual new line
+	input = strings.ReplaceAll(input, `\n`, "\n")
 	lines := strings.Split(input, "\n")
 
 	extraFiles := make([]string, 0, len(lines))
