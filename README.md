@@ -1,6 +1,7 @@
 # releaser-pleaser
 
-`releaser-pleaser` is a tool designed to automate versioning and changelog management for your projects. Building on the concepts of [`release-please`](https://github.com/googleapis/release-please), it streamlines the release process through GitHub Actions or GitLab CI.
+`releaser-pleaser` is a tool designed to automate versioning and changelog management for your projects. Building on the concepts of [
+`release-please`](https://github.com/googleapis/release-please), it streamlines the release process through GitHub Actions or GitLab CI.
 
 ## Features
 
@@ -20,14 +21,18 @@ This project is still under active development. You can not reasonably use it ri
 
 ## Relation to `release-please`
 
-After using `release-please` for 1.5 years, I've found it to be the best tool for low-effort releases currently available. While I appreciate many of its features, I identified several additional capabilities that would significantly enhance my workflow. Although it might be possible to incorporate these features into `release-please`, I decided to channel my efforts into creating a new tool that specifically addresses my needs.
+After using
+`release-please` for 1.5 years, I've found it to be the best tool for low-effort releases currently available. While I appreciate many of its features, I identified several additional capabilities that would significantly enhance my workflow. Although it might be possible to incorporate these features into
+`release-please`, I decided to channel my efforts into creating a new tool that specifically addresses my needs.
 
 Key differences in `releaser-pleaser` include:
 
 - Support for multiple forges (both GitHub and GitLab)
 - Better support for pre-releases
 
-One notable limitation of `release-please` is its deep integration with the GitHub API, making the addition of support for other platforms (like GitLab) a substantial undertaking. `releaser-pleaser` aims to overcome this limitation by design, offering a more versatile solution for automated release management across different platforms and project requirements.
+One notable limitation of
+`release-please` is its deep integration with the GitHub API, making the addition of support for other platforms (like GitLab) a substantial undertaking.
+`releaser-pleaser` aims to overcome this limitation by design, offering a more versatile solution for automated release management across different platforms and project requirements.
 
 ## License
 
