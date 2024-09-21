@@ -43,6 +43,7 @@ You can now edit the message for a pull request after merging by adding a \```rp
 - **cli**: show release PR url in log messages (#44)
 
 ## [v0.2.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.2.0)
+
 ### Features
 
 - update version references in any files (#14)
@@ -55,6 +56,7 @@ You can now edit the message for a pull request after merging by adding a \```rp
 - **action**: invalid quoting for extra-files arg (#25)
 
 ## [v0.2.0-beta.2](https://github.com/apricote/releaser-pleaser/releases/tag/v0.2.0-beta.2)
+
 ### Features
 
 - update version references in any files (#14)
@@ -65,6 +67,7 @@ You can now edit the message for a pull request after merging by adding a \```rp
 - **ci**: ko pipeline permissions (#23)
 
 ## [v0.2.0-beta.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.2.0-beta.1)
+
 ### Features
 
 - update version references in any files (#14)
@@ -74,13 +77,14 @@ You can now edit the message for a pull request after merging by adding a \```rp
 - **ci**: building release image fails (#21)
 
 ## [v0.2.0-beta.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.2.0-beta.0)
+
 ### Features
 
 - update version references in any files (#14)
 
 ## [v0.1.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.1.0)
-### This is the first release ever, so it also includes a lot of other functionality.
 
+### This is the first release ever, so it also includes a lot of other functionality.
 
 ### Features
 

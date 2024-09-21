@@ -1,0 +1,80 @@
+{
+  "extends": [
+    ":semanticCommits",
+    ":semanticCommitTypeAll(deps)",
+    ":semanticCommitScopeDisabled",
+
+    ":dependencyDashboard",
+    ":approveMajorUpdates",
+
+    ":automergeMinor",
+    ":automergeLinters",
+    ":automergeTesters",
+    ":automergeTypes",
+
+    ":maintainLockFilesWeekly",
+    ":enableVulnerabilityAlerts",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "packageRules": [
+    {
+      "groupName": "linters",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "matchDepNames": [
+        "golangci/golangci-lint"
+      ],
+      "automerge": true
+    },
+    {
+      "groupName": "testing",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "matchDepNames": [
+        "github.com/stretchr/testify"
+      ],
+      "automerge": true
+    },
+    {
+      "groupName": "github-actions",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "matchDepTypes": [
+        "action"
+      ],
+      "automerge": true
+    },
+    {
+      "groupName": "gitlab-ci",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "matchPackageNames": [
+        "registry.gitlab.com/gitlab-org/release-cli"
+      ],
+      "automerge": true
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        ".+\\.ya?ml$"
+      ],
+      "matchStrings": [
+        ": (?<currentValue>.+) # renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?: lookupName=(?<lookupName>[^\\s]+))?(?: versioning=(?<versioning>[a-z-]+))?(?: extractVersion=(?<extractVersion>[^\\s]+))?"
+      ]
+    }
+  ],
+  "postUpdateOptions": [
+    "gomodUpdateImportPaths",
+    "gomodTidy"
+  ]
+}
