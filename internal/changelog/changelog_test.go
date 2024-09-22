@@ -168,7 +168,8 @@ This version is compatible with flux-compensator v2.2 - v2.9.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewChangelogEntry(slog.Default(), tt.args.analyzedCommits, tt.args.version, tt.args.link, tt.args.prefix, tt.args.suffix)
+			data := New(commitparser.ByType(tt.args.analyzedCommits), tt.args.version, tt.args.link, tt.args.prefix, tt.args.suffix)
+			got, err := Entry(slog.Default(), DefaultTemplate(), data, Formatting{})
 			if !tt.wantErr(t, err) {
 				return
 			}

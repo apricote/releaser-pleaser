@@ -26,27 +26,37 @@ func init() {
 	}
 }
 
-func NewChangelogEntry(logger *slog.Logger, commits []commitparser.AnalyzedCommit, version, link, prefix, suffix string) (string, error) {
-	features := make([]commitparser.AnalyzedCommit, 0)
-	fixes := make([]commitparser.AnalyzedCommit, 0)
+func DefaultTemplate() *template.Template {
+	return changelogTemplate
+}
 
-	for _, commit := range commits {
-		switch commit.Type {
-		case "feat":
-			features = append(features, commit)
-		case "fix":
-			fixes = append(fixes, commit)
-		}
+type Data struct {
+	Commits     map[string][]commitparser.AnalyzedCommit
+	Version     string
+	VersionLink string
+	Prefix      string
+	Suffix      string
+}
+
+func New(commits map[string][]commitparser.AnalyzedCommit, version, versionLink, prefix, suffix string) Data {
+	return Data{
+		Commits:     commits,
+		Version:     version,
+		VersionLink: versionLink,
+		Prefix:      prefix,
+		Suffix:      suffix,
 	}
+}
 
+type Formatting struct {
+	HideVersionTitle bool
+}
+
+func Entry(logger *slog.Logger, tpl *template.Template, data Data, formatting Formatting) (string, error) {
 	var changelog bytes.Buffer
-	err := changelogTemplate.Execute(&changelog, map[string]any{
-		"Features":    features,
-		"Fixes":       fixes,
-		"Version":     version,
-		"VersionLink": link,
-		"Prefix":      prefix,
-		"Suffix":      suffix,
+	err := tpl.Execute(&changelog, map[string]any{
+		"Data":       data,
+		"Formatting": formatting,
 	})
 	if err != nil {
 		return "", err
