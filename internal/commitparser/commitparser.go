@@ -15,3 +15,18 @@ type AnalyzedCommit struct {
 	Scope          *string
 	BreakingChange bool
 }
+
+// ByType groups the Commits by the type field. Used by the Changelog.
+func ByType(in []AnalyzedCommit) map[string][]AnalyzedCommit {
+	out := map[string][]AnalyzedCommit{}
+
+	for _, commit := range in {
+		if out[commit.Type] == nil {
+			out[commit.Type] = make([]AnalyzedCommit, 0, 1)
+		}
+
+		out[commit.Type] = append(out[commit.Type], commit)
+	}
+
+	return out
+}

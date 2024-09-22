@@ -1,22 +1,24 @@
-## [{{.Version}}]({{.VersionLink}})
-{{- if .Prefix }}
-{{ .Prefix }}
+{{define "entry" -}}
+- {{ if .Scope }}**{{.Scope}}**: {{end}}{{.Description}}
+{{ end }}
+
+{{- if not .Formatting.HideVersionTitle }}
+## [{{.Data.Version}}]({{.Data.VersionLink}})
 {{ end -}}
-{{- if (gt (len .Features) 0) }}
+{{- if .Data.Prefix }}
+{{ .Data.Prefix }}
+{{ end -}}
+{{- with .Data.Commits.feat }}
 ### Features
 
-{{ range .Features -}}
-- {{ if .Scope }}**{{.Scope}}**: {{end}}{{.Description}}
-{{ end -}}
+{{ range . -}}{{template "entry" .}}{{end}}
 {{- end -}}
-{{- if (gt (len .Fixes) 0) }}
+{{- with .Data.Commits.fix }}
 ### Bug Fixes
 
-{{ range .Fixes -}}
-- {{ if .Scope }}**{{.Scope}}**: {{end}}{{.Description}}
-{{ end -}}
+{{ range . -}}{{template "entry" .}}{{end}}
 {{- end -}}
 
-{{- if .Suffix }}
-{{ .Suffix }}
+{{- if .Data.Suffix }}
+{{ .Data.Suffix }}
 {{ end }}

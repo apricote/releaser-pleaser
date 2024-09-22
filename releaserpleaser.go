@@ -243,7 +243,9 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return err
 	}
 
-	changelogEntry, err := changelog.NewChangelogEntry(logger, analyzedCommits, nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
+	changelogData := changelog.New(commitparser.ByType(analyzedCommits), nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
+
+	changelogEntry, err := changelog.Entry(logger, changelog.DefaultTemplate(), changelogData, changelog.Formatting{})
 	if err != nil {
 		return fmt.Errorf("failed to build changelog entry: %w", err)
 	}
@@ -289,9 +291,16 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		logger.InfoContext(ctx, "file content is already up-to-date in remote branch, skipping push")
 	}
 
+	// We do not need the version title here. In the pull request the version is available from the title, and in the
+	// release on the Forge its usually in a heading somewhere above the text.
+	changelogEntryPullRequest, err := changelog.Entry(logger, changelog.DefaultTemplate(), changelogData, changelog.Formatting{HideVersionTitle: true})
+	if err != nil {
+		return fmt.Errorf("failed to build pull request changelog entry: %w", err)
+	}
+
 	// Open/Update PR
 	if pr == nil {
-		pr, err = releasepr.NewReleasePullRequest(rpBranch, rp.targetBranch, nextVersion, changelogEntry)
+		pr, err = releasepr.NewReleasePullRequest(rpBranch, rp.targetBranch, nextVersion, changelogEntryPullRequest)
 		if err != nil {
 			return err
 		}
@@ -308,7 +317,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		err = pr.SetDescription(changelogEntry, overrides)
+		err = pr.SetDescription(changelogEntryPullRequest, overrides)
 		if err != nil {
 			return err
 		}
