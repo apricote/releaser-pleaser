@@ -73,6 +73,12 @@ include:
 
 > You can set the `stage` input if you want to run `releaser-pleaser` during a different stage.
 
+<div class="warning">
+
+If you want to use `releaser-pleaser` on a self-managed GitLab instance, you need to mirror the GitLab.com component to your instance. See the official [GitLab documentation for details](https://docs.gitlab.com/ee/ci/components/#use-a-gitlabcom-component-in-a-self-managed-instance). 
+
+</div>
+
 ## 4. Release Merge Request
 
 Once the `releaser-pleaser` job runs for the first time, you can check the logs to see what it did.
