@@ -1,6 +1,6 @@
-# GitHub
+# Getting started on GitHub
 
-In this tutorial we show how to install `releaser-pleaser` in your GitHub project.
+In this tutorial you will learn how to set up `releaser-pleaser` in your GitHub project with GitHub Actions.
 
 ## 1. Repository Settings
 
@@ -52,7 +52,7 @@ jobs:
       pull-requests: write
     steps:
       - name: releaser-pleaser
-        uses: apricote/releaser-pleaser@v0.2.0
+        uses: apricote/releaser-pleaser@v0.4.0
 ```
 
 ## 3. Release Pull Request
