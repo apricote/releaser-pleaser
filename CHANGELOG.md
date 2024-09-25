@@ -1,5 +1,28 @@
 # Changelog
 
+## [v0.4.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.4.0)
+
+### ✨ Highlights
+
+#### GitLab Support
+
+You can now use `releaser-pleaser` with projects hosted on GitLab.com and self-managed GitLab installations. Check out the new [tutorial](https://apricote.github.io/releaser-pleaser/tutorials/gitlab.html) to get started.
+
+### Features
+
+- add support for GitLab repositories (#49)
+- add shell to container image (#59)
+- **gitlab**: add CI/CD component (#55)
+- **changelog**: omit version heading in forge release notes
+- **gitlab**: support self-managed instances (#75)
+
+### Bug Fixes
+
+- **parser**: continue on unparsable commit message (#48)
+- **cli**: command name in help output (#52)
+- **parser**: invalid handling of empty lines (#53)
+- multiple extra-files are not evaluated properly (#61)
+
 ## [v0.4.0-beta.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.4.0-beta.1)
 
 ### Features
