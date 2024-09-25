@@ -24,8 +24,14 @@ const (
 	PRStateOpen       = "opened"
 	PRStateMerged     = "merged"
 	PRStateEventClose = "close"
-	EnvAPIToken       = "GITLAB_TOKEN" // nolint:gosec // Not actually a hardcoded credential
-	EnvProjectPath    = "CI_PROJECT_PATH"
+
+	EnvAPIToken = "GITLAB_TOKEN" // nolint:gosec // Not actually a hardcoded credential
+
+	// The following vars are from https://docs.gitlab.com/ee/ci/variables/predefined_variables.html
+
+	EnvAPIURL      = "CI_API_V4_URL"
+	EnvProjectURL  = "CI_PROJECT_URL"
+	EnvProjectPath = "CI_PROJECT_PATH"
 )
 
 type GitLab struct {
@@ -36,19 +42,23 @@ type GitLab struct {
 }
 
 func (g *GitLab) RepoURL() string {
+	if g.options.ProjectURL != "" {
+		return g.options.ProjectURL
+	}
+
 	return fmt.Sprintf("https://gitlab.com/%s", g.options.Path)
 }
 
 func (g *GitLab) CloneURL() string {
-	return fmt.Sprintf("https://gitlab.com/%s.git", g.options.Path)
+	return fmt.Sprintf("%s.git", g.RepoURL())
 }
 
 func (g *GitLab) ReleaseURL(version string) string {
-	return fmt.Sprintf("https://gitlab.com/%s/-/releases/%s", g.options.Path, version)
+	return fmt.Sprintf("%s/-/releases/%s", g.RepoURL(), version)
 }
 
 func (g *GitLab) PullRequestURL(id int) string {
-	return fmt.Sprintf("https://gitlab.com/%s/-/merge_requests/%d", g.options.Path, id)
+	return fmt.Sprintf("%s/-/merge_requests/%d", g.RepoURL(), id)
 }
 
 func (g *GitLab) GitAuth() transport.AuthMethod {
@@ -393,20 +403,41 @@ func gitlabMRToReleasePullRequest(pr *gitlab.MergeRequest) *releasepr.ReleasePul
 
 func (g *Options) autodiscover() {
 	// Read settings from GitLab-CI env vars
+	if apiURL := os.Getenv(EnvAPIURL); apiURL != "" {
+		g.APIURL = apiURL
+	}
+
 	if apiToken := os.Getenv(EnvAPIToken); apiToken != "" {
 		g.APIToken = apiToken
+	}
+
+	if projectURL := os.Getenv(EnvProjectURL); projectURL != "" {
+		g.ProjectURL = projectURL
 	}
 
 	if projectPath := os.Getenv(EnvProjectPath); projectPath != "" {
 		g.Path = projectPath
 	}
+
+}
+
+func (g *Options) ClientOptions() []gitlab.ClientOptionFunc {
+	options := []gitlab.ClientOptionFunc{}
+
+	if g.APIURL != "" {
+		options = append(options, gitlab.WithBaseURL(g.APIURL))
+	}
+
+	return options
 }
 
 type Options struct {
 	forge.Options
 
-	Path string
+	ProjectURL string
+	Path       string
 
+	APIURL   string
 	APIToken string
 }
 
@@ -414,7 +445,7 @@ func New(log *slog.Logger, options *Options) (*GitLab, error) {
 	log = log.With("forge", "gitlab")
 	options.autodiscover()
 
-	client, err := gitlab.NewClient(options.APIToken)
+	client, err := gitlab.NewClient(options.APIToken, options.ClientOptions()...)
 	if err != nil {
 		return nil, err
 	}
