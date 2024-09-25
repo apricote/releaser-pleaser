@@ -15,6 +15,8 @@ jobs:
         with:
           # Need all to fetch all tags so we can push them
           fetch-depth: 0
+          # Required so they can be pushed too
+          lfs: true
 
       - name: Add Remote
         env:
