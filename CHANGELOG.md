@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.4.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.4.1)
+
+### Bug Fixes
+
+- **gitlab**: release not created when release pr was squashed (#86)
+
 ## [v0.4.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.4.0)
 
 ### ✨ Highlights

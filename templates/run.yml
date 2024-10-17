@@ -24,7 +24,7 @@ releaser-pleaser:
     # There is no way to run a pipeline when the MR description is updated :(
     - if: $CI_COMMIT_BRANCH == "$[[ inputs.branch ]]"
   image:
-    name: ghcr.io/apricote/releaser-pleaser:v0.4.0 # x-releaser-pleaser-version
+    name: ghcr.io/apricote/releaser-pleaser:v0.4.1 # x-releaser-pleaser-version
     entrypoint: [""]
   variables:
     GITLAB_TOKEN: $[[ inputs.token ]]
