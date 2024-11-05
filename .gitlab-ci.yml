@@ -6,6 +6,7 @@ stages: [ release ]
 # and create a corresponding GitLab Release.
 create-release:
   stage: release
+  needs: []
   image: registry.gitlab.com/gitlab-org/release-cli:v0.19.0
   script: echo "Creating release $CI_COMMIT_TAG"
   rules:

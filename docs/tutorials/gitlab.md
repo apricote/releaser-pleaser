@@ -63,19 +63,29 @@ In the section "Variables" click on the "Add variable" button to open the form f
 Create or open your `.gitlab-ci.yml` and add the following include to your configuration:
 
 ```yaml
-stages: [build]
-
 include:
   - component: $CI_SERVER_FQDN/apricote/releaser-pleaser/run@v0.4.0-beta.1
     inputs:
       token: $RELEASER_PLEASER_TOKEN
 ```
 
-> You can set the `stage` input if you want to run `releaser-pleaser` during a different stage.
+> You can override the `releaser-pleaser` job if you want to tweak the job definition:
+>
+> ```yaml
+> stages: [release]
+>
+> include:
+>   - component: $CI_SERVER_FQDN/apricote/releaser-pleaser/run@v0.4.0-beta.1
+>     inputs:
+>       token: $RELEASER_PLEASER_TOKEN
+>
+> releaser-pleaser:
+>   stage: release
+> ```
 
 <div class="warning">
 
-If you want to use `releaser-pleaser` on a self-managed GitLab instance, you need to mirror the GitLab.com component to your instance. See the official [GitLab documentation for details](https://docs.gitlab.com/ee/ci/components/#use-a-gitlabcom-component-in-a-self-managed-instance). 
+If you want to use `releaser-pleaser` on a self-managed GitLab instance, you need to mirror the GitLab.com component to your instance. See the official [GitLab documentation for details](https://docs.gitlab.com/ee/ci/components/#use-a-gitlabcom-component-in-a-self-managed-instance).
 
 </div>
 
