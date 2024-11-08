@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.4.2](https://github.com/apricote/releaser-pleaser/releases/tag/v0.4.2)
+
+### Bug Fixes
+
+- **action**: container image reference used wrong syntax (#96)
+
 ## [v0.4.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.4.1)
 
 ### Bug Fixes
