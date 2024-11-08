@@ -34,7 +34,7 @@ jobs:
       - run: ko build --bare --local --tags ci github.com/apricote/releaser-pleaser/cmd/rp
 
       - run: mkdir -p .github/actions/releaser-pleaser
-      - run: "sed -i 's|image: .*$|image: ghcr.io/apricote/releaser-pleaser:ci|g' action.yml"
+      - run: "sed -i 's|image: .*$|image: docker://ghcr.io/apricote/releaser-pleaser:ci|g' action.yml"
 
       # Dogfood the action to make sure it works for users.
       - name: releaser-pleaser
