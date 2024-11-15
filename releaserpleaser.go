@@ -253,14 +253,14 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	// Info for updaters
 	info := updater.ReleaseInfo{Version: nextVersion, ChangelogEntry: changelogEntry}
 
-	err = repo.UpdateFile(ctx, updater.ChangelogFile, updater.WithInfo(info, updater.Changelog))
+	err = repo.UpdateFile(ctx, updater.ChangelogFile, true, updater.WithInfo(info, updater.Changelog))
 	if err != nil {
 		return fmt.Errorf("failed to update changelog file: %w", err)
 	}
 
 	for _, path := range rp.extraFiles {
 		// TODO: Check for missing files
-		err = repo.UpdateFile(ctx, path, updater.WithInfo(info, rp.updaters...))
+		err = repo.UpdateFile(ctx, path, false, updater.WithInfo(info, rp.updaters...))
 		if err != nil {
 			return fmt.Errorf("failed to run file updater: %w", err)
 		}
