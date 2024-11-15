@@ -1,80 +1,77 @@
 {
-  "extends": [
-    ":semanticCommits",
-    ":semanticCommitTypeAll(deps)",
-    ":semanticCommitScopeDisabled",
-
-    ":dependencyDashboard",
-    ":approveMajorUpdates",
-
-    ":automergeMinor",
-    ":automergeLinters",
-    ":automergeTesters",
-    ":automergeTypes",
-
-    ":maintainLockFilesWeekly",
-    ":enableVulnerabilityAlerts",
-    "helpers:pinGitHubActionDigests"
+  extends: [
+    ':semanticCommits',
+    ':semanticCommitTypeAll(deps)',
+    ':semanticCommitScopeDisabled',
+    ':dependencyDashboard',
+    ':approveMajorUpdates',
+    ':automergeMinor',
+    ':automergeLinters',
+    ':automergeTesters',
+    ':automergeTypes',
+    ':maintainLockFilesWeekly',
+    ':enableVulnerabilityAlerts',
+    'helpers:pinGitHubActionDigests',
   ],
-  "packageRules": [
+  packageRules: [
     {
-      "groupName": "linters",
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
+      groupName: 'linters',
+      matchUpdateTypes: [
+        'minor',
+        'patch',
       ],
-      "matchDepNames": [
-        "golangci/golangci-lint"
+      matchDepNames: [
+        'golangci/golangci-lint',
       ],
-      "automerge": true
+      automerge: true,
     },
     {
-      "groupName": "testing",
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
+      groupName: 'testing',
+      matchUpdateTypes: [
+        'minor',
+        'patch',
       ],
-      "matchDepNames": [
-        "github.com/stretchr/testify"
+      matchDepNames: [
+        'github.com/stretchr/testify',
       ],
-      "automerge": true
+      automerge: true,
     },
     {
-      "groupName": "github-actions",
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
+      groupName: 'github-actions',
+      matchUpdateTypes: [
+        'minor',
+        'patch',
       ],
-      "matchDepTypes": [
-        "action"
+      matchDepTypes: [
+        'action',
       ],
-      "automerge": true
+      automerge: true,
     },
     {
-      "groupName": "gitlab-ci",
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
+      groupName: 'gitlab-ci',
+      matchUpdateTypes: [
+        'minor',
+        'patch',
       ],
-      "matchPackageNames": [
-        "registry.gitlab.com/gitlab-org/release-cli"
+      matchPackageNames: [
+        'registry.gitlab.com/gitlab-org/release-cli',
       ],
-      "automerge": true
-    }
+      automerge: true,
+    },
   ],
-  "customManagers": [
+  customManagers: [
     {
-      "customType": "regex",
-      "fileMatch": [
-        ".+\\.ya?ml$"
+      customType: 'regex',
+      fileMatch: [
+        '.+\\.ya?ml$',
       ],
-      "matchStrings": [
-        ": (?<currentValue>.+) # renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?: lookupName=(?<lookupName>[^\\s]+))?(?: versioning=(?<versioning>[a-z-]+))?(?: extractVersion=(?<extractVersion>[^\\s]+))?"
-      ]
-    }
+      matchStrings: [
+        ': (?<currentValue>.+) # renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?: lookupName=(?<packageName>[^\\s]+))?(?: versioning=(?<versioning>[a-z-]+))?(?: extractVersion=(?<extractVersion>[^\\s]+))?',
+      ],
+    },
   ],
-  "postUpdateOptions": [
-    "gomodUpdateImportPaths",
-    "gomodTidy"
-  ]
+  postUpdateOptions: [
+    'gomodUpdateImportPaths',
+    'gomodTidy',
+  ],
 }
