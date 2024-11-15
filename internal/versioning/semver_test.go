@@ -10,7 +10,7 @@ import (
 	"github.com/apricote/releaser-pleaser/internal/git"
 )
 
-func TestReleases_NextVersion(t *testing.T) {
+func TestSemVer_NextVersion(t *testing.T) {
 	type args struct {
 		releases        git.Releases
 		versionBump     VersionBump
@@ -326,7 +326,7 @@ func TestReleases_NextVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := SemVerNextVersion(tt.args.releases, tt.args.versionBump, tt.args.nextVersionType)
+			got, err := SemVer.NextVersion(tt.args.releases, tt.args.versionBump, tt.args.nextVersionType)
 			if !tt.wantErr(t, err, fmt.Sprintf("SemVerNextVersion(Releases(%v, %v), %v, %v)", tt.args.releases.Latest, tt.args.releases.Stable, tt.args.versionBump, tt.args.nextVersionType)) {
 				return
 			}
