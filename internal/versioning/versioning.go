@@ -8,6 +8,7 @@ import (
 
 type Strategy interface {
 	NextVersion(git.Releases, VersionBump, NextVersionType) (string, error)
+	IsPrerelease(version string) bool
 }
 
 type VersionBump conventionalcommits.VersionBump

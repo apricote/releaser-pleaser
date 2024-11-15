@@ -110,3 +110,16 @@ func parseSemverWithDefault(tag *git.Tag) (semver.Version, error) {
 
 	return parsedVersion, nil
 }
+
+func (s semVer) IsPrerelease(version string) bool {
+	semVersion, err := parseSemverWithDefault(&git.Tag{Hash: "", Name: version})
+	if err != nil {
+		return false
+	}
+
+	if len(semVersion.Pre) > 0 {
+		return true
+	}
+
+	return false
+}
