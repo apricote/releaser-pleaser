@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	remoteName = "origin"
+	remoteName         = "origin"
+	newFilePermissions = 0o644
 )
 
 type Commit struct {
@@ -97,13 +98,18 @@ func (r *Repository) Checkout(_ context.Context, branch string) error {
 	return nil
 }
 
-func (r *Repository) UpdateFile(_ context.Context, path string, updaters []updater.Updater) error {
+func (r *Repository) UpdateFile(_ context.Context, path string, create bool, updaters []updater.Updater) error {
 	worktree, err := r.r.Worktree()
 	if err != nil {
 		return err
 	}
 
-	file, err := worktree.Filesystem.OpenFile(path, os.O_RDWR, 0)
+	fileFlags := os.O_RDWR
+	if create {
+		fileFlags |= os.O_CREATE
+	}
+
+	file, err := worktree.Filesystem.OpenFile(path, fileFlags, newFilePermissions)
 	if err != nil {
 		return err
 	}
