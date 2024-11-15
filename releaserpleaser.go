@@ -122,10 +122,10 @@ func (rp *ReleaserPleaser) createPendingRelease(ctx context.Context, pr *release
 		return err
 	}
 
-	// TODO: pre-release & latest
+	// TODO: Check if version should be marked latest
 
 	logger.DebugContext(ctx, "Creating release on forge")
-	err = rp.forge.CreateRelease(ctx, *pr.ReleaseCommit, version, changelogText, false, true)
+	err = rp.forge.CreateRelease(ctx, *pr.ReleaseCommit, version, changelogText, rp.versioning.IsPrerelease(version), true)
 	if err != nil {
 		return fmt.Errorf("failed to create release on forge: %w", err)
 	}

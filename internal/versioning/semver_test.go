@@ -388,3 +388,37 @@ func TestVersionBumpFromCommits(t *testing.T) {
 		})
 	}
 }
+
+func TestSemVer_IsPrerelease(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		want    bool
+	}{
+		{
+			name:    "empty string",
+			version: "",
+			want:    false,
+		},
+		{
+			name:    "stable version",
+			version: "v1.0.0",
+			want:    false,
+		},
+		{
+			name:    "pre-release version",
+			version: "v1.0.0-rc.1+foo",
+			want:    true,
+		},
+		{
+			name:    "invalid version",
+			version: "ajfkdafjdsfj",
+			want:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, SemVer.IsPrerelease(tt.version), "IsSemverPrerelease(%v)", tt.version)
+		})
+	}
+}
