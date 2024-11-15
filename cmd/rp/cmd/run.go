@@ -86,7 +86,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		logger,
 		flagBranch,
 		conventionalcommits.NewParser(logger),
-		versioning.SemVerNextVersion,
+		versioning.SemVer,
 		extraFiles,
 		[]updater.NewUpdater{updater.Generic},
 	)

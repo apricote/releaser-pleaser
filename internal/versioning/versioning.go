@@ -6,7 +6,9 @@ import (
 	"github.com/apricote/releaser-pleaser/internal/git"
 )
 
-type Strategy = func(git.Releases, VersionBump, NextVersionType) (string, error)
+type Strategy interface {
+	NextVersion(git.Releases, VersionBump, NextVersionType) (string, error)
+}
 
 type VersionBump conventionalcommits.VersionBump
 

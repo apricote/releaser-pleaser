@@ -23,7 +23,7 @@ type ReleaserPleaser struct {
 	logger       *slog.Logger
 	targetBranch string
 	commitParser commitparser.CommitParser
-	nextVersion  versioning.Strategy
+	versioning   versioning.Strategy
 	extraFiles   []string
 	updaters     []updater.NewUpdater
 }
@@ -34,7 +34,7 @@ func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitPars
 		logger:       logger,
 		targetBranch: targetBranch,
 		commitParser: commitParser,
-		nextVersion:  versioningStrategy,
+		versioning:   versioningStrategy,
 		extraFiles:   extraFiles,
 		updaters:     updaters,
 	}
@@ -117,7 +117,7 @@ func (rp *ReleaserPleaser) createPendingRelease(ctx context.Context, pr *release
 		return err
 	}
 
-	changelog, err := pr.ChangelogText()
+	changelogText, err := pr.ChangelogText()
 	if err != nil {
 		return err
 	}
@@ -125,7 +125,7 @@ func (rp *ReleaserPleaser) createPendingRelease(ctx context.Context, pr *release
 	// TODO: pre-release & latest
 
 	logger.DebugContext(ctx, "Creating release on forge")
-	err = rp.forge.CreateRelease(ctx, *pr.ReleaseCommit, version, changelog, false, true)
+	err = rp.forge.CreateRelease(ctx, *pr.ReleaseCommit, version, changelogText, false, true)
 	if err != nil {
 		return fmt.Errorf("failed to create release on forge: %w", err)
 	}
@@ -163,7 +163,6 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
 	}
 
 	releases, err := rp.forge.LatestTags(ctx)
@@ -223,7 +222,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 
 	versionBump := versioning.BumpFromCommits(analyzedCommits)
 	// TODO: Set version in release pr
-	nextVersion, err := rp.nextVersion(releases, versionBump, releaseOverrides.NextVersionType)
+	nextVersion, err := rp.versioning.NextVersion(releases, versionBump, releaseOverrides.NextVersionType)
 	if err != nil {
 		return err
 	}

@@ -10,9 +10,11 @@ import (
 	"github.com/apricote/releaser-pleaser/internal/git"
 )
 
-var _ Strategy = SemVerNextVersion
+var SemVer Strategy = semVer{}
 
-func SemVerNextVersion(r git.Releases, versionBump VersionBump, nextVersionType NextVersionType) (string, error) {
+type semVer struct{}
+
+func (s semVer) NextVersion(r git.Releases, versionBump VersionBump, nextVersionType NextVersionType) (string, error) {
 	latest, err := parseSemverWithDefault(r.Latest)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse latest version: %w", err)
