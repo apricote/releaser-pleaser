@@ -125,6 +125,24 @@ func TestAnalyzeCommits(t *testing.T) {
 			},
 			wantErr: assert.NoError,
 		},
+
+		{
+			name: "success with body",
+			commits: []git.Commit{
+				{
+					Message: "feat: some thing (hz/fl!144)\n\nFixes #15\n\nDepends on !143",
+				},
+			},
+			expectedCommits: []commitparser.AnalyzedCommit{
+				{
+					Commit:         git.Commit{Message: "feat: some thing (hz/fl!144)\n\nFixes #15\n\nDepends on !143"},
+					Type:           "feat",
+					Description:    "some thing (hz/fl!144)",
+					BreakingChange: false,
+				},
+			},
+			wantErr: assert.NoError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
