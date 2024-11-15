@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.5.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.5.0)
+
+### Features
+
+- **gitlab**: make job dependencies configurable and run immediately (#101)
+- **github**: mark pre-releases correctly (#110)
+
+### Bug Fixes
+
+- use commits with slightly invalid messages in release notes (#105)
+- create CHANGELOG.md if it does not exist (#108)
+
 ## [v0.4.2](https://github.com/apricote/releaser-pleaser/releases/tag/v0.4.2)
 
 ### Bug Fixes
