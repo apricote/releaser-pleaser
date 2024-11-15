@@ -15,17 +15,23 @@ spec:
     stage:
       default: build
       description: 'Defines the build stage'
+
+    needs:
+      default: [ ]
+      type: array
+      description: 'Dependencies of the created Job'
     # Remember to update docs/reference/gitlab-ci-component.md
 ---
 
 releaser-pleaser:
   stage: $[[ inputs.stage ]]
+  needs: $[[ inputs.needs ]]
   rules:
     # There is no way to run a pipeline when the MR description is updated :(
     - if: $CI_COMMIT_BRANCH == "$[[ inputs.branch ]]"
   image:
     name: ghcr.io/apricote/releaser-pleaser:v0.4.2 # x-releaser-pleaser-version
-    entrypoint: [""]
+    entrypoint: [ "" ]
   variables:
     GITLAB_TOKEN: $[[ inputs.token ]]
   script:
