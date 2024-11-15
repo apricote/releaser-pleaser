@@ -35,13 +35,23 @@ func (c *Parser) Analyze(commits []git.Commit) ([]commitparser.AnalyzedCommit, e
 	for _, commit := range commits {
 		msg, err := c.machine.Parse([]byte(strings.TrimSpace(commit.Message)))
 		if err != nil {
-			c.logger.Warn("failed to parse message of commit, skipping", "commit.hash", commit.Hash, "err", err)
-			continue
+			if msg == nil {
+				c.logger.Warn("failed to parse message of commit, skipping", "commit.hash", commit.Hash, "err", err)
+				continue
+			}
+
+			c.logger.Warn("failed to parse message of commit fully, trying to use as much as possible", "commit.hash", commit.Hash, "err", err)
 		}
 
 		conventionalCommit, ok := msg.(*conventionalcommits.ConventionalCommit)
 		if !ok {
 			return nil, fmt.Errorf("unable to get ConventionalCommit from parser result: %T", msg)
+		}
+
+		if conventionalCommit.Type == "" {
+			// Parsing broke before getting the type, can not use the commit
+			c.logger.Warn("commit type was not parsed, skipping", "commit.hash", commit.Hash, "err", err)
+			continue
 		}
 
 		commitVersionBump := conventionalCommit.VersionBump(conventionalcommits.DefaultStrategy)
