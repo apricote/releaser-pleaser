@@ -38,7 +38,7 @@ jobs:
         run: go test -v -race -coverpkg=./... -coverprofile=coverage.txt  ./...
 
       - name: Upload results to Codecov
-        uses: codecov/codecov-action@288befbd1044bd1756afb0bdae077549e0ddb31f # v5
+        uses: codecov/codecov-action@7f8b4b4bde536c465e797be725718b88c5d95e0e # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
