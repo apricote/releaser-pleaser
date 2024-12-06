@@ -170,8 +170,19 @@ func (r *Repository) Commit(_ context.Context, message string) (Commit, error) {
 	}, nil
 }
 
-func (r *Repository) HasChangesWithRemote(ctx context.Context, branch string) (bool, error) {
-	remoteRef, err := r.r.Reference(plumbing.NewRemoteReferenceName(remoteName, branch), false)
+// HasChangesWithRemote checks if the following two diffs are equal:
+//
+// - **Local**:                                 remote/main..branch
+// - **Remote**: (git merge-base remote/main remote/branch)..remote/branch
+//
+// This is done to avoid pushing when the only change would be a rebase of remote/branch onto the current remote/main.
+func (r *Repository) HasChangesWithRemote(ctx context.Context, mainBranch, prBranch string) (bool, error) {
+	commitOnRemoteMain, err := r.commitFromRef(plumbing.NewRemoteReferenceName(remoteName, mainBranch))
+	if err != nil {
+		return false, err
+	}
+
+	commitOnRemotePRBranch, err := r.commitFromRef(plumbing.NewRemoteReferenceName(remoteName, prBranch))
 	if err != nil {
 		if err.Error() == "reference not found" {
 			// No remote branch means that there are changes
@@ -181,29 +192,60 @@ func (r *Repository) HasChangesWithRemote(ctx context.Context, branch string) (b
 		return false, err
 	}
 
-	remoteCommit, err := r.r.CommitObject(remoteRef.Hash())
+	currentRemotePRMergeBase, err := r.mergeBase(commitOnRemoteMain, commitOnRemotePRBranch)
+	if err != nil {
+		return false, err
+	}
+	if currentRemotePRMergeBase == nil {
+		// If there is no merge base something weird has happened with the
+		// remote main branch, and we should definitely push updates.
+		return false, nil
+	}
+
+	remoteDiff, err := currentRemotePRMergeBase.PatchContext(ctx, commitOnRemotePRBranch)
 	if err != nil {
 		return false, err
 	}
 
-	localRef, err := r.r.Reference(plumbing.NewBranchReferenceName(branch), false)
+	commitOnLocalPRBranch, err := r.commitFromRef(plumbing.NewBranchReferenceName(prBranch))
 	if err != nil {
 		return false, err
 	}
 
-	localCommit, err := r.r.CommitObject(localRef.Hash())
+	localDiff, err := commitOnRemoteMain.PatchContext(ctx, commitOnLocalPRBranch)
 	if err != nil {
 		return false, err
 	}
 
-	diff, err := localCommit.PatchContext(ctx, remoteCommit)
+	return remoteDiff.String() == localDiff.String(), nil
+}
+
+func (r *Repository) commitFromRef(refName plumbing.ReferenceName) (*object.Commit, error) {
+	ref, err := r.r.Reference(refName, false)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	hasChanges := len(diff.FilePatches()) > 0
+	commit, err := r.r.CommitObject(ref.Hash())
+	if err != nil {
+		return nil, err
+	}
 
-	return hasChanges, nil
+	return commit, nil
+}
+
+func (r *Repository) mergeBase(a, b *object.Commit) (*object.Commit, error) {
+	mergeBases, err := a.MergeBase(b)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(mergeBases) == 0 {
+		return nil, nil
+	}
+
+	// :shrug: We dont really care which commit we pick, at worst we do an unnecessary push.
+	return mergeBases[0], nil
 }
 
 func (r *Repository) ForcePush(ctx context.Context, branch string) error {
