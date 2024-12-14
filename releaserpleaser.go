@@ -274,7 +274,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	logger.InfoContext(ctx, "created release commit", "commit.hash", releaseCommit.Hash, "commit.message", releaseCommit.Message)
 
 	// Check if anything changed in comparison to the remote branch (if exists)
-	newReleasePRChanges, err := repo.HasChangesWithRemote(ctx, rpBranch)
+	newReleasePRChanges, err := repo.HasChangesWithRemote(ctx, rp.targetBranch, rpBranch)
 	if err != nil {
 		return err
 	}
