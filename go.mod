@@ -1,6 +1,8 @@
 module github.com/apricote/releaser-pleaser
 
-go 1.23.0
+go 1.23.2
+
+toolchain go1.23.4
 
 require (
 	github.com/blang/semver/v4 v4.0.0
@@ -9,7 +11,7 @@ require (
 	github.com/leodido/go-conventionalcommits v0.12.0
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.10.0
-	github.com/teekennedy/goldmark-markdown v0.4.0
+	github.com/teekennedy/goldmark-markdown v0.4.1
 	github.com/xanzy/go-gitlab v0.114.0
 	github.com/yuin/goldmark v1.7.8
 )
