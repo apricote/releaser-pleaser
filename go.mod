@@ -2,7 +2,7 @@ module github.com/apricote/releaser-pleaser
 
 go 1.23.2
 
-toolchain go1.23.5
+toolchain go1.23.6
 
 require (
 	github.com/blang/semver/v4 v4.0.0
