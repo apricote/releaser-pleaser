@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.5.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.5.1)
+
+### Bug Fixes
+
+- invalid version for subsequent pre-releases (#174)
+
 ## [v0.5.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.5.0)
 
 ### Features
