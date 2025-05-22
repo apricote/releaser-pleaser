@@ -179,34 +179,16 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		logger.InfoContext(ctx, "no latest tag found")
 	}
 
-	// By default, we want to show everything that has happened since the last stable release
-	lastReleaseCommit := releases.Stable
-	if releaseOverrides.NextVersionType.IsPrerelease() {
-		// if the new release will be a prerelease,
-		// only show changes since the latest release (stable or prerelease)
-		lastReleaseCommit = releases.Latest
-	}
-
-	commits, err := rp.forge.CommitsSince(ctx, lastReleaseCommit)
+	// For stable releases, we want to consider all changes since the last stable release for version and changelog.
+	// For prereleases, we want to consider all changes...
+	// - since the last stable release for the version
+	// - since the latest release (stable or prerelease) for the changelog
+	analyzedCommitsForVersioning, err := rp.analyzedCommitsSince(ctx, releases.Stable)
 	if err != nil {
 		return err
 	}
 
-	commits, err = parsePRBodyForCommitOverrides(commits)
-	if err != nil {
-		return err
-	}
-
-	logger.InfoContext(ctx, "Found releasable commits", "length", len(commits))
-
-	analyzedCommits, err := rp.commitParser.Analyze(commits)
-	if err != nil {
-		return err
-	}
-
-	logger.InfoContext(ctx, "Analyzed commits", "length", len(analyzedCommits))
-
-	if len(analyzedCommits) == 0 {
+	if len(analyzedCommitsForVersioning) == 0 {
 		if pr != nil {
 			logger.InfoContext(ctx, "closing existing pull requests, no commits available", "pr.id", pr.ID, "pr.title", pr.Title)
 			err = rp.forge.ClosePullRequest(ctx, pr)
@@ -220,13 +202,21 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return nil
 	}
 
-	versionBump := versioning.BumpFromCommits(analyzedCommits)
+	versionBump := versioning.BumpFromCommits(analyzedCommitsForVersioning)
 	// TODO: Set version in release pr
 	nextVersion, err := rp.versioning.NextVersion(releases, versionBump, releaseOverrides.NextVersionType)
 	if err != nil {
 		return err
 	}
 	logger.InfoContext(ctx, "next version", "version", nextVersion)
+
+	analyzedCommitsForChangelog := analyzedCommitsForVersioning
+	if releaseOverrides.NextVersionType.IsPrerelease() && releases.Latest != releases.Stable {
+		analyzedCommitsForChangelog, err = rp.analyzedCommitsSince(ctx, releases.Latest)
+		if err != nil {
+			return err
+		}
+	}
 
 	logger.DebugContext(ctx, "cloning repository", "clone.url", rp.forge.CloneURL())
 	repo, err := git.CloneRepo(ctx, logger, rp.forge.CloneURL(), rp.targetBranch, rp.forge.GitAuth())
@@ -242,7 +232,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return err
 	}
 
-	changelogData := changelog.New(commitparser.ByType(analyzedCommits), nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
+	changelogData := changelog.New(commitparser.ByType(analyzedCommitsForChangelog), nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
 
 	changelogEntry, err := changelog.Entry(logger, changelog.DefaultTemplate(), changelogData, changelog.Formatting{})
 	if err != nil {
@@ -329,4 +319,29 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (rp *ReleaserPleaser) analyzedCommitsSince(ctx context.Context, since *git.Tag) ([]commitparser.AnalyzedCommit, error) {
+	logger := rp.logger.With("method", "analyzedCommitsSince", "tag.hash", since.Hash, "tag.name", since.Name)
+
+	commits, err := rp.forge.CommitsSince(ctx, since)
+	if err != nil {
+		return nil, err
+	}
+
+	commits, err = parsePRBodyForCommitOverrides(commits)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.InfoContext(ctx, "Found releasable commits", "length", len(commits))
+
+	analyzedCommits, err := rp.commitParser.Analyze(commits)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.InfoContext(ctx, "Analyzed commits", "length", len(analyzedCommits))
+
+	return analyzedCommits, nil
 }
