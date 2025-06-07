@@ -11,7 +11,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/xanzy/go-gitlab"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 
 	"github.com/apricote/releaser-pleaser/internal/forge"
 	"github.com/apricote/releaser-pleaser/internal/git"
@@ -174,7 +174,7 @@ func (g *GitLab) prForCommit(ctx context.Context, commit git.Commit) (*git.PullR
 		return nil, err
 	}
 
-	var mergeRequest *gitlab.MergeRequest
+	var mergeRequest *gitlab.BasicMergeRequest
 	for _, mr := range associatedMRs {
 		// We only look for the MR that has this commit set as the "merge/squash commit" => The result of squashing this branch onto main
 		if mr.MergeCommitSHA == commit.Hash || mr.SquashCommitSHA == commit.Hash {
@@ -315,7 +315,7 @@ func (g *GitLab) ClosePullRequest(ctx context.Context, pr *releasepr.ReleasePull
 }
 
 func (g *GitLab) PendingReleases(ctx context.Context, pendingLabel releasepr.Label) ([]*releasepr.ReleasePullRequest, error) {
-	glMRs, err := all(func(listOptions gitlab.ListOptions) ([]*gitlab.MergeRequest, *gitlab.Response, error) {
+	glMRs, err := all(func(listOptions gitlab.ListOptions) ([]*gitlab.BasicMergeRequest, *gitlab.Response, error) {
 		return g.client.MergeRequests.ListMergeRequests(&gitlab.ListMergeRequestsOptions{
 			State:        pointer.Pointer(PRStateMerged),
 			Labels:       &gitlab.LabelOptions{pendingLabel.Name},
@@ -369,7 +369,7 @@ func all[T any](f func(listOptions gitlab.ListOptions) ([]T, *gitlab.Response, e
 	}
 }
 
-func gitlabMRToPullRequest(pr *gitlab.MergeRequest) *git.PullRequest {
+func gitlabMRToPullRequest(pr *gitlab.BasicMergeRequest) *git.PullRequest {
 	return &git.PullRequest{
 		ID:          pr.IID,
 		Title:       pr.Title,
@@ -377,7 +377,7 @@ func gitlabMRToPullRequest(pr *gitlab.MergeRequest) *git.PullRequest {
 	}
 }
 
-func gitlabMRToReleasePullRequest(pr *gitlab.MergeRequest) *releasepr.ReleasePullRequest {
+func gitlabMRToReleasePullRequest(pr *gitlab.BasicMergeRequest) *releasepr.ReleasePullRequest {
 	labels := make([]releasepr.Label, 0, len(pr.Labels))
 	for _, labelName := range pr.Labels {
 		if i := slices.IndexFunc(releasepr.KnownLabels, func(label releasepr.Label) bool {
