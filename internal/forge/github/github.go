@@ -12,7 +12,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v72/github"
 
 	"github.com/apricote/releaser-pleaser/internal/forge"
 	"github.com/apricote/releaser-pleaser/internal/git"
