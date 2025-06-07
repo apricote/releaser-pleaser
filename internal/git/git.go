@@ -113,7 +113,7 @@ func (r *Repository) UpdateFile(_ context.Context, path string, create bool, upd
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	content, err := io.ReadAll(file)
 	if err != nil {

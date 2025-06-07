@@ -1,7 +1,6 @@
 package releasepr
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,7 +58,7 @@ func TestReleasePullRequest_GetOverrides(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.pr.GetOverrides()
-			if !tt.wantErr(t, err, fmt.Sprintf("GetOverrides()")) {
+			if !tt.wantErr(t, err, "GetOverrides()") {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "GetOverrides()")
@@ -115,7 +114,7 @@ Suffix Things
 				},
 			}
 			got, err := pr.ChangelogText()
-			if !tt.wantErr(t, err, fmt.Sprintf("ChangelogText()")) {
+			if !tt.wantErr(t, err, "ChangelogText()") {
 				return
 			}
 			assert.Equalf(t, tt.want, got, "ChangelogText()")
