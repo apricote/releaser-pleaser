@@ -1,14 +1,38 @@
+version: "2"
 linters:
-  presets:
-    - bugs
-    - error
-    - import
-    - metalinter
-    - module
-    - unused
-
   enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - durationcheck
+    - errchkjson
+    - errorlint
+    - exhaustive
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - gocritic
+    - gomoddirectives
+    - gomodguard
+    - gosec
+    - gosmopolitan
+    - loggercheck
+    - makezero
+    - musttag
+    - nilerr
+    - nilnesserr
+    - noctx
+    - protogetter
+    - reassign
+    - recvcheck
+    - rowserrcheck
+    - spancheck
+    - sqlclosecheck
     - testifylint
+    - unparam
+    - zerologlint
+    - revive
 
   disable:
     # preset error
@@ -18,10 +42,19 @@ linters:
     # preset import
     - depguard
 
-linters-settings:
-  gci:
-    sections:
-      - standard
-      - default
-      - localmodule
+  settings:
+    revive:
+      rules:
+        - name: exported
+          disabled: true
 
+formatters:
+  enable:
+    - gci
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - localmodule
