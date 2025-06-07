@@ -62,8 +62,8 @@
   customManagers: [
     {
       customType: 'regex',
-      fileMatch: [
-        '.+\\.ya?ml$',
+      managerFilePatterns: [
+        '/.+\\.ya?ml$/',
       ],
       matchStrings: [
         ': (?<currentValue>.+) # renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?: lookupName=(?<packageName>[^\\s]+))?(?: versioning=(?<versioning>[a-z-]+))?(?: extractVersion=(?<extractVersion>[^\\s]+))?',
