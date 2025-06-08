@@ -69,6 +69,22 @@ func (g *GitLab) GitAuth() transport.AuthMethod {
 	}
 }
 
+func (g *GitLab) CommitAuthor(ctx context.Context) (git.Author, error) {
+	g.log.DebugContext(ctx, "getting commit author from current token user")
+
+	user, _, err := g.client.Users.CurrentUser(gitlab.WithContext(ctx))
+	if err != nil {
+		return git.Author{}, err
+	}
+
+	// TODO: Return bot when nothing is returned?
+
+	return git.Author{
+		Name:  user.Name,
+		Email: user.Email,
+	}, nil
+}
+
 func (g *GitLab) LatestTags(ctx context.Context) (git.Releases, error) {
 	g.log.DebugContext(ctx, "listing all tags in gitlab repository")
 

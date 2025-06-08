@@ -255,13 +255,18 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		}
 	}
 
+	releaseCommitAuthor, err := rp.forge.CommitAuthor(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get commit author: %w", err)
+	}
+
 	releaseCommitMessage := fmt.Sprintf("chore(%s): release %s", rp.targetBranch, nextVersion)
-	releaseCommit, err := repo.Commit(ctx, releaseCommitMessage)
+	releaseCommit, err := repo.Commit(ctx, releaseCommitMessage, releaseCommitAuthor)
 	if err != nil {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 
-	logger.InfoContext(ctx, "created release commit", "commit.hash", releaseCommit.Hash, "commit.message", releaseCommit.Message)
+	logger.InfoContext(ctx, "created release commit", "commit.hash", releaseCommit.Hash, "commit.message", releaseCommit.Message, "commit.author", releaseCommitAuthor)
 
 	// Check if anything changed in comparison to the remote branch (if exists)
 	newReleasePRChanges, err := repo.HasChangesWithRemote(ctx, rpBranch)

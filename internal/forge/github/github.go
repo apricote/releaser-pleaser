@@ -29,6 +29,13 @@ const (
 	EnvRepository = "GITHUB_REPOSITORY"
 )
 
+var (
+	gitHubActionsBotAuthor = git.Author{
+		Name:  "github-actions[bot]",
+		Email: "41898282+github-actions[bot]@users.noreply.github.com",
+	}
+)
+
 var _ forge.Forge = &GitHub{}
 
 type GitHub struct {
@@ -59,6 +66,22 @@ func (g *GitHub) GitAuth() transport.AuthMethod {
 		Username: g.options.Username,
 		Password: g.options.APIToken,
 	}
+}
+
+func (g *GitHub) CommitAuthor(ctx context.Context) (git.Author, error) {
+	g.log.DebugContext(ctx, "getting commit author from current token user")
+
+	user, _, err := g.client.Users.Get(ctx, "")
+	if err != nil {
+		g.log.WarnContext(ctx, "failed to get commit author from API, using default github-actions[bot] user", "error", err)
+
+		return gitHubActionsBotAuthor, nil
+	}
+
+	return git.Author{
+		Name:  user.GetName(),
+		Email: user.GetEmail(),
+	}, nil
 }
 
 func (g *GitHub) LatestTags(ctx context.Context) (git.Releases, error) {

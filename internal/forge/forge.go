@@ -17,6 +17,9 @@ type Forge interface {
 
 	GitAuth() transport.AuthMethod
 
+	// CommitAuthor returns the git author used for the release commit. It should be the user whose token is used to talk to the API.
+	CommitAuthor(context.Context) (git.Author, error)
+
 	// LatestTags returns the last stable tag created on the main branch. If there is a more recent pre-release tag,
 	// that is also returned. If no tag is found, it returns nil.
 	LatestTags(context.Context) (git.Releases, error)
