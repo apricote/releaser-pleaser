@@ -45,6 +45,27 @@ type Releases struct {
 	Stable *Tag
 }
 
+type Author struct {
+	Name  string
+	Email string
+}
+
+func (a Author) signature(when time.Time) *object.Signature {
+	return &object.Signature{
+		Name:  a.Name,
+		Email: a.Email,
+		When:  when,
+	}
+}
+
+func (a Author) String() string {
+	return fmt.Sprintf("%s <%s>", a.Name, a.Email)
+}
+
+var (
+	committer = Author{Name: "releaser-pleaser", Email: ""}
+)
+
 func CloneRepo(ctx context.Context, logger *slog.Logger, cloneURL, branch string, auth transport.AuthMethod) (*Repository, error) {
 	dir, err := os.MkdirTemp("", "releaser-pleaser.*")
 	if err != nil {
@@ -150,15 +171,17 @@ func (r *Repository) UpdateFile(_ context.Context, path string, create bool, upd
 	return nil
 }
 
-func (r *Repository) Commit(_ context.Context, message string) (Commit, error) {
+func (r *Repository) Commit(_ context.Context, message string, author Author) (Commit, error) {
 	worktree, err := r.r.Worktree()
 	if err != nil {
 		return Commit{}, err
 	}
 
+	now := time.Now()
+
 	releaseCommitHash, err := worktree.Commit(message, &git.CommitOptions{
-		Author:    signature(),
-		Committer: signature(),
+		Author:    author.signature(now),
+		Committer: committer.signature(now),
 	})
 	if err != nil {
 		return Commit{}, fmt.Errorf("failed to commit changes: %w", err)
@@ -222,12 +245,4 @@ func (r *Repository) ForcePush(ctx context.Context, branch string) error {
 		Force:      true,
 		Auth:       r.auth,
 	})
-}
-
-func signature() *object.Signature {
-	return &object.Signature{
-		Name:  "releaser-pleaser",
-		Email: "",
-		When:  time.Now(),
-	}
 }
