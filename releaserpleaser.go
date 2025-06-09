@@ -327,7 +327,11 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 }
 
 func (rp *ReleaserPleaser) analyzedCommitsSince(ctx context.Context, since *git.Tag) ([]commitparser.AnalyzedCommit, error) {
-	logger := rp.logger.With("method", "analyzedCommitsSince", "tag.hash", since.Hash, "tag.name", since.Name)
+	logger := rp.logger.With("method", "analyzedCommitsSince")
+
+	if since != nil {
+		logger = rp.logger.With("tag.hash", since.Hash, "tag.name", since.Name)
+	}
 
 	commits, err := rp.forge.CommitsSince(ctx, since)
 	if err != nil {
