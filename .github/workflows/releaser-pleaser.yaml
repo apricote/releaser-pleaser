@@ -10,6 +10,13 @@ on:
       - labeled
       - unlabeled
 
+# Only one job needs to run at a time, if a new job is started there is probably new data to include in the response, so
+# it does not make sense to finish the previous job. This also helps with "data-race conflicts", where a human changes
+# the PR description but releaser-pleaser was already running and overwrites the humans changes.
+concurrency:
+  group: releaser-pleaser
+  cancel-in-progress: true
+
 permissions: {}
 
 jobs:
