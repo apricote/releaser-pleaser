@@ -7,7 +7,9 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"syscall"
+	"time"
 
+	"github.com/lmittmann/tint"
 	"github.com/spf13/cobra"
 )
 
@@ -76,8 +78,12 @@ func Execute() {
 }
 
 func init() {
-	logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}))
+	logger = slog.New(
+		tint.NewHandler(os.Stderr, &tint.Options{
+			Level:      slog.LevelDebug,
+			TimeFormat: time.RFC3339,
+		}),
+	)
 
+	slog.SetDefault(logger)
 }
