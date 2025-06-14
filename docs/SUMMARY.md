@@ -10,6 +10,7 @@
 # Explanation
 
 - [Release Pull Request](explanation/release-pr.md)
+- [Concurrency and Conflicts](explanation/concurrency-conflicts.md)
 
 # Guides
 
