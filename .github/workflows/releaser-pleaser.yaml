@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   # Using pull_request_target to avoid tainting the actual release PR with code from open feature pull requests
+  pull_request:
   pull_request_target:
     types:
       - edited
@@ -26,8 +27,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        with:
-          ref: main
 
       - name: Set up Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
