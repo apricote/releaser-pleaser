@@ -44,6 +44,10 @@ on:
       - labeled
       - unlabeled
 
+concurrency:
+  group: releaser-pleaser
+  cancel-in-progress: true
+
 jobs:
   releaser-pleaser:
     runs-on: ubuntu-latest

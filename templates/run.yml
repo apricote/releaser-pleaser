@@ -26,9 +26,19 @@ spec:
 releaser-pleaser:
   stage: $[[ inputs.stage ]]
   needs: $[[ inputs.needs ]]
+
   rules:
     # There is no way to run a pipeline when the MR description is updated :(
     - if: $CI_COMMIT_BRANCH == "$[[ inputs.branch ]]"
+
+  # If a newer releaser-pleaser job runs, this one may be cancelled without problem, releaser-pleaser is idempotent.
+  # This only works if the user enables "auto-cancel redundant pipelines", which we do tell them to, because this is
+  # intrusive and up to the user.
+  interruptible: true
+
+  # No need to have multiple releaser-pleaser jobs running at the same time. They all act on the same global state.
+  resource_group: releaser-pleaser
+
   image:
     name: ghcr.io/apricote/releaser-pleaser:v0.5.1 # x-releaser-pleaser-version
     entrypoint: [ "" ]
