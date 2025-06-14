@@ -1,5 +1,44 @@
 # Changelog
 
+## [v0.6.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.6.0)
+
+### ✨ Highlights
+
+#### Reduced resource usage
+
+`releaser-pleaser` now uses less resources:
+
+- It now skips pushing changes to the release pull request if they are only a rebase.
+- The configurations for GitHub Actions and GitLab CI/CD now makes sure that only a single job is running at the same time. On GitHub unnecessary/duplicate jobs are also automatically aborted.
+- It handles the stop signals from the CI environment and tries to exit quickly.
+
+\```yaml
+concurrency:
+group: releaser-pleaser
+cancel-in-progress: true
+\```
+
+#### Avoid losing manual edits to release pull request
+
+Before, releaser-pleaser was prone to overwriting user changes to the release pull request if they were made after releaser-pleaser already started running. There is now an additional check right before submitting the changes to see if the description changed, and retry if it did.
+
+#### Proper commit authorship
+
+Before, the release commits were created by `releaser-pleaser &lt;&gt;`. This was ugly to look at. We now check for details on the API user used to talk to the forge, and use that users details instead as the commit author. The committer is still `releaser-pleaser`.
+
+### Features
+
+- real user as commit author (#187)
+- avoid pushing release branch only for rebasing (#114)
+- colorize log output (#195)
+- graceful shutdown when CI job is cancelled (#196)
+- detect changed pull request description and retry process (#197)
+- run one job concurrently to reduce chance of conflicts (#198)
+
+### Bug Fixes
+
+- crash when running in repo without any tags (#190)
+
 ## [v0.5.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.5.1)
 
 ### Bug Fixes
