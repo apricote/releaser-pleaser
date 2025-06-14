@@ -233,7 +233,7 @@ func (r *Repository) hasChangesWithRemote(ctx context.Context, mainBranchRef, lo
 		return false, nil
 	}
 
-	remoteDiff, err := commitOnRemotePRBranch.PatchContext(ctx, currentRemotePRMergeBase)
+	remoteDiff, err := currentRemotePRMergeBase.PatchContext(ctx, commitOnRemotePRBranch)
 	if err != nil {
 		return false, err
 	}
@@ -248,7 +248,7 @@ func (r *Repository) hasChangesWithRemote(ctx context.Context, mainBranchRef, lo
 		return false, err
 	}
 
-	return remoteDiff.String() == localDiff.String(), nil
+	return remoteDiff.String() != localDiff.String(), nil
 }
 
 func (r *Repository) commitFromRef(refName plumbing.ReferenceName) (*object.Commit, error) {
