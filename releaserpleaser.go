@@ -2,6 +2,7 @@ package rp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -16,6 +17,14 @@ import (
 
 const (
 	PullRequestBranchFormat = "releaser-pleaser--branches--%s"
+)
+
+const (
+	PullRequestConflictAttempts = 3
+)
+
+var (
+	ErrorPullRequestConflict = errors.New("conflict: pull request description was changed while releaser-pleaser was running")
 )
 
 type ReleaserPleaser struct {
@@ -57,7 +66,7 @@ func (rp *ReleaserPleaser) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to create pending releases: %w", err)
 	}
 
-	err = rp.runReconcileReleasePR(ctx)
+	err = rp.runReconcileReleasePRWithRetries(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to reconcile release pull request: %w", err)
 	}
@@ -139,6 +148,36 @@ func (rp *ReleaserPleaser) createPendingRelease(ctx context.Context, pr *release
 	logger.DebugContext(ctx, "updated pr labels")
 
 	logger.InfoContext(ctx, "Created release", "release.title", version, "release.url", rp.forge.ReleaseURL(version))
+
+	return nil
+}
+
+// runReconcileReleasePRWithRetries retries runReconcileReleasePR up to PullRequestConflictAttempts times, but only
+// when a ErrorPullRequestConflict was encountered.
+func (rp *ReleaserPleaser) runReconcileReleasePRWithRetries(ctx context.Context) error {
+	logger := rp.logger.With("method", "runReconcileReleasePRWithRetries", "totalAttempts", PullRequestConflictAttempts)
+	var err error
+
+	for i := range PullRequestConflictAttempts {
+		logger := logger.With("attempt", i+1)
+		logger.DebugContext(ctx, "attempting runReconcileReleasePR")
+
+		err = rp.runReconcileReleasePR(ctx)
+		if err != nil {
+			if errors.Is(err, ErrorPullRequestConflict) {
+				logger.WarnContext(ctx, "detected conflict while updating pull request description, retrying")
+				continue
+			}
+
+			break
+		}
+
+		break
+	}
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -305,6 +344,23 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		}
 		logger.InfoContext(ctx, "opened pull request", "pr.title", pr.Title, "pr.id", pr.ID, "pr.url", rp.forge.PullRequestURL(pr.ID))
 	} else {
+		// Check if the pull request was updated while releaser-pleaser was running.
+		// This avoids a conflict where the user updated the PR while releaser-pleaser already pulled the info, and
+		// releaser-pleaser subsequently reverts the users changes. There is still a minimal time window for this to
+		// happen between us checking the PR again and submitting our changes.
+
+		logger.DebugContext(ctx, "checking for conflict in pr description", "pr.id", pr.ID)
+		recheckPR, err := rp.forge.PullRequestForBranch(ctx, rpBranch)
+		if err != nil {
+			return err
+		}
+		if recheckPR == nil {
+			return fmt.Errorf("PR was deleted while releaser-pleaser was running")
+		}
+		if recheckPR.Description != pr.Description {
+			return ErrorPullRequestConflict
+		}
+
 		pr.SetTitle(rp.targetBranch, nextVersion)
 
 		overrides, err := pr.GetOverrides()
