@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/apricote/releaser-pleaser/internal/forge/forgejo"
 	"github.com/spf13/cobra"
 
 	rp "github.com/apricote/releaser-pleaser"
@@ -23,6 +24,10 @@ func newRunCommand() *cobra.Command {
 		flagOwner      string
 		flagRepo       string
 		flagExtraFiles string
+
+		flagAPIURL   string
+		flagAPIToken string
+		flagUsername string
 	)
 
 	var cmd = &cobra.Command{
@@ -64,6 +69,21 @@ func newRunCommand() *cobra.Command {
 					Owner:   flagOwner,
 					Repo:    flagRepo,
 				})
+			case "forgejo":
+				slog.DebugContext(ctx, "using forge Forgejo")
+				f, err = forgejo.New(slog.Default(), &forgejo.Options{
+					Options: forgeOptions,
+					Owner:   flagOwner,
+					Repo:    flagRepo,
+
+					APIURL:   flagAPIURL,
+					APIToken: flagAPIToken,
+					Username: flagUsername,
+				})
+				if err != nil {
+					slog.ErrorContext(ctx, "failed to create client", "err", err)
+					return fmt.Errorf("failed to create forgejo client: %w", err)
+				}
 			default:
 				return fmt.Errorf("unknown --forge: %s", flagForge)
 			}
@@ -89,6 +109,9 @@ func newRunCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flagOwner, "owner", "", "")
 	cmd.PersistentFlags().StringVar(&flagRepo, "repo", "", "")
 	cmd.PersistentFlags().StringVar(&flagExtraFiles, "extra-files", "", "")
+	cmd.PersistentFlags().StringVar(&flagAPIURL, "api-url", "", "")
+	cmd.PersistentFlags().StringVar(&flagAPIToken, "api-token", "", "")
+	cmd.PersistentFlags().StringVar(&flagUsername, "username", "", "")
 
 	return cmd
 }
