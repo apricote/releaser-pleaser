@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -15,83 +16,81 @@ import (
 	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
 
-var runCmd = &cobra.Command{
-	Use:  "run",
-	RunE: run,
-}
-
-var (
-	flagForge      string
-	flagBranch     string
-	flagOwner      string
-	flagRepo       string
-	flagExtraFiles string
-)
-
-func init() {
-	rootCmd.AddCommand(runCmd)
-
-	runCmd.PersistentFlags().StringVar(&flagForge, "forge", "", "")
-	runCmd.PersistentFlags().StringVar(&flagBranch, "branch", "main", "")
-	runCmd.PersistentFlags().StringVar(&flagOwner, "owner", "", "")
-	runCmd.PersistentFlags().StringVar(&flagRepo, "repo", "", "")
-	runCmd.PersistentFlags().StringVar(&flagExtraFiles, "extra-files", "", "")
-}
-
-func run(cmd *cobra.Command, _ []string) error {
-	ctx := cmd.Context()
-
-	var err error
-
-	logger.DebugContext(ctx, "run called",
-		"forge", flagForge,
-		"branch", flagBranch,
-		"owner", flagOwner,
-		"repo", flagRepo,
+func newRunCommand() *cobra.Command {
+	var (
+		flagForge      string
+		flagBranch     string
+		flagOwner      string
+		flagRepo       string
+		flagExtraFiles string
 	)
 
-	var f forge.Forge
+	var cmd = &cobra.Command{
+		Use: "run",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
 
-	forgeOptions := forge.Options{
-		Repository: flagRepo,
-		BaseBranch: flagBranch,
+			var err error
+
+			slog.DebugContext(ctx, "run called",
+				"forge", flagForge,
+				"branch", flagBranch,
+				"owner", flagOwner,
+				"repo", flagRepo,
+			)
+
+			var f forge.Forge
+
+			forgeOptions := forge.Options{
+				Repository: flagRepo,
+				BaseBranch: flagBranch,
+			}
+
+			switch flagForge {
+			case "gitlab":
+				slog.DebugContext(ctx, "using forge GitLab")
+				f, err = gitlab.New(slog.Default(), &gitlab.Options{
+					Options: forgeOptions,
+					Path:    fmt.Sprintf("%s/%s", flagOwner, flagRepo),
+				})
+				if err != nil {
+					slog.ErrorContext(ctx, "failed to create client", "err", err)
+					return fmt.Errorf("failed to create gitlab client: %w", err)
+				}
+			case "github":
+				slog.DebugContext(ctx, "using forge GitHub")
+				f = github.New(slog.Default(), &github.Options{
+					Options: forgeOptions,
+					Owner:   flagOwner,
+					Repo:    flagRepo,
+				})
+			default:
+				return fmt.Errorf("unknown --forge: %s", flagForge)
+			}
+
+			extraFiles := parseExtraFiles(flagExtraFiles)
+
+			releaserPleaser := rp.New(
+				f,
+				slog.Default(),
+				flagBranch,
+				conventionalcommits.NewParser(slog.Default()),
+				versioning.SemVer,
+				extraFiles,
+				[]updater.NewUpdater{updater.Generic},
+			)
+
+			return releaserPleaser.Run(ctx)
+		},
 	}
 
-	switch flagForge {
-	case "gitlab":
-		logger.DebugContext(ctx, "using forge GitLab")
-		f, err = gitlab.New(logger, &gitlab.Options{
-			Options: forgeOptions,
-			Path:    fmt.Sprintf("%s/%s", flagOwner, flagRepo),
-		})
-		if err != nil {
-			logger.ErrorContext(ctx, "failed to create client", "err", err)
-			return fmt.Errorf("failed to create gitlab client: %w", err)
-		}
-	case "github":
-		logger.DebugContext(ctx, "using forge GitHub")
-		f = github.New(logger, &github.Options{
-			Options: forgeOptions,
-			Owner:   flagOwner,
-			Repo:    flagRepo,
-		})
-	default:
-		return fmt.Errorf("unknown --forge: %s", flagForge)
-	}
+	cmd.PersistentFlags().StringVar(&flagForge, "forge", "", "")
+	cmd.PersistentFlags().StringVar(&flagBranch, "branch", "main", "")
+	cmd.PersistentFlags().StringVar(&flagOwner, "owner", "", "")
+	cmd.PersistentFlags().StringVar(&flagRepo, "repo", "", "")
+	cmd.PersistentFlags().StringVar(&flagExtraFiles, "extra-files", "", "")
 
-	extraFiles := parseExtraFiles(flagExtraFiles)
-
-	releaserPleaser := rp.New(
-		f,
-		logger,
-		flagBranch,
-		conventionalcommits.NewParser(logger),
-		versioning.SemVer,
-		extraFiles,
-		[]updater.NewUpdater{updater.Generic},
-	)
-
-	return releaserPleaser.Run(ctx)
+	return cmd
 }
 
 func parseExtraFiles(input string) []string {
