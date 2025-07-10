@@ -405,11 +405,12 @@ func gitlabMRToReleasePullRequest(pr *gitlab.BasicMergeRequest) *releasepr.Relea
 
 	// Commit SHA is saved in either [MergeCommitSHA], [SquashCommitSHA] or [SHA] depending on which merge method was used.
 	var releaseCommit *git.Commit
-	if pr.MergeCommitSHA != "" {
+	switch {
+	case pr.MergeCommitSHA != "":
 		releaseCommit = &git.Commit{Hash: pr.MergeCommitSHA}
-	} else if pr.SquashCommitSHA != "" {
+	case pr.SquashCommitSHA != "":
 		releaseCommit = &git.Commit{Hash: pr.SquashCommitSHA}
-	} else if pr.MergedAt != nil && pr.SHA != "" {
+	case pr.MergedAt != nil && pr.SHA != "":
 		releaseCommit = &git.Commit{Hash: pr.SHA}
 	}
 
