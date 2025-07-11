@@ -193,7 +193,7 @@ func (g *GitLab) prForCommit(ctx context.Context, commit git.Commit) (*git.PullR
 	var mergeRequest *gitlab.BasicMergeRequest
 	for _, mr := range associatedMRs {
 		// We only look for the MR that has this commit set as the "merge/squash commit" => The result of squashing this branch onto main
-		if mr.MergeCommitSHA == commit.Hash || mr.SquashCommitSHA == commit.Hash {
+		if mr.MergeCommitSHA == commit.Hash || mr.SquashCommitSHA == commit.Hash || mr.SHA == commit.Hash {
 			mergeRequest = mr
 			break
 		}
@@ -403,12 +403,15 @@ func gitlabMRToReleasePullRequest(pr *gitlab.BasicMergeRequest) *releasepr.Relea
 		}
 	}
 
-	// Commit SHA is saved in either [MergeCommitSHA] or [SquashCommitSHA] depending on which merge method was used.
+	// Commit SHA is saved in either [MergeCommitSHA], [SquashCommitSHA] or [SHA] depending on which merge method was used.
 	var releaseCommit *git.Commit
-	if pr.MergeCommitSHA != "" {
+	switch {
+	case pr.MergeCommitSHA != "":
 		releaseCommit = &git.Commit{Hash: pr.MergeCommitSHA}
-	} else if pr.SquashCommitSHA != "" {
+	case pr.SquashCommitSHA != "":
 		releaseCommit = &git.Commit{Hash: pr.SquashCommitSHA}
+	case pr.MergedAt != nil && pr.SHA != "":
+		releaseCommit = &git.Commit{Hash: pr.SHA}
 	}
 
 	return &releasepr.ReleasePullRequest{
