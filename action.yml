@@ -21,7 +21,7 @@ inputs:
 outputs: {}
 runs:
   using: 'docker'
-  image: docker://ghcr.io/apricote/releaser-pleaser:v0.6.0 # x-releaser-pleaser-version
+  image: docker://ghcr.io/apricote/releaser-pleaser:v0.6.1 # x-releaser-pleaser-version
   args:
     - run
     - --forge=github

@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.6.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.6.1)
+
+### Bug Fixes
+
+- **gitlab**: support fast-forward merges (#210)
+
 ## [v0.6.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.6.0)
 
 ### ✨ Highlights
