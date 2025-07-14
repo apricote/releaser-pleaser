@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -144,7 +145,7 @@ func (r *Repository) UpdateFile(_ context.Context, path string, create bool, upd
 	updatedContent := string(content)
 
 	for _, update := range updaters {
-		updatedContent, err = update(updatedContent)
+		updatedContent, err = update(updatedContent, filepath.Base(path))
 		if err != nil {
 			return fmt.Errorf("failed to run updater on file %s", path)
 		}

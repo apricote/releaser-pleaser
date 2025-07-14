@@ -9,11 +9,12 @@ import (
 func TestChangelogUpdater_UpdateContent(t *testing.T) {
 	tests := []updaterTestCase{
 		{
-			name:    "empty file",
-			content: "",
-			info:    ReleaseInfo{ChangelogEntry: "## v1.0.0\n"},
-			want:    "# Changelog\n\n## v1.0.0\n",
-			wantErr: assert.NoError,
+			name:     "empty file",
+			content:  "",
+			filename: "CHANGELOG.md",
+			info:     ReleaseInfo{ChangelogEntry: "## v1.0.0\n"},
+			want:     "# Changelog\n\n## v1.0.0\n",
+			wantErr:  assert.NoError,
 		},
 		{
 			name: "well-formatted changelog",
@@ -27,7 +28,8 @@ func TestChangelogUpdater_UpdateContent(t *testing.T) {
 
 ### Bazuuum
 `,
-			info: ReleaseInfo{ChangelogEntry: "## v1.0.0\n\n- Version 1, juhu.\n"},
+			filename: "CHANGELOG.md",
+			info:     ReleaseInfo{ChangelogEntry: "## v1.0.0\n\n- Version 1, juhu.\n"},
 			want: `# Changelog
 
 ## v1.0.0
@@ -45,11 +47,12 @@ func TestChangelogUpdater_UpdateContent(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name:    "error on invalid header",
-			content: "What even is this file?",
-			info:    ReleaseInfo{ChangelogEntry: "## v1.0.0\n\n- Version 1, juhu.\n"},
-			want:    "",
-			wantErr: assert.Error,
+			name:     "error on invalid header",
+			content:  "What even is this file?",
+			filename: "CHANGELOG.md",
+			info:     ReleaseInfo{ChangelogEntry: "## v1.0.0\n\n- Version 1, juhu.\n"},
+			want:     "",
+			wantErr:  assert.Error,
 		},
 	}
 	for _, tt := range tests {
