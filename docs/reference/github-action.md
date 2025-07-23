@@ -14,11 +14,12 @@ The action does not support floating tags (e.g. `v1`) right now ([#31](https://g
 
 The following inputs are supported by the `apricote/releaser-pleaser` GitHub Action.
 
-| Input         | Description                                            |         Default |                                                              Example |
-| ------------- | :----------------------------------------------------- | --------------: | -------------------------------------------------------------------: |
-| `branch`      | This branch is used as the target for releases.        |          `main` |                                                             `master` |
-| `token`       | GitHub token for creating and updating release PRs     | `$GITHUB_TOKEN` |                                `${{secrets.RELEASER_PLEASER_TOKEN}}` |
-| `extra-files` | List of files that are scanned for version references. |            `""` | <pre><code>version/version.go<br>deploy/deployment.yaml</code></pre> |
+| Input                 | Description                                             |         Default |                                                              Example |
+| --------------------- | :------------------------------------------------------ | --------------: | -------------------------------------------------------------------: |
+| `branch`              | This branch is used as the target for releases.         |          `main` |                                                             `master` |
+| `token`               | GitHub token for creating and updating release PRs      | `$GITHUB_TOKEN` |                                `${{secrets.RELEASER_PLEASER_TOKEN}}` |
+| `extra-files`         | List of files that are scanned for version references.  |            `""` | <pre><code>version/version.go<br>deploy/deployment.yaml</code></pre> |
+| `update-package-json` | Update version field in package.json file.              |         `false` |                                                               `true` |
 
 ## Outputs
 

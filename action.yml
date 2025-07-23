@@ -17,6 +17,10 @@ inputs:
     description: 'List of files that are scanned for version references.'
     required: false
     default: ""
+  update-package-json:
+    description: 'Update version field in package.json file.'
+    required: false
+    default: "false"
   # Remember to update docs/reference/github-action.md
 outputs: {}
 runs:
@@ -27,6 +31,7 @@ runs:
     - --forge=github
     - --branch=${{ inputs.branch }}
     - --extra-files="${{ inputs.extra-files }}"
+    - ${{ inputs.update-package-json == 'true' && '--update-package-json' || '' }}
   env:
     GITHUB_TOKEN: "${{ inputs.token }}"
     GITHUB_USER: "oauth2"

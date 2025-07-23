@@ -21,21 +21,22 @@ var runCmd = &cobra.Command{
 }
 
 var (
-	flagForge      string
-	flagBranch     string
-	flagOwner      string
-	flagRepo       string
-	flagExtraFiles string
+	flagForge             string
+	flagBranch            string
+	flagOwner             string
+	flagRepo              string
+	flagExtraFiles        string
+	flagUpdatePackageJson bool
 )
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-
 	runCmd.PersistentFlags().StringVar(&flagForge, "forge", "", "")
 	runCmd.PersistentFlags().StringVar(&flagBranch, "branch", "main", "")
 	runCmd.PersistentFlags().StringVar(&flagOwner, "owner", "", "")
 	runCmd.PersistentFlags().StringVar(&flagRepo, "repo", "", "")
 	runCmd.PersistentFlags().StringVar(&flagExtraFiles, "extra-files", "", "")
+	runCmd.PersistentFlags().BoolVar(&flagUpdatePackageJson, "update-package-json", false, "")
 }
 
 func run(cmd *cobra.Command, _ []string) error {
@@ -48,6 +49,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		"branch", flagBranch,
 		"owner", flagOwner,
 		"repo", flagRepo,
+		"update-package-json", flagUpdatePackageJson,
 	)
 
 	var f forge.Forge
@@ -81,6 +83,13 @@ func run(cmd *cobra.Command, _ []string) error {
 
 	extraFiles := parseExtraFiles(flagExtraFiles)
 
+	updaters := []updater.NewUpdater{updater.Generic}
+
+	if flagUpdatePackageJson {
+		logger.DebugContext(ctx, "package.json updater enabled")
+		updaters = append(updaters, updater.PackageJson)
+	}
+
 	releaserPleaser := rp.New(
 		f,
 		logger,
@@ -88,7 +97,7 @@ func run(cmd *cobra.Command, _ []string) error {
 		conventionalcommits.NewParser(logger),
 		versioning.SemVer,
 		extraFiles,
-		[]updater.NewUpdater{updater.Generic},
+		updaters,
 	)
 
 	return releaserPleaser.Run(ctx)
