@@ -5,7 +5,7 @@ type ReleaseInfo struct {
 	ChangelogEntry string
 }
 
-type Updater func(string) (string, error)
+type Updater func(content string, filename string) (string, error)
 
 type NewUpdater func(ReleaseInfo) Updater
 
