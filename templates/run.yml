@@ -44,7 +44,7 @@ releaser-pleaser:
   resource_group: releaser-pleaser
 
   image:
-    name: ghcr.io/apricote/releaser-pleaser:v0.6.1 # x-releaser-pleaser-version
+    name: ghcr.io/apricote/releaser-pleaser:v0.7.0 # x-releaser-pleaser-version
     entrypoint: [ "" ]
   variables:
     GITLAB_TOKEN: $[[ inputs.token ]]

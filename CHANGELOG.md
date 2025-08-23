@@ -1,5 +1,27 @@
 # Changelog
 
+## [v0.7.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.7.0)
+
+### Highlights :sparkles:
+
+#### Update version in `package.json`
+
+Thanks to @Mattzi it is now possible to use `releaser-pleaser` in Javascript/Node.js projects with a `package.json` file.
+
+You can enable this with the option `updaters: packagejson` in the GitHub Actions / GitLab CI/CD config.
+
+All updaters, including the defaults `changelog` and `generic` can now be enabled and disabled through this field. You can find a full list in the [documentation](https://apricote.github.io/releaser-pleaser/reference/updaters.html).
+
+### Features
+
+- add updater for package.json (#213)
+- highlight breaking changes in release notes (#234)
+
+### Bug Fixes
+
+- filter out empty updaters in input (#235)
+- **github**: duplicate release pr when process is stopped at wrong moment (#236)
+
 ## [v0.6.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.6.1)
 
 ### Bug Fixes
