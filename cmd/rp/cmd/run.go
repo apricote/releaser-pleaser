@@ -135,6 +135,10 @@ func parseUpdaters(input []string) []string {
 	names := []string{"changelog", "generic"}
 
 	for _, u := range input {
+		if u == "" {
+			continue
+		}
+
 		if strings.HasPrefix(u, "-") {
 			name := u[1:]
 			names = slices.DeleteFunc(names, func(existingName string) bool { return existingName == name })

@@ -89,6 +89,11 @@ func Test_parseUpdaters(t *testing.T) {
 			input: []string{"bar", "bar", "changelog"},
 			want:  []string{"bar", "changelog", "generic"},
 		},
+		{
+			name:  "remove empty entries",
+			input: []string{""},
+			want:  []string{"changelog", "generic"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
