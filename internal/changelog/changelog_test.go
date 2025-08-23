@@ -55,6 +55,23 @@ func Test_NewChangelogEntry(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "single breaking change",
+			args: args{
+				analyzedCommits: []commitparser.AnalyzedCommit{
+					{
+						Commit:         git.Commit{},
+						Type:           "feat",
+						Description:    "Foobar!",
+						BreakingChange: true,
+					},
+				},
+				version: "1.0.0",
+				link:    "https://example.com/1.0.0",
+			},
+			want:    "## [1.0.0](https://example.com/1.0.0)\n\n### Features\n\n- **BREAKING**: Foobar!\n",
+			wantErr: assert.NoError,
+		},
+		{
 			name: "single fix",
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
