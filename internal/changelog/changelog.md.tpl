@@ -1,5 +1,5 @@
 {{define "entry" -}}
-- {{ if .Scope }}**{{.Scope}}**: {{end}}{{.Description}}
+- {{ if .BreakingChange}}**BREAKING**: {{end}}{{ if .Scope }}**{{.Scope}}**: {{end}}{{.Description}}
 {{ end }}
 
 {{- if not .Formatting.HideVersionTitle }}
