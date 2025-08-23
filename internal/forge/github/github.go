@@ -296,6 +296,13 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*rele
 }
 
 func (g *GitHub) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
+	// If the Pull Request is created without the labels releaser-pleaser will create a new PR in the run. The user may merge both and have duplicate entries in the changelog.
+	// We try to avoid this situation by checking for a cancelled context first, and then running both API calls without passing along any cancellations.
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+	ctx = context.WithoutCancel(ctx)
+
 	ghPR, _, err := g.client.PullRequests.Create(
 		ctx, g.options.Owner, g.options.Repo,
 		&github.NewPullRequest{
@@ -309,7 +316,6 @@ func (g *GitHub) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePul
 		return err
 	}
 
-	// TODO: String ID?
 	pr.ID = ghPR.GetNumber()
 
 	err = g.SetPullRequestLabels(ctx, pr, []releasepr.Label{}, pr.Labels)
