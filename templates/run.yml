@@ -9,12 +9,12 @@ spec:
       description: "GitLab token for creating and updating release MRs."
 
     extra-files:
-      description: 'List of files that are scanned for version references.'
+      description: 'List of files that are scanned for version references by the generic updater.'
       default: ""
 
-    update-package-json:
-      description: 'Update version field in package.json file.'
-      default: "false"
+    updaters:
+      description: "List of updaters that are run. Default updaters can be removed by specifying them as -name. Multiple updaters should be concatenated with a comma. Default Updaters: changelog,generic"
+      default: ""
 
     stage:
       default: build
@@ -54,4 +54,4 @@ releaser-pleaser:
         --forge=gitlab \
         --branch=$[[ inputs.branch ]] \
         --extra-files="$[[ inputs.extra-files ]]" \
-        $([[ inputs.update-package-json == "true" ]] && echo "--update-package-json" || echo "")
+        --updaters="$[[ inputs.updaters ]]"

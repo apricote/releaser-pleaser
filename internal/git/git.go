@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -14,8 +13,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
-
-	"github.com/apricote/releaser-pleaser/internal/updater"
 )
 
 const (
@@ -120,7 +117,7 @@ func (r *Repository) Checkout(_ context.Context, branch string) error {
 	return nil
 }
 
-func (r *Repository) UpdateFile(_ context.Context, path string, create bool, updaters []updater.Updater) error {
+func (r *Repository) UpdateFile(_ context.Context, path string, create bool, updateHook func(string) (string, error)) error {
 	worktree, err := r.r.Worktree()
 	if err != nil {
 		return err
@@ -142,13 +139,9 @@ func (r *Repository) UpdateFile(_ context.Context, path string, create bool, upd
 		return err
 	}
 
-	updatedContent := string(content)
-
-	for _, update := range updaters {
-		updatedContent, err = update(updatedContent, filepath.Base(path))
-		if err != nil {
-			return fmt.Errorf("failed to run updater on file %s", path)
-		}
+	updatedContent, err := updateHook(string(content))
+	if err != nil {
+		return fmt.Errorf("failed to run update hook on file %s", path)
 	}
 
 	err = file.Truncate(0)

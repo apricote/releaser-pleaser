@@ -10,7 +10,8 @@ In some situations it makes sense to have the current version committed in files
 
 ## Markers
 
-The line that needs to be updated must have the marker `x-releaser-pleaser-version` somewhere after the version that should be updated.
+The line that needs to be updated must have the marker
+`x-releaser-pleaser-version` somewhere after the version that should be updated.
 
 For example:
 
@@ -28,7 +29,8 @@ You need to tell `releaser-pleaser` which files it should update. This happens t
 
 ### GitHub Action
 
-In the GitHub Action you can set the `extra-files` input with a list of the files. They need to be formatted as a single multi-line string with one file path per line:
+In the GitHub Action you can set the
+`extra-files` input with a list of the files. They need to be formatted as a single multi-line string with one file path per line:
 
 ```yaml
 jobs:
@@ -44,7 +46,8 @@ jobs:
 
 ### GitLab CI/CD Component
 
-In the GitLab CI/CD Component you can set the `extra-files` input with a list of files. They need to be formatted as a single multi-line string with one file path per line:
+In the GitLab CI/CD Component you can set the
+`extra-files` input with a list of files. They need to be formatted as a single multi-line string with one file path per line:
 
 ```yaml
 include:
@@ -61,3 +64,4 @@ include:
 - **Reference**
   - [GitHub Action](../reference/github-action.md#inputs)
   - [GitLab CI/CD Component](../reference/gitlab-cicd-component.md#inputs)
+  - [Updaters](../reference/updaters.md#generic-updater)

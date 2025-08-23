@@ -14,8 +14,23 @@ var (
 	ChangelogUpdaterHeaderRegex = regexp.MustCompile(`^# Changelog\n`)
 )
 
-func Changelog(info ReleaseInfo) Updater {
-	return func(content string, filename string) (string, error) {
+func Changelog() Updater {
+	return changelog{}
+}
+
+type changelog struct {
+}
+
+func (c changelog) Files() []string {
+	return []string{ChangelogFile}
+}
+
+func (c changelog) CreateNewFiles() bool {
+	return true
+}
+
+func (c changelog) Update(info ReleaseInfo) func(content string) (string, error) {
+	return func(content string) (string, error) {
 		headerIndex := ChangelogUpdaterHeaderRegex.FindStringIndex(content)
 		if headerIndex == nil && len(content) != 0 {
 			return "", fmt.Errorf("unexpected format of CHANGELOG.md, header does not match")

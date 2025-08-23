@@ -57,3 +57,43 @@ dir/Chart.yaml"`,
 		})
 	}
 }
+
+func Test_parseUpdaters(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []string
+		want  []string
+	}{
+		{
+			name:  "empty",
+			input: []string{},
+			want:  []string{"changelog", "generic"},
+		},
+		{
+			name:  "remove defaults",
+			input: []string{"-changelog", "-generic"},
+			want:  []string{},
+		},
+		{
+			name:  "remove unknown is ignored",
+			input: []string{"-fooo"},
+			want:  []string{"changelog", "generic"},
+		},
+		{
+			name:  "add new entry",
+			input: []string{"bar"},
+			want:  []string{"bar", "changelog", "generic"},
+		},
+		{
+			name:  "duplicates are removed",
+			input: []string{"bar", "bar", "changelog"},
+			want:  []string{"bar", "changelog", "generic"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseUpdaters(tt.input)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

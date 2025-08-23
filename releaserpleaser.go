@@ -34,10 +34,10 @@ type ReleaserPleaser struct {
 	commitParser commitparser.CommitParser
 	versioning   versioning.Strategy
 	extraFiles   []string
-	updaters     []updater.NewUpdater
+	updaters     []updater.Updater
 }
 
-func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.NewUpdater) *ReleaserPleaser {
+func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater) *ReleaserPleaser {
 	return &ReleaserPleaser{
 		forge:        forge,
 		logger:       logger,
@@ -281,16 +281,12 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	// Info for updaters
 	info := updater.ReleaseInfo{Version: nextVersion, ChangelogEntry: changelogEntry}
 
-	err = repo.UpdateFile(ctx, updater.ChangelogFile, true, updater.WithInfo(info, updater.Changelog))
-	if err != nil {
-		return fmt.Errorf("failed to update changelog file: %w", err)
-	}
-
-	for _, path := range rp.extraFiles {
-		// TODO: Check for missing files
-		err = repo.UpdateFile(ctx, path, false, updater.WithInfo(info, rp.updaters...))
-		if err != nil {
-			return fmt.Errorf("failed to run file updater: %w", err)
+	for _, u := range rp.updaters {
+		for _, file := range u.Files() {
+			err = repo.UpdateFile(ctx, file, u.CreateNewFiles(), u.Update(info))
+			if err != nil {
+				return fmt.Errorf("failed to run updater %T: %w", u, err)
+			}
 		}
 	}
 

@@ -6,12 +6,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenericUpdater_UpdateContent(t *testing.T) {
+func TestGenericUpdater_Files(t *testing.T) {
+	assert.Equal(t, []string{"foo.bar", "version.txt"}, Generic([]string{"foo.bar", "version.txt"}).Files())
+}
+
+func TestGenericUpdater_CreateNewFiles(t *testing.T) {
+	assert.False(t, Generic([]string{}).CreateNewFiles())
+}
+
+func TestGenericUpdater_Update(t *testing.T) {
 	tests := []updaterTestCase{
 		{
-			name:     "single line",
-			content:  "v1.0.0 // x-releaser-pleaser-version",
-			filename: "version.txt",
+			name:    "single line",
+			content: "v1.0.0 // x-releaser-pleaser-version",
 			info: ReleaseInfo{
 				Version: "v1.2.0",
 			},
@@ -19,9 +26,8 @@ func TestGenericUpdater_UpdateContent(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name:     "multiline line",
-			content:  "Foooo\n\v1.2.0\nv1.0.0 // x-releaser-pleaser-version\n",
-			filename: "version.txt",
+			name:    "multiline line",
+			content: "Foooo\n\v1.2.0\nv1.0.0 // x-releaser-pleaser-version\n",
 			info: ReleaseInfo{
 				Version: "v1.2.0",
 			},
@@ -29,9 +35,8 @@ func TestGenericUpdater_UpdateContent(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name:     "invalid existing version",
-			content:  "1.0 // x-releaser-pleaser-version",
-			filename: "version.txt",
+			name:    "invalid existing version",
+			content: "1.0 // x-releaser-pleaser-version",
 			info: ReleaseInfo{
 				Version: "v1.2.0",
 			},
@@ -39,9 +44,8 @@ func TestGenericUpdater_UpdateContent(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name:     "complicated line",
-			content:  "version: v1.2.0-alpha.1 => Awesome, isnt it? x-releaser-pleaser-version foobar",
-			filename: "version.txt",
+			name:    "complicated line",
+			content: "version: v1.2.0-alpha.1 => Awesome, isnt it? x-releaser-pleaser-version foobar",
 			info: ReleaseInfo{
 				Version: "v1.2.0",
 			},
@@ -51,7 +55,7 @@ func TestGenericUpdater_UpdateContent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runUpdaterTest(t, Generic, tt)
+			runUpdaterTest(t, Generic([]string{"version.txt"}), tt)
 		})
 	}
 }
