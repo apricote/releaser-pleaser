@@ -23,5 +23,6 @@ The following inputs are supported by the component.
 | `branch`               | This branch is used as the target for releases.           |  `main` |                                                             `master` |
 | `token` (**required**) | GitLab access token for creating and updating release PRs |         |                                            `$RELEASER_PLEASER_TOKEN` |
 | `extra-files`          | List of files that are scanned for version references.    |    `""` | <pre><code>version/version.go<br>deploy/deployment.yaml</code></pre> |
+| `update-package-json`  | Update version field in package.json file.                | `false` |                                                               `true` |
 | `stage`                | Stage the job runs in. Must exists.                       | `build` |                                                               `test` |
 | `needs`                | Other jobs the releaser-pleaser job depends on.           |    `[]` |              <pre><code>- validate-foo<br>- prepare-bar</code></pre> |
