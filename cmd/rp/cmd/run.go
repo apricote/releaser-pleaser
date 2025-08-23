@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -21,12 +22,12 @@ var runCmd = &cobra.Command{
 }
 
 var (
-	flagForge             string
-	flagBranch            string
-	flagOwner             string
-	flagRepo              string
-	flagExtraFiles        string
-	flagUpdatePackageJson bool
+	flagForge      string
+	flagBranch     string
+	flagOwner      string
+	flagRepo       string
+	flagExtraFiles string
+	flagUpdaters   []string
 )
 
 func init() {
@@ -36,7 +37,7 @@ func init() {
 	runCmd.PersistentFlags().StringVar(&flagOwner, "owner", "", "")
 	runCmd.PersistentFlags().StringVar(&flagRepo, "repo", "", "")
 	runCmd.PersistentFlags().StringVar(&flagExtraFiles, "extra-files", "", "")
-	runCmd.PersistentFlags().BoolVar(&flagUpdatePackageJson, "update-package-json", false, "")
+	runCmd.PersistentFlags().StringSliceVar(&flagUpdaters, "updaters", []string{}, "")
 }
 
 func run(cmd *cobra.Command, _ []string) error {
@@ -49,7 +50,6 @@ func run(cmd *cobra.Command, _ []string) error {
 		"branch", flagBranch,
 		"owner", flagOwner,
 		"repo", flagRepo,
-		"update-package-json", flagUpdatePackageJson,
 	)
 
 	var f forge.Forge
@@ -83,11 +83,19 @@ func run(cmd *cobra.Command, _ []string) error {
 
 	extraFiles := parseExtraFiles(flagExtraFiles)
 
-	updaters := []updater.NewUpdater{updater.Generic}
-
-	if flagUpdatePackageJson {
-		logger.DebugContext(ctx, "package.json updater enabled")
-		updaters = append(updaters, updater.PackageJson)
+	updaterNames := parseUpdaters(flagUpdaters)
+	updaters := []updater.Updater{}
+	for _, name := range updaterNames {
+		switch name {
+		case "generic":
+			updaters = append(updaters, updater.Generic(extraFiles))
+		case "changelog":
+			updaters = append(updaters, updater.Changelog())
+		case "packagejson":
+			updaters = append(updaters, updater.PackageJson())
+		default:
+			return fmt.Errorf("unknown updater: %s", name)
+		}
 	}
 
 	releaserPleaser := rp.New(
@@ -121,4 +129,23 @@ func parseExtraFiles(input string) []string {
 	}
 
 	return extraFiles
+}
+
+func parseUpdaters(input []string) []string {
+	names := []string{"changelog", "generic"}
+
+	for _, u := range input {
+		if strings.HasPrefix(u, "-") {
+			name := u[1:]
+			names = slices.DeleteFunc(names, func(existingName string) bool { return existingName == name })
+		} else {
+			names = append(names, u)
+		}
+	}
+
+	// Make sure we only have unique updaters
+	slices.Sort(names)
+	names = slices.Compact(names)
+
+	return names
 }

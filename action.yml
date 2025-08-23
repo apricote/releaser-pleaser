@@ -14,15 +14,15 @@ inputs:
     required: false
     default: ${{ github.token }}
   extra-files:
-    description: 'List of files that are scanned for version references.'
+    description: 'List of files that are scanned for version references by the generic updater.'
     required: false
     default: ""
-  update-package-json:
-    description: 'Update version field in package.json file.'
+  updaters:
+    description: "List of updaters that are run. Default updaters can be removed by specifying them as -name. Multiple updaters should be concatenated with a comma. Default Updaters: changelog,generic"
     required: false
-    default: "false"
+    default: ""
   # Remember to update docs/reference/github-action.md
-outputs: {}
+outputs: { }
 runs:
   using: 'docker'
   image: docker://ghcr.io/apricote/releaser-pleaser:v0.6.1 # x-releaser-pleaser-version
@@ -31,7 +31,7 @@ runs:
     - --forge=github
     - --branch=${{ inputs.branch }}
     - --extra-files="${{ inputs.extra-files }}"
-    - ${{ inputs.update-package-json == 'true' && '--update-package-json' || '' }}
+    - --updaters="${{ inputs.updaters }}"
   env:
     GITHUB_TOKEN: "${{ inputs.token }}"
     GITHUB_USER: "oauth2"

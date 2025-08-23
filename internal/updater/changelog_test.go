@@ -6,15 +6,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestChangelogUpdater_UpdateContent(t *testing.T) {
+func TestChangelogUpdater_Files(t *testing.T) {
+	assert.Equal(t, []string{"CHANGELOG.md"}, Changelog().Files())
+}
+
+func TestChangelogUpdater_CreateNewFiles(t *testing.T) {
+	assert.True(t, Changelog().CreateNewFiles())
+}
+
+func TestChangelogUpdater_Update(t *testing.T) {
 	tests := []updaterTestCase{
 		{
-			name:     "empty file",
-			content:  "",
-			filename: "CHANGELOG.md",
-			info:     ReleaseInfo{ChangelogEntry: "## v1.0.0\n"},
-			want:     "# Changelog\n\n## v1.0.0\n",
-			wantErr:  assert.NoError,
+			name:    "empty file",
+			content: "",
+			info:    ReleaseInfo{ChangelogEntry: "## v1.0.0\n"},
+			want:    "# Changelog\n\n## v1.0.0\n",
+			wantErr: assert.NoError,
 		},
 		{
 			name: "well-formatted changelog",
@@ -28,8 +35,7 @@ func TestChangelogUpdater_UpdateContent(t *testing.T) {
 
 ### Bazuuum
 `,
-			filename: "CHANGELOG.md",
-			info:     ReleaseInfo{ChangelogEntry: "## v1.0.0\n\n- Version 1, juhu.\n"},
+			info: ReleaseInfo{ChangelogEntry: "## v1.0.0\n\n- Version 1, juhu.\n"},
 			want: `# Changelog
 
 ## v1.0.0
@@ -47,17 +53,16 @@ func TestChangelogUpdater_UpdateContent(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name:     "error on invalid header",
-			content:  "What even is this file?",
-			filename: "CHANGELOG.md",
-			info:     ReleaseInfo{ChangelogEntry: "## v1.0.0\n\n- Version 1, juhu.\n"},
-			want:     "",
-			wantErr:  assert.Error,
+			name:    "error on invalid header",
+			content: "What even is this file?",
+			info:    ReleaseInfo{ChangelogEntry: "## v1.0.0\n\n- Version 1, juhu.\n"},
+			want:    "",
+			wantErr: assert.Error,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runUpdaterTest(t, Changelog, tt)
+			runUpdaterTest(t, Changelog(), tt)
 		})
 	}
 }

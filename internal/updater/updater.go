@@ -5,7 +5,11 @@ type ReleaseInfo struct {
 	ChangelogEntry string
 }
 
-type Updater func(content string, filename string) (string, error)
+type Updater interface {
+	Files() []string
+	CreateNewFiles() bool
+	Update(info ReleaseInfo) func(content string) (string, error)
+}
 
 type NewUpdater func(ReleaseInfo) Updater
 
