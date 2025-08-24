@@ -17,10 +17,6 @@ jobs:
         with:
           lfs: "true"
 
-      - uses: ./.github/actions/setup-mdbook
-        with:
-          version: v0.4.52 # renovate: datasource=github-releases depName=rust-lang/mdbook
-
       - name: Build Book
         working-directory: docs
         run: mdbook build
