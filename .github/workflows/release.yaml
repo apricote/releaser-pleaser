@@ -16,10 +16,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
-      - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
-        with:
-          go-version-file: go.mod
+      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3
 
-      - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
       - run: ko build --bare --tags ${{ github.ref_name }} github.com/apricote/releaser-pleaser/cmd/rp

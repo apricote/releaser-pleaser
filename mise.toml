@@ -1,0 +1,10 @@
+[tools]
+go = "1.25.0"
+golangci-lint = "v2.4.0"
+goreleaser = "v2.9.0"
+"github:rust-lang/mdBook" = "v0.4.52"
+"github:ko-build/ko" = "v0.18.0"
+
+[settings]
+# Experimental features are needed for the Go backend
+experimental = true
