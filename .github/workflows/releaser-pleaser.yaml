@@ -2,7 +2,7 @@ name: releaser-pleaser
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   # Using pull_request_target to avoid tainting the actual release PR with code from open feature pull requests
   pull_request_target:
     types:
@@ -17,7 +17,7 @@ concurrency:
   group: releaser-pleaser
   cancel-in-progress: true
 
-permissions: {}
+permissions: { }
 
 jobs:
   releaser-pleaser:
@@ -29,15 +29,11 @@ jobs:
         with:
           ref: main
 
-      - name: Set up Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
-        with:
-          go-version-file: go.mod
+      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3
 
       # Build container image from current commit and replace image ref in `action.yml`
       # Without this, any new flags in `action.yml` would break the job in this repository until the new
       # version is released. But a new version can only be released if this job works.
-      - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
       - run: ko build --bare --local --platform linux/amd64 --tags ci github.com/apricote/releaser-pleaser/cmd/rp
 
       - run: mkdir -p .github/actions/releaser-pleaser
