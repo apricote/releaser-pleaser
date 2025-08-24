@@ -64,6 +64,7 @@
       customType: 'regex',
       managerFilePatterns: [
         '/.+\\.ya?ml$/',
+        '/.+\\.toml$/'
       ],
       matchStrings: [
         ': (?<currentValue>.+) # renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?: lookupName=(?<packageName>[^\\s]+))?(?: versioning=(?<versioning>[a-z-]+))?(?: extractVersion=(?<extractVersion>[^\\s]+))?',
