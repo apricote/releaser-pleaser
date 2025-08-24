@@ -18,4 +18,12 @@ jobs:
 
       - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3
 
+      - name: Prepare ko
+        run: |
+          echo "${{ github.token }}" | ko login ghcr.io --username "dummy" --password-stdin
+
+          repo=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "KO_DOCKER_REPO=ghcr.io/${repo}"
+          echo "KO_DOCKER_REPO=ghcr.io/${repo}" >> $GITHUB_ENV
+
       - run: ko build --bare --tags ${{ github.ref_name }} github.com/apricote/releaser-pleaser/cmd/rp
