@@ -8,3 +8,18 @@ ko = "v0.18.0" # renovate: datasource=github-releases depName=ko-build/ko
 [settings]
 # Experimental features are needed for the Go backend
 experimental = true
+
+[tasks.lint]
+run = "golangci-lint run"
+
+[tasks.test]
+run = "go test -v -race ./..."
+
+[tasks.test-e2e]
+run = "go test -tags e2e_forgejo -v -race ./test/e2e/forgejo"
+
+[tasks.e2e-forgejo-start]
+run = "docker compose --project-directory ./test/e2e/forgejo up -d --wait"
+
+[tasks.e2e-forgejo-stop]
+run = "docker compose --project-directory ./test/e2e/forgejo down"
