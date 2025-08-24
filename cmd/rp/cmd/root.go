@@ -7,21 +7,23 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"syscall"
-	"time"
 
-	"github.com/lmittmann/tint"
 	"github.com/spf13/cobra"
 )
 
-var logger *slog.Logger
+func NewRootCmd() *cobra.Command {
+	var cmd = &cobra.Command{
+		Use:           "rp",
+		Short:         "",
+		Long:          ``,
+		Version:       version(),
+		SilenceUsage:  true, // Makes it harder to find the actual error
+		SilenceErrors: true, // We log manually with slog
+	}
 
-var rootCmd = &cobra.Command{
-	Use:           "rp",
-	Short:         "",
-	Long:          ``,
-	Version:       version(),
-	SilenceUsage:  true, // Makes it harder to find the actual error
-	SilenceErrors: true, // We log manually with slog
+	cmd.AddCommand(newRunCommand())
+
+	return cmd
 }
 
 func version() string {
@@ -66,24 +68,13 @@ func Execute() {
 		// Make sure to stop listening on signals after receiving the first signal to hand control of the signal back
 		// to the runtime. The Go runtime implements a "force shutdown" if the signal is received again.
 		<-ctx.Done()
-		logger.InfoContext(ctx, "Received shutdown signal, stopping...")
+		slog.InfoContext(ctx, "Received shutdown signal, stopping...")
 		stop()
 	}()
 
-	err := rootCmd.ExecuteContext(ctx)
+	err := NewRootCmd().ExecuteContext(ctx)
 	if err != nil {
-		logger.ErrorContext(ctx, err.Error())
+		slog.ErrorContext(ctx, err.Error())
 		os.Exit(1)
 	}
-}
-
-func init() {
-	logger = slog.New(
-		tint.NewHandler(os.Stderr, &tint.Options{
-			Level:      slog.LevelDebug,
-			TimeFormat: time.RFC3339,
-		}),
-	)
-
-	slog.SetDefault(logger)
 }
