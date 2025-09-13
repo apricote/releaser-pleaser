@@ -55,4 +55,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 => codeberg.org/apricote/forgejo-sdk/forgejo/v2 v2.1.2-0.20250615152743-47d3f0434561
+replace codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 => codeberg.org/apricote/forgejo-sdk/forgejo/v2 v2.1.0
