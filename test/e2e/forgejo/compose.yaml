@@ -1,0 +1,16 @@
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:11
+    ports:
+      - '3000:3000'
+      - '222:22'
+    volumes:
+      - data:/data/gitea
+      - ./app.ini:/data/gitea/conf/app.ini:ro
+
+    healthcheck:
+      test: ["CMD", "curl", "localhost:3000/api/healthz"]
+
+
+volumes:
+  data:
