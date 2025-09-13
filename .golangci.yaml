@@ -48,6 +48,10 @@ linters:
         - name: exported
           disabled: true
 
+    gomoddirectives:
+      replace-allow-list:
+        - codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2
+
 formatters:
   enable:
     - gci
