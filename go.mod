@@ -5,7 +5,7 @@ go 1.24
 toolchain go1.25.1
 
 require (
-	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.0.0-00010101000000-000000000000
+	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/go-git/go-billy/v5 v5.6.2
 	github.com/go-git/go-git/v5 v5.16.2
