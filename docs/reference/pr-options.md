@@ -30,17 +30,17 @@ Any text in code blocks with these languages is being added to the start or end 
 
 **Examples**:
 
-    ```rp-prefix
+    ~~~~rp-prefix
     #### Awesome new feature!
 
     This text is at the start of the release notes.
-    ```
+    ~~~~
 
-    ```rp-suffix
+    ~~~~rp-suffix
     #### Version Compatibility
 
     And this at the end.
-    ```
+    ~~~~
 
 ### Status
 

@@ -1,0 +1,13 @@
+## Foo
+
+- Cool thing
+
+```go
+// Some code example
+func IsPositive(number int) error {
+	if number < 0 {
+		return fmt.Errorf("number %d is negative", number)
+	}
+	return nil
+}
+```

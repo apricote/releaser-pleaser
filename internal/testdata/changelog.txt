@@ -1,0 +1,13 @@
+# Foobar
+
+<!-- section-start changelog -->
+This is the changelog
+
+## Awesome
+
+### New
+
+#### Changes
+<!-- section-end changelog -->
+
+Suffix Things
