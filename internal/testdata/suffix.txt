@@ -1,0 +1,3 @@
+## Compatibility
+
+No compatibility guarantees.

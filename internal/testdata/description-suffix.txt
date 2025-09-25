@@ -1,5 +1,5 @@
 <!-- section-start changelog -->
-{{ .Changelog }}
+## v1.0.0
 <!-- section-end changelog -->
 
 ---
@@ -16,8 +16,6 @@ If you want to modify the proposed release, add you overrides here. You can lear
 This will be added to the start of the release notes.
 
 ~~~~rp-prefix
-{{- if .Overrides.Prefix }}
-{{ .Overrides.Prefix }}{{ end }}
 ~~~~
 
 ### Suffix / End
@@ -25,8 +23,9 @@ This will be added to the start of the release notes.
 This will be added to the end of the release notes.
 
 ~~~~rp-suffix
-{{- if .Overrides.Suffix }}
-{{ .Overrides.Suffix }}{{ end }}
+## Compatibility
+
+No compatibility guarantees.
 ~~~~
 
 </details>

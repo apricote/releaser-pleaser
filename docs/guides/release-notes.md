@@ -43,17 +43,17 @@ The release pull request description has text fields where maintainers can add t
 
 When you edit the description, make sure to put your desired content into the code blocks named `rp-prefix` and `rp-suffix`. Only the content of these blocks is considered.
 
->     ```rp-prefix
+>     ~~~~rp-prefix
 >     ### Prefix
 >
 >     This will be shown as the Prefix.
->     ```
+>     ~~~~
 >
->     ```rp-suffix
+>     ~~~~rp-suffix
 >     ### Suffix
 >
 >     This will be shown as the Suffix.
->     ```
+>     ~~~~
 
 To match the style of the auto-generated release notes, you should start any headings at level 3 (`### Title`).
 

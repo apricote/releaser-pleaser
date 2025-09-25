@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/apricote/releaser-pleaser/internal/git"
+	"github.com/apricote/releaser-pleaser/internal/testdata"
 	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
 
@@ -37,20 +38,24 @@ func TestReleasePullRequest_GetOverrides(t *testing.T) {
 			name: "prefix in description",
 			pr: ReleasePullRequest{
 				PullRequest: git.PullRequest{
-					Description: "```rp-prefix\n## Foo\n\n- Cool thing\n```",
+					Description: testdata.MustReadFileString(t, "description-prefix.txt"),
 				},
 			},
-			want:    ReleaseOverrides{Prefix: "## Foo\n\n- Cool thing"},
+			want: ReleaseOverrides{
+				Prefix: testdata.MustReadFileString(t, "prefix.txt"),
+			},
 			wantErr: assert.NoError,
 		},
 		{
 			name: "suffix in description",
 			pr: ReleasePullRequest{
 				PullRequest: git.PullRequest{
-					Description: "```rp-suffix\n## Compatibility\n\nNo compatibility guarantees.\n```",
+					Description: testdata.MustReadFileString(t, "description-suffix.txt"),
 				},
 			},
-			want:    ReleaseOverrides{Suffix: "## Compatibility\n\nNo compatibility guarantees."},
+			want: ReleaseOverrides{
+				Suffix: testdata.MustReadFileString(t, "suffix.txt"),
+			},
 			wantErr: assert.NoError,
 		},
 	}
@@ -80,30 +85,10 @@ func TestReleasePullRequest_ChangelogText(t *testing.T) {
 			wantErr:     assert.NoError,
 		},
 		{
-			name: "with section",
-			description: `# Foobar
-
-<!-- section-start changelog -->
-This is the changelog
-
-## Awesome
-
-### New
-
-#### Changes
-<!-- section-end changelog -->
-
-Suffix Things
-`,
-			want: `This is the changelog
-
-## Awesome
-
-### New
-
-#### Changes
-`,
-			wantErr: assert.NoError,
+			name:        "with section",
+			description: testdata.MustReadFileString(t, "changelog.txt"),
+			want:        testdata.MustReadFileString(t, "changelog-content.txt"),
+			wantErr:     assert.NoError,
 		},
 	}
 	for _, tt := range tests {
@@ -178,75 +163,17 @@ func TestReleasePullRequest_SetDescription(t *testing.T) {
 			name:           "no overrides",
 			changelogEntry: `## v1.0.0`,
 			overrides:      ReleaseOverrides{},
-			want: `<!-- section-start changelog -->
-## v1.0.0
-<!-- section-end changelog -->
-
----
-
-<details>
-  <summary><h4>PR by <a href="https://github.com/apricote/releaser-pleaser">releaser-pleaser</a> 🤖</h4></summary>
-
-If you want to modify the proposed release, add you overrides here. You can learn more about the options in the docs.
-
-## Release Notes
-
-### Prefix / Start
-
-This will be added to the start of the release notes.
-
-` + "```" + `rp-prefix
-` + "```" + `
-
-### Suffix / End
-
-This will be added to the end of the release notes.
-
-` + "```" + `rp-suffix
-` + "```" + `
-
-</details>
-`,
-			wantErr: assert.NoError,
+			want:           testdata.MustReadFileString(t, "description-no-overrides.txt"),
+			wantErr:        assert.NoError,
 		},
 		{
 			name:           "existing overrides",
 			changelogEntry: `## v1.0.0`,
 			overrides: ReleaseOverrides{
-				Prefix: "This release is awesome!",
-				Suffix: "Fooo",
+				Prefix: testdata.MustReadFileString(t, "prefix.txt"),
+				Suffix: testdata.MustReadFileString(t, "suffix.txt"),
 			},
-			want: `<!-- section-start changelog -->
-## v1.0.0
-<!-- section-end changelog -->
-
----
-
-<details>
-  <summary><h4>PR by <a href="https://github.com/apricote/releaser-pleaser">releaser-pleaser</a> 🤖</h4></summary>
-
-If you want to modify the proposed release, add you overrides here. You can learn more about the options in the docs.
-
-## Release Notes
-
-### Prefix / Start
-
-This will be added to the start of the release notes.
-
-` + "```" + `rp-prefix
-This release is awesome!
-` + "```" + `
-
-### Suffix / End
-
-This will be added to the end of the release notes.
-
-` + "```" + `rp-suffix
-Fooo
-` + "```" + `
-
-</details>
-`,
+			want:    testdata.MustReadFileString(t, "description-overrides.txt"),
 			wantErr: assert.NoError,
 		},
 	}
