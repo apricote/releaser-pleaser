@@ -1,0 +1,9 @@
+## [1.0.0](https://example.com/1.0.0)
+
+### Bug Fixes
+
+- Foobar!
+
+## Compatibility
+
+This version is compatible with flux-compensator v2.2 - v2.9.

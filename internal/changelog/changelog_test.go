@@ -8,6 +8,7 @@ import (
 
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
 	"github.com/apricote/releaser-pleaser/internal/git"
+	"github.com/apricote/releaser-pleaser/internal/testdata"
 )
 
 func ptr[T any](input T) *T {
@@ -143,16 +144,9 @@ func Test_NewChangelogEntry(t *testing.T) {
 				},
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
-				prefix:  "### Breaking Changes",
+				prefix:  testdata.MustReadFileString(t, "prefix.txt"),
 			},
-			want: `## [1.0.0](https://example.com/1.0.0)
-
-### Breaking Changes
-
-### Bug Fixes
-
-- Foobar!
-`,
+			want:    testdata.MustReadFileString(t, "changelog-entry-prefix.txt"),
 			wantErr: assert.NoError,
 		},
 		{
@@ -167,18 +161,9 @@ func Test_NewChangelogEntry(t *testing.T) {
 				},
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
-				suffix:  "### Compatibility\n\nThis version is compatible with flux-compensator v2.2 - v2.9.",
+				suffix:  testdata.MustReadFileString(t, "suffix.txt"),
 			},
-			want: `## [1.0.0](https://example.com/1.0.0)
-
-### Bug Fixes
-
-- Foobar!
-
-### Compatibility
-
-This version is compatible with flux-compensator v2.2 - v2.9.
-`,
+			want:    testdata.MustReadFileString(t, "changelog-entry-suffix.txt"),
 			wantErr: assert.NoError,
 		},
 	}

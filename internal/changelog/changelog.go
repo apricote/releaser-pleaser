@@ -3,9 +3,9 @@ package changelog
 import (
 	"bytes"
 	_ "embed"
-	"html/template"
 	"log"
 	"log/slog"
+	"text/template"
 
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
 	"github.com/apricote/releaser-pleaser/internal/markdown"
