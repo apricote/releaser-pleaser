@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.7.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.7.1)
+
+### Bug Fixes
+
+- using code blocks within release-notes (#275)
+- no html escaping for changelog template (#277)
+
 ## [v0.7.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.7.0)
 
 ### Highlights :sparkles:
