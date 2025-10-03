@@ -117,8 +117,8 @@ github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
 github.com/yuin/goldmark v1.7.13 h1:GPddIs617DnBLFFVJFgpo1aBfe/4xcvMc3SB5t/D0pA=
 github.com/yuin/goldmark v1.7.13/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
-gitlab.com/gitlab-org/api/client-go v0.148.1 h1:xds5sz/aylLFX9wdTnaqalRDPmlZTzbp0vKA64nbLo4=
-gitlab.com/gitlab-org/api/client-go v0.148.1/go.mod h1:9Y5ivg3xj5KJ+TAyRmNSiQtpkoqKsHLRRlLKpgXNJ+Q=
+gitlab.com/gitlab-org/api/client-go v0.149.0 h1:Rp+q5QCBb2LEryCp68iHkW0K9YX9xcX0DbsRtaxqK6Y=
+gitlab.com/gitlab-org/api/client-go v0.149.0/go.mod h1:P3UhcdtBYT1dpqA33GibGrVl4dZWBs3vINR+YOaM+mA=
 go.abhg.dev/goldmark/toc v0.11.0 h1:IRixVy3/yVPKvFBc37EeBPi8XLTXrtH6BYaonSjkF8o=
 go.abhg.dev/goldmark/toc v0.11.0/go.mod h1:XMFIoI1Sm6dwF9vKzVDOYE/g1o5BmKXghLG8q/wJNww=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
