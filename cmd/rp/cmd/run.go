@@ -104,6 +104,8 @@ func newRunCommand() *cobra.Command {
 					updaters = append(updaters, updater.Changelog())
 				case "packagejson":
 					updaters = append(updaters, updater.PackageJson())
+				case "helmchart":
+					updaters = append(updaters, updater.HelmChart())
 				default:
 					return fmt.Errorf("unknown updater: %s", name)
 				}
