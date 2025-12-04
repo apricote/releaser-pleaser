@@ -12,7 +12,7 @@ require (
 	github.com/google/go-github/v74 v74.0.0
 	github.com/leodido/go-conventionalcommits v0.12.0
 	github.com/lmittmann/tint v1.1.2
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	github.com/teekennedy/goldmark-markdown v0.5.1
 	github.com/yuin/goldmark v1.7.13
