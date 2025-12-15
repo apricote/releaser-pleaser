@@ -17,7 +17,7 @@ jobs:
         with:
           lfs: "true"
 
-      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3
+      - uses: jdx/mise-action@146a28175021df8ca24f8ee1828cc2a60f980bd5 # v3
 
       - name: Build Book
         working-directory: docs
