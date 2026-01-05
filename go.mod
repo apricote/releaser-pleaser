@@ -15,7 +15,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	github.com/teekennedy/goldmark-markdown v0.5.1
-	github.com/yuin/goldmark v1.7.14
+	github.com/yuin/goldmark v1.7.15
 	gitlab.com/gitlab-org/api/client-go v0.161.1
 )
 
