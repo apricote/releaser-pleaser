@@ -31,3 +31,10 @@ Learn more about this updater in ["Updating arbitrary files"](../guides/updating
 - **Default**: disabled
 
 This updater can update the `version` field in Node.js `package.json` files. The updater is disabled by default.
+
+## Helm's `Chart.yaml` Updater
+
+- **Name**: `helmchart`
+- **Default**: disabled
+
+This updater can update the `version` field in Helm's `Chart.yaml` files. The updater is disabled by default.
