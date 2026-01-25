@@ -33,7 +33,7 @@ func newRunCommand() *cobra.Command {
 		flagUsername string
 	)
 
-	var cmd = &cobra.Command{
+	cmd := &cobra.Command{
 		Use: "run",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
