@@ -21,6 +21,22 @@ inputs:
     description: "List of updaters that are run. Default updaters can be removed by specifying them as -name. Multiple updaters should be concatenated with a comma. Default Updaters: changelog,generic"
     required: false
     default: ""
+  forge:
+    description: "Forge this action is run against"
+    required: false
+    default: "github"
+  api-url:
+    description: "API URL of the selected forge "
+    required: false
+    default: ""
+  owner:
+    description: "Owner of the repository"
+    required: false
+    default: ""
+  repo:
+    description: "Name of the repository"
+    required: false
+    default: ""
   # Remember to update docs/reference/github-action.md
 outputs: { }
 runs:
@@ -28,10 +44,14 @@ runs:
   image: docker://ghcr.io/apricote/releaser-pleaser:v0.7.1 # x-releaser-pleaser-version
   args:
     - run
-    - --forge=github
+    - --forge=${{ inputs.forge }}
     - --branch=${{ inputs.branch }}
     - --extra-files="${{ inputs.extra-files }}"
     - --updaters="${{ inputs.updaters }}"
+    - --api-url=${{ inputs.api-url }}
+    - --api-token=${{ inputs.token }}
+    - --owner=${{ inputs.owner }}
+    - --repo=${{ inputs.repo }}
   env:
     GITHUB_TOKEN: "${{ inputs.token }}"
     GITHUB_USER: "oauth2"
