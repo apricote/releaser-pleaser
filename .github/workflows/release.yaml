@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
 
-      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3
+      - uses: jdx/mise-action@6d1e696aa24c1aa1bcc1adea0212707c71ab78a8 # v3
 
       - name: Prepare ko
         run: |
