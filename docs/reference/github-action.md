@@ -17,11 +17,15 @@ The action does not support floating tags (e.g.
 The following inputs are supported by the `apricote/releaser-pleaser` GitHub Action.
 
 | Input         | Description                                                                                                                                                                            |         Default |                                                              Example |
-|---------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------:|---------------------------------------------------------------------:|
+| ------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------: | -------------------------------------------------------------------: |
 | `branch`      | This branch is used as the target for releases.                                                                                                                                        |          `main` |                                                             `master` |
 | `token`       | GitHub token for creating and updating release PRs                                                                                                                                     | `$GITHUB_TOKEN` |                                `${{secrets.RELEASER_PLEASER_TOKEN}}` |
+| `forge`       | Forge this action is run against                                                                                                                                                       |        `github` |                                                            `forgejo` |
 | `extra-files` | List of files that are scanned for version references by the generic updater.                                                                                                          |            `""` | <pre><code>version/version.go<br>deploy/deployment.yaml</code></pre> |
 | `updaters`    | List of updaters that are run. Default updaters can be removed by specifying them as -name. Multiple updaters should be concatenated with a comma. Default Updaters: changelog,generic |            `""` |                                               `-generic,packagejson` |
+| `api-url`     | API URL of the forge this action is run against.                                                                                                                                       |            `""` |                                        `https://forgejo.example.com` |
+| `owner`       | Owner of the repository. Only required for Forgejo Actions.                                                                                                                            |            `""` |                                                           `apricote` |
+| `repo`        | Name of the repository. Only required for Forgejo Actions.                                                                                                                             |            `""` |                                                   `releaser-pleaser` |
 
 ## Outputs
 
