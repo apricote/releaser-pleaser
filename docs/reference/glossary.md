@@ -57,5 +57,6 @@ Learn more in the [Release Notes customization](../guides/release-notes.md) guid
 ### Updater
 
 Updaters can update or create files that will be included in [Release Pull Request](#release-pull-request). Examples of Updaters are
-`changelog` for `CHANGELOG.md`, `generic` that can update arbitrary files and
-`packagejson` that knows how to update Node.JS `package.json` files.
+`changelog` for `CHANGELOG.md`, `generic` that can update arbitrary files,
+`packagejson` that knows how to update Node.JS `package.json` files and
+`helmchart` for Helm's `Chart.yaml` file.
