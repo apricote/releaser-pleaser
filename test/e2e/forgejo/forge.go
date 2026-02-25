@@ -9,7 +9,11 @@ import (
 	"testing"
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/stretchr/testify/require"
 
+	"github.com/apricote/releaser-pleaser/internal/git"
 	"github.com/apricote/releaser-pleaser/test/e2e"
 )
 
@@ -103,11 +107,87 @@ func (f *TestForge) CreateRepo(t *testing.T, opts e2e.CreateRepoOpts) (*e2e.Repo
 	}, nil
 }
 
+func (f *TestForge) CloneURL(t *testing.T, repo *e2e.Repository) string {
+	t.Helper()
+
+	return fmt.Sprintf("%s/%s/%s.git", TestAPIURL, f.username, repo.Name)
+}
+
+func (f *TestForge) GitAuth(t *testing.T) transport.AuthMethod {
+	t.Helper()
+
+	return &http.BasicAuth{
+		Username: f.username,
+		Password: f.token,
+	}
+}
+
+func (f *TestForge) ListOpenPRs(t *testing.T, repo *e2e.Repository) ([]*git.PullRequest, error) {
+	t.Helper()
+
+	fPRs, _, err := f.client.ListRepoPullRequests(f.username, repo.Name, forgejo.ListPullRequestsOptions{
+		State: forgejo.StateOpen,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	prs := make([]*git.PullRequest, 0, len(fPRs))
+	for _, pr := range fPRs {
+		prs = append(prs, forgejoPRToPullRequest(pr))
+	}
+
+	return prs, nil
+}
+
+func (f *TestForge) MergePR(t *testing.T, repo *e2e.Repository, pr *git.PullRequest) error {
+	t.Helper()
+
+	ok, _, err := f.client.MergePullRequest(f.username, repo.Name, pr.ID, forgejo.MergePullRequestOption{Style: forgejo.MergeStyleSquash})
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("merging pull request #%d failed", pr.ID)
+	}
+
+	return nil
+}
+
+func (f *TestForge) ListTags(t *testing.T, repo *e2e.Repository) ([]*git.Tag, error) {
+	t.Helper()
+
+	fTags, _, err := f.client.ListRepoTags(f.username, repo.Name, forgejo.ListRepoTagsOptions{})
+	require.NoError(t, err)
+
+	tags := make([]*git.Tag, 0, len(fTags))
+	for _, tag := range fTags {
+		tags = append(tags, forgejoTagToTag(tag))
+	}
+
+	return tags, nil
+}
+
 func (f *TestForge) RunArguments() []string {
 	return []string{"--forge=forgejo",
 		fmt.Sprintf("--owner=%s", f.username),
 		fmt.Sprintf("--api-url=%s", TestAPIURL),
 		fmt.Sprintf("--api-token=%s", f.token),
 		fmt.Sprintf("--username=%s", f.username),
+	}
+}
+
+func forgejoPRToPullRequest(pr *forgejo.PullRequest) *git.PullRequest {
+	return &git.PullRequest{
+		ID:          pr.Index,
+		Title:       pr.Title,
+		Description: pr.Body,
+	}
+}
+
+func forgejoTagToTag(tag *forgejo.Tag) *git.Tag {
+	return &git.Tag{
+		Hash: tag.Commit.SHA,
+		Name: tag.Name,
 	}
 }
