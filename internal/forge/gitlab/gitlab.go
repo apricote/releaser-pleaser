@@ -57,7 +57,7 @@ func (g *GitLab) ReleaseURL(version string) string {
 	return fmt.Sprintf("%s/-/releases/%s", g.RepoURL(), version)
 }
 
-func (g *GitLab) PullRequestURL(id int) string {
+func (g *GitLab) PullRequestURL(id int64) string {
 	return fmt.Sprintf("%s/-/merge_requests/%d", g.RepoURL(), id)
 }
 
@@ -368,7 +368,7 @@ func (g *GitLab) CreateRelease(ctx context.Context, commit git.Commit, title, ch
 
 func all[T any](f func(listOptions gitlab.ListOptions) ([]T, *gitlab.Response, error)) ([]T, error) {
 	results := make([]T, 0)
-	page := 1
+	page := int64(1)
 
 	for {
 		pageResults, resp, err := f(gitlab.ListOptions{Page: page, PerPage: PerPageMax})
