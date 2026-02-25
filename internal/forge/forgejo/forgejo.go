@@ -294,7 +294,7 @@ func (f *Forgejo) UpdatePullRequest(_ context.Context, pr *releasepr.ReleasePull
 		f.options.Owner, f.options.Repo,
 		int64(pr.ID), forgejo.EditPullRequestOption{
 			Title: pr.Title,
-			Body:  pr.Description,
+			Body:  &pr.Description,
 		},
 	)
 	if err != nil {
