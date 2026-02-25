@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.26.0
 
 require (
-	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.0
+	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.1-0.20260217203524-edf26081b649
 	github.com/blang/semver/v4 v4.0.0
 	github.com/go-git/go-billy/v5 v5.8.0
 	github.com/go-git/go-git/v5 v5.17.0
@@ -54,5 +54,3 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 => codeberg.org/apricote/forgejo-sdk/forgejo/v2 v2.1.2-0.20250615152743-47d3f0434561
