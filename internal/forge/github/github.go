@@ -57,7 +57,7 @@ func (g *GitHub) ReleaseURL(version string) string {
 	return fmt.Sprintf("https://github.com/%s/%s/releases/tag/%s", g.options.Owner, g.options.Repo, version)
 }
 
-func (g *GitHub) PullRequestURL(id int) string {
+func (g *GitHub) PullRequestURL(id int64) string {
 	return fmt.Sprintf("https://github.com/%s/%s/pull/%d", g.options.Owner, g.options.Repo, id)
 }
 
@@ -316,7 +316,7 @@ func (g *GitHub) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePul
 		return err
 	}
 
-	pr.ID = ghPR.GetNumber()
+	pr.ID = int64(ghPR.GetNumber())
 
 	err = g.SetPullRequestLabels(ctx, pr, []releasepr.Label{}, pr.Labels)
 	if err != nil {
@@ -329,7 +329,7 @@ func (g *GitHub) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePul
 func (g *GitHub) UpdatePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
 	_, _, err := g.client.PullRequests.Edit(
 		ctx, g.options.Owner, g.options.Repo,
-		pr.ID, &github.PullRequest{
+		int(pr.ID), &github.PullRequest{
 			Title: &pr.Title,
 			Body:  &pr.Description,
 		},
@@ -345,7 +345,7 @@ func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *releasepr.Release
 	for _, label := range remove {
 		_, err := g.client.Issues.RemoveLabelForIssue(
 			ctx, g.options.Owner, g.options.Repo,
-			pr.ID, label.Name,
+			int(pr.ID), label.Name,
 		)
 		if err != nil {
 			return err
@@ -359,7 +359,7 @@ func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *releasepr.Release
 
 	_, _, err := g.client.Issues.AddLabelsToIssue(
 		ctx, g.options.Owner, g.options.Repo,
-		pr.ID, addString,
+		int(pr.ID), addString,
 	)
 	if err != nil {
 		return err
@@ -371,7 +371,7 @@ func (g *GitHub) SetPullRequestLabels(ctx context.Context, pr *releasepr.Release
 func (g *GitHub) ClosePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
 	_, _, err := g.client.PullRequests.Edit(
 		ctx, g.options.Owner, g.options.Repo,
-		pr.ID, &github.PullRequest{
+		int(pr.ID), &github.PullRequest{
 			State: pointer.Pointer(PRStateClosed),
 		},
 	)
@@ -464,7 +464,7 @@ func all[T any](f func(listOptions github.ListOptions) ([]T, *github.Response, e
 
 func gitHubPRToPullRequest(pr *github.PullRequest) *git.PullRequest {
 	return &git.PullRequest{
-		ID:          pr.GetNumber(),
+		ID:          int64(pr.GetNumber()),
 		Title:       pr.GetTitle(),
 		Description: pr.GetBody(),
 	}

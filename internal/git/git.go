@@ -28,7 +28,7 @@ type Commit struct {
 }
 
 type PullRequest struct {
-	ID          int
+	ID          int64
 	Title       string
 	Description string
 }

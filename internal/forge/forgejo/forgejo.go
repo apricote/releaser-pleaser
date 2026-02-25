@@ -41,7 +41,7 @@ func (f *Forgejo) ReleaseURL(version string) string {
 	return fmt.Sprintf("%s/releases/tag/%s", f.RepoURL(), version)
 }
 
-func (f *Forgejo) PullRequestURL(id int) string {
+func (f *Forgejo) PullRequestURL(id int64) string {
 	return fmt.Sprintf("%s/pulls/%d", f.RepoURL(), id)
 }
 
@@ -279,7 +279,7 @@ func (f *Forgejo) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePu
 	}
 
 	// TODO: String ID?
-	pr.ID = int(fPR.ID)
+	pr.ID = fPR.ID
 
 	err = f.SetPullRequestLabels(ctx, pr, []releasepr.Label{}, pr.Labels)
 	if err != nil {
@@ -452,7 +452,7 @@ func all[T any](f func(listOptions forgejo.ListOptions) ([]T, *forgejo.Response,
 
 func forgejoPRToPullRequest(pr *forgejo.PullRequest) *git.PullRequest {
 	return &git.PullRequest{
-		ID:          int(pr.ID),
+		ID:          pr.ID,
 		Title:       pr.Title,
 		Description: pr.Body,
 	}
