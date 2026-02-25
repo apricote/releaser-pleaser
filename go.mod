@@ -9,7 +9,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/go-git/go-billy/v5 v5.8.0
 	github.com/go-git/go-git/v5 v5.17.0
-	github.com/google/go-github/v74 v74.0.0
+	github.com/google/go-github/v83 v83.0.0
 	github.com/leodido/go-conventionalcommits v0.12.0
 	github.com/lmittmann/tint v1.1.3
 	github.com/spf13/cobra v1.10.2
@@ -32,7 +32,7 @@ require (
 	github.com/go-fed/httpsig v1.1.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.8 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
