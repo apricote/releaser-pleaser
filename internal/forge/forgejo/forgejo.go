@@ -41,7 +41,7 @@ func (f *Forgejo) ReleaseURL(version string) string {
 	return fmt.Sprintf("%s/releases/tag/%s", f.RepoURL(), version)
 }
 
-func (f *Forgejo) PullRequestURL(id int) string {
+func (f *Forgejo) PullRequestURL(id int64) string {
 	return fmt.Sprintf("%s/pulls/%d", f.RepoURL(), id)
 }
 
@@ -279,7 +279,7 @@ func (f *Forgejo) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePu
 	}
 
 	// TODO: String ID?
-	pr.ID = int(fPR.Index)
+	pr.ID = fPR.Index
 
 	err = f.SetPullRequestLabels(ctx, pr, []releasepr.Label{}, pr.Labels)
 	if err != nil {
@@ -294,7 +294,7 @@ func (f *Forgejo) UpdatePullRequest(_ context.Context, pr *releasepr.ReleasePull
 		f.options.Owner, f.options.Repo,
 		int64(pr.ID), forgejo.EditPullRequestOption{
 			Title: pr.Title,
-			Body:  pr.Description,
+			Body:  &pr.Description,
 		},
 	)
 	if err != nil {
@@ -452,7 +452,7 @@ func all[T any](f func(listOptions forgejo.ListOptions) ([]T, *forgejo.Response,
 
 func forgejoPRToPullRequest(pr *forgejo.PullRequest) *git.PullRequest {
 	return &git.PullRequest{
-		ID:          int(pr.Index),
+		ID:          pr.Index,
 		Title:       pr.Title,
 		Description: pr.Body,
 	}
@@ -505,7 +505,7 @@ type Options struct {
 
 	APIURL   string
 	Username string
-	APIToken string
+	APIToken string //gosec:disable G117
 }
 
 func New(log *slog.Logger, options *Options) (*Forgejo, error) {
