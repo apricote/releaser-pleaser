@@ -7,7 +7,7 @@ toolchain go1.26.0
 require (
 	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/go-git/go-billy/v5 v5.7.0
+	github.com/go-git/go-billy/v5 v5.8.0
 	github.com/go-git/go-git/v5 v5.16.5
 	github.com/google/go-github/v74 v74.0.0
 	github.com/leodido/go-conventionalcommits v0.12.0
