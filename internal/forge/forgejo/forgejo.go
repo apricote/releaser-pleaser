@@ -505,7 +505,7 @@ type Options struct {
 
 	APIURL   string
 	Username string
-	APIToken string
+	APIToken string //gosec:disable G117
 }
 
 func New(log *slog.Logger, options *Options) (*Forgejo, error) {
