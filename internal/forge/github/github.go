@@ -521,7 +521,7 @@ type Options struct {
 	Owner string
 	Repo  string
 
-	APIToken string
+	APIToken string //gosec:disable G117
 	Username string
 }
 

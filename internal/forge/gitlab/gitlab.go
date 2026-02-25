@@ -460,7 +460,7 @@ type Options struct {
 	Path       string
 
 	APIURL   string
-	APIToken string
+	APIToken string //gosec:disable G117
 }
 
 func New(log *slog.Logger, options *Options) (*GitLab, error) {
