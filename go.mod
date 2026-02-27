@@ -16,7 +16,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/teekennedy/goldmark-markdown v0.5.1
 	github.com/yuin/goldmark v1.7.16
-	gitlab.com/gitlab-org/api/client-go v1.44.0
+	gitlab.com/gitlab-org/api/client-go v1.45.0
 )
 
 require (
