@@ -264,6 +264,18 @@ func (f *Forgejo) PullRequestForBranch(_ context.Context, branch string) (*relea
 	return nil, nil
 }
 
+func (f *Forgejo) PullRequestByID(_ context.Context, pr *releasepr.ReleasePullRequest) (*releasepr.ReleasePullRequest, error) {
+	fPR, _, err := f.client.GetPullRequest(
+		f.options.Owner, f.options.Repo,
+		pr.ID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return forgejoPRToReleasePullRequest(fPR), nil
+}
+
 func (f *Forgejo) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
 	fPR, _, err := f.client.CreatePullRequest(
 		f.options.Owner, f.options.Repo,
@@ -292,7 +304,7 @@ func (f *Forgejo) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePu
 func (f *Forgejo) UpdatePullRequest(_ context.Context, pr *releasepr.ReleasePullRequest) error {
 	_, _, err := f.client.EditPullRequest(
 		f.options.Owner, f.options.Repo,
-		int64(pr.ID), forgejo.EditPullRequestOption{
+		pr.ID, forgejo.EditPullRequestOption{
 			Title: pr.Title,
 			Body:  &pr.Description,
 		},
@@ -332,7 +344,7 @@ func (f *Forgejo) SetPullRequestLabels(_ context.Context, pr *releasepr.ReleaseP
 
 		_, err = f.client.DeleteIssueLabel(
 			f.options.Owner, f.options.Repo,
-			int64(pr.ID), fLabel.ID,
+			pr.ID, fLabel.ID,
 		)
 		if err != nil {
 			return err
@@ -351,7 +363,7 @@ func (f *Forgejo) SetPullRequestLabels(_ context.Context, pr *releasepr.ReleaseP
 
 	_, _, err = f.client.AddIssueLabels(
 		f.options.Owner, f.options.Repo,
-		int64(pr.ID), forgejo.IssueLabelsOption{Labels: addIDs},
+		pr.ID, forgejo.IssueLabelsOption{Labels: addIDs},
 	)
 	if err != nil {
 		return err
@@ -363,7 +375,7 @@ func (f *Forgejo) SetPullRequestLabels(_ context.Context, pr *releasepr.ReleaseP
 func (f *Forgejo) ClosePullRequest(_ context.Context, pr *releasepr.ReleasePullRequest) error {
 	_, _, err := f.client.EditPullRequest(
 		f.options.Owner, f.options.Repo,
-		int64(pr.ID), forgejo.EditPullRequestOption{
+		pr.ID, forgejo.EditPullRequestOption{
 			State: pointer.Pointer(forgejo.StateClosed),
 		},
 	)

@@ -346,7 +346,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		// happen between us checking the PR again and submitting our changes.
 
 		logger.DebugContext(ctx, "checking for conflict in pr description", "pr.id", pr.ID)
-		recheckPR, err := rp.forge.PullRequestForBranch(ctx, rpBranch)
+		recheckPR, err := rp.forge.PullRequestByID(ctx, pr)
 		if err != nil {
 			return err
 		}

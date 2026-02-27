@@ -260,6 +260,15 @@ func (g *GitLab) PullRequestForBranch(ctx context.Context, branch string) (*rele
 	return nil, nil
 }
 
+func (g *GitLab) PullRequestByID(ctx context.Context, pr *releasepr.ReleasePullRequest) (*releasepr.ReleasePullRequest, error) {
+	mr, _, err := g.client.MergeRequests.GetMergeRequest(g.options.Path, pr.ID, &gitlab.GetMergeRequestsOptions{}, gitlab.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return gitlabMRToReleasePullRequest(&mr.BasicMergeRequest), nil
+}
+
 func (g *GitLab) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
 	labels := make(gitlab.LabelOptions, 0, len(pr.Labels))
 	for _, label := range pr.Labels {
