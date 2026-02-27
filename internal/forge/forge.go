@@ -36,6 +36,9 @@ type Forge interface {
 	// exists, it returns nil.
 	PullRequestForBranch(context.Context, string) (*releasepr.ReleasePullRequest, error)
 
+	// PullRequestByID returns the pull request identified by pr.
+	PullRequestByID(context.Context, *releasepr.ReleasePullRequest) (*releasepr.ReleasePullRequest, error)
+
 	// CreatePullRequest opens a new pull/merge request for the ReleasePullRequest.
 	CreatePullRequest(context.Context, *releasepr.ReleasePullRequest) error
 
