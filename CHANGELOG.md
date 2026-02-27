@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.8.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.8.0)
+
+### Features
+
+- **github-action**: support for forgejo (#328)
+
+### Bug Fixes
+
+- **forgejo**: locate PRs by index (#326)
+- check for updated PR description fails sometimes (#351)
+
 ## [v0.7.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.7.1)
 
 ### Bug Fixes
