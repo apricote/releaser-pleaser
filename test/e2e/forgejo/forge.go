@@ -3,10 +3,12 @@ package forgejo
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -143,12 +145,40 @@ func (f *TestForge) ListOpenPRs(t *testing.T, repo *e2e.Repository) ([]*git.Pull
 func (f *TestForge) MergePR(t *testing.T, repo *e2e.Repository, pr *git.PullRequest) error {
 	t.Helper()
 
-	ok, _, err := f.client.MergePullRequest(f.username, repo.Name, pr.ID, forgejo.MergePullRequestOption{Style: forgejo.MergeStyleSquash})
+	// Wait for the PR to become mergable
+	retries := 10
+	sleep := 1 * time.Second
+
+	var fPR *forgejo.PullRequest
+	var err error
+	for range retries {
+		fPR, _, err = f.client.GetPullRequest(f.username, repo.Name, pr.ID)
+		if err != nil {
+			t.Logf("sleeping, error while checking pr mergeable status: %v", err)
+			time.Sleep(sleep)
+			continue
+		}
+
+		if !fPR.Mergeable {
+			t.Log("sleeping, pr not marked as mergeable yet")
+			time.Sleep(sleep)
+			continue
+		}
+
+		break
+	}
+
+	if !fPR.Mergeable {
+		return fmt.Errorf("pull request not marked as mergable by forgejo after retries")
+	}
+
+	ok, resp, err := f.client.MergePullRequest(f.username, repo.Name, pr.ID, forgejo.MergePullRequestOption{Style: forgejo.MergeStyleSquash})
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("merging pull request #%d failed", pr.ID)
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("merging pull request #%d failed: %v", pr.ID, string(respBody))
 	}
 
 	return nil

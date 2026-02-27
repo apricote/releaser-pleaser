@@ -107,10 +107,10 @@ func (f *Framework) Run(t *testing.T, r *Repository, extraFiles []string) error 
 	stderrString := stderr.String()
 
 	if stdoutString != "" {
-		t.Log("STDOUT: \n", stdoutString)
+		t.Log("STDOUT:\n", stdoutString)
 	}
 	if stderrString != "" {
-		t.Log("STDERR: \n", stderrString)
+		t.Log("STDERR:\n", stderrString)
 	}
 
 	return err
