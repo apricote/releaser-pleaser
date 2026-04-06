@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"text/template"
 
 	"github.com/apricote/releaser-pleaser/internal/changelog"
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
@@ -28,24 +29,29 @@ var (
 )
 
 type ReleaserPleaser struct {
-	forge        forge.Forge
-	logger       *slog.Logger
-	targetBranch string
-	commitParser commitparser.CommitParser
-	versioning   versioning.Strategy
-	extraFiles   []string
-	updaters     []updater.Updater
+	forge             forge.Forge
+	logger            *slog.Logger
+	targetBranch      string
+	commitParser      commitparser.CommitParser
+	versioning        versioning.Strategy
+	extraFiles        []string
+	updaters          []updater.Updater
+	changelogTemplate *template.Template
 }
 
-func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater) *ReleaserPleaser {
+func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater, changelogTemplate *template.Template) *ReleaserPleaser {
+	if changelogTemplate == nil {
+		changelogTemplate = changelog.DefaultTemplate()
+	}
 	return &ReleaserPleaser{
-		forge:        forge,
-		logger:       logger,
-		targetBranch: targetBranch,
-		commitParser: commitParser,
-		versioning:   versioningStrategy,
-		extraFiles:   extraFiles,
-		updaters:     updaters,
+		forge:             forge,
+		logger:            logger,
+		targetBranch:      targetBranch,
+		commitParser:      commitParser,
+		versioning:        versioningStrategy,
+		extraFiles:        extraFiles,
+		updaters:          updaters,
+		changelogTemplate: changelogTemplate,
 	}
 }
 
@@ -249,12 +255,19 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	}
 	logger.InfoContext(ctx, "next version", "version", nextVersion)
 
+	changelogBaseTag := releases.Stable
 	analyzedCommitsForChangelog := analyzedCommitsForVersioning
 	if releaseOverrides.NextVersionType.IsPrerelease() && releases.Latest != releases.Stable {
+		changelogBaseTag = releases.Latest
 		analyzedCommitsForChangelog, err = rp.analyzedCommitsSince(ctx, releases.Latest)
 		if err != nil {
 			return err
 		}
+	}
+
+	var compareURL string
+	if changelogBaseTag != nil {
+		compareURL = rp.forge.CompareURL(changelogBaseTag.Name, nextVersion)
 	}
 
 	logger.DebugContext(ctx, "cloning repository", "clone.url", rp.forge.CloneURL())
@@ -271,9 +284,9 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return err
 	}
 
-	changelogData := changelog.New(commitparser.ByType(analyzedCommitsForChangelog), nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
+	changelogData := changelog.New(commitparser.ByType(analyzedCommitsForChangelog), nextVersion, rp.forge.ReleaseURL(nextVersion), compareURL, releaseOverrides.Prefix, releaseOverrides.Suffix)
 
-	changelogEntry, err := changelog.Entry(logger, changelog.DefaultTemplate(), changelogData, changelog.Formatting{})
+	changelogEntry, err := changelog.Entry(logger, rp.changelogTemplate, changelogData, changelog.Formatting{})
 	if err != nil {
 		return fmt.Errorf("failed to build changelog entry: %w", err)
 	}
@@ -322,7 +335,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 
 	// We do not need the version title here. In the pull request the version is available from the title, and in the
 	// release on the Forge its usually in a heading somewhere above the text.
-	changelogEntryPullRequest, err := changelog.Entry(logger, changelog.DefaultTemplate(), changelogData, changelog.Formatting{HideVersionTitle: true})
+	changelogEntryPullRequest, err := changelog.Entry(logger, rp.changelogTemplate, changelogData, changelog.Formatting{HideVersionTitle: true})
 	if err != nil {
 		return fmt.Errorf("failed to build pull request changelog entry: %w", err)
 	}

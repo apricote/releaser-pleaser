@@ -61,6 +61,14 @@ func (g *GitLab) PullRequestURL(id int64) string {
 	return fmt.Sprintf("%s/-/merge_requests/%d", g.RepoURL(), id)
 }
 
+func (g *GitLab) CommitURL(hash string) string {
+	return fmt.Sprintf("%s/-/commit/%s", g.RepoURL(), hash)
+}
+
+func (g *GitLab) CompareURL(from, to string) string {
+	return fmt.Sprintf("%s/-/compare/%s...%s", g.RepoURL(), from, to)
+}
+
 func (g *GitLab) GitAuth() transport.AuthMethod {
 	return &http.BasicAuth{
 		// Username just needs to be any non-blank value
@@ -160,6 +168,7 @@ func (g *GitLab) CommitsSince(ctx context.Context, tag *git.Tag) ([]git.Commit, 
 	for _, ghCommit := range gitLabCommits {
 		commit := git.Commit{
 			Hash:    ghCommit.ID,
+			URL:     g.CommitURL(ghCommit.ID),
 			Message: ghCommit.Message,
 		}
 		commit.PullRequest, err = g.prForCommit(ctx, commit)

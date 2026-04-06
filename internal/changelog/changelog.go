@@ -34,15 +34,17 @@ type Data struct {
 	Commits     map[string][]commitparser.AnalyzedCommit
 	Version     string
 	VersionLink string
+	CompareURL  string
 	Prefix      string
 	Suffix      string
 }
 
-func New(commits map[string][]commitparser.AnalyzedCommit, version, versionLink, prefix, suffix string) Data {
+func New(commits map[string][]commitparser.AnalyzedCommit, version, versionLink, compareURL, prefix, suffix string) Data {
 	return Data{
 		Commits:     commits,
 		Version:     version,
 		VersionLink: versionLink,
+		CompareURL:  compareURL,
 		Prefix:      prefix,
 		Suffix:      suffix,
 	}

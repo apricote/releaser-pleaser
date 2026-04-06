@@ -3,8 +3,10 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"slices"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 
@@ -21,12 +23,13 @@ import (
 
 func newRunCommand() *cobra.Command {
 	var (
-		flagForge      string
-		flagBranch     string
-		flagOwner      string
-		flagRepo       string
-		flagExtraFiles string
-		flagUpdaters   []string
+		flagForge             string
+		flagBranch            string
+		flagOwner             string
+		flagRepo              string
+		flagExtraFiles        string
+		flagUpdaters          []string
+		flagChangelogTemplate string
 
 		flagAPIURL   string
 		flagAPIToken string
@@ -109,6 +112,18 @@ func newRunCommand() *cobra.Command {
 				}
 			}
 
+			var changelogTemplate *template.Template
+			if flagChangelogTemplate != "" {
+				content, err := os.ReadFile(flagChangelogTemplate)
+				if err != nil {
+					return fmt.Errorf("failed to read changelog template file: %w", err)
+				}
+				changelogTemplate, err = template.New("changelog").Parse(string(content))
+				if err != nil {
+					return fmt.Errorf("failed to parse changelog template: %w", err)
+				}
+			}
+
 			releaserPleaser := rp.New(
 				f,
 				logger,
@@ -117,6 +132,7 @@ func newRunCommand() *cobra.Command {
 				versioning.SemVer,
 				extraFiles,
 				updaters,
+				changelogTemplate,
 			)
 
 			return releaserPleaser.Run(ctx)
@@ -129,6 +145,7 @@ func newRunCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flagRepo, "repo", "", "")
 	cmd.PersistentFlags().StringVar(&flagExtraFiles, "extra-files", "", "")
 	cmd.PersistentFlags().StringSliceVar(&flagUpdaters, "updaters", []string{}, "")
+	cmd.PersistentFlags().StringVar(&flagChangelogTemplate, "changelog-template", "", "path to a custom changelog template file")
 
 	cmd.PersistentFlags().StringVar(&flagAPIURL, "api-url", "", "")
 	cmd.PersistentFlags().StringVar(&flagAPIToken, "api-token", "", "")
