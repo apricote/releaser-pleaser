@@ -16,6 +16,10 @@ spec:
       description: "List of updaters that are run. Default updaters can be removed by specifying them as -name. Multiple updaters should be concatenated with a comma. Default Updaters: changelog,generic"
       default: ""
 
+    changelog-template:
+      description: "Path to a custom changelog template file."
+      default: ""
+
     stage:
       default: build
       description: 'Defines the build stage'
@@ -54,4 +58,5 @@ releaser-pleaser:
         --forge=gitlab \
         --branch=$[[ inputs.branch ]] \
         --extra-files="$[[ inputs.extra-files ]]" \
-        --updaters="$[[ inputs.updaters ]]"
+        --updaters="$[[ inputs.updaters ]]" \
+        --changelog-template="$[[ inputs.changelog-template ]]"
