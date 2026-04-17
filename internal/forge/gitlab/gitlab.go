@@ -341,7 +341,7 @@ func (g *GitLab) ClosePullRequest(ctx context.Context, pr *releasepr.ReleasePull
 
 func (g *GitLab) PendingReleases(ctx context.Context, pendingLabel releasepr.Label) ([]*releasepr.ReleasePullRequest, error) {
 	glMRs, err := all(func(listOptions gitlab.ListOptions) ([]*gitlab.BasicMergeRequest, *gitlab.Response, error) {
-		return g.client.MergeRequests.ListMergeRequests(&gitlab.ListMergeRequestsOptions{
+		return g.client.MergeRequests.ListProjectMergeRequests(g.options.Path, &gitlab.ListProjectMergeRequestsOptions{
 			State:        pointer.Pointer(PRStateMerged),
 			Labels:       &gitlab.LabelOptions{pendingLabel.Name},
 			TargetBranch: pointer.Pointer(g.options.BaseBranch),
