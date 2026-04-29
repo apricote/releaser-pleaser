@@ -61,6 +61,14 @@ func (g *GitHub) PullRequestURL(id int64) string {
 	return fmt.Sprintf("https://github.com/%s/%s/pull/%d", g.options.Owner, g.options.Repo, id)
 }
 
+func (g *GitHub) CommitURL(hash string) string {
+	return fmt.Sprintf("https://github.com/%s/%s/commit/%s", g.options.Owner, g.options.Repo, hash)
+}
+
+func (g *GitHub) CompareURL(from, to string) string {
+	return fmt.Sprintf("https://github.com/%s/%s/compare/%s...%s", g.options.Owner, g.options.Repo, from, to)
+}
+
 func (g *GitHub) GitAuth() transport.AuthMethod {
 	return &http.BasicAuth{
 		Username: g.options.Username,
@@ -147,6 +155,7 @@ func (g *GitHub) CommitsSince(ctx context.Context, tag *git.Tag) ([]git.Commit, 
 	for _, ghCommit := range repositoryCommits {
 		commit := git.Commit{
 			Hash:    ghCommit.GetSHA(),
+			URL:     g.CommitURL(ghCommit.GetSHA()),
 			Message: ghCommit.GetCommit().GetMessage(),
 		}
 		commit.PullRequest, err = g.prForCommit(ctx, commit)
