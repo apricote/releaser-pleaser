@@ -10,6 +10,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAuthor_signature(t *testing.T) {
@@ -171,4 +172,25 @@ func TestRepository_HasChangesWithRemote(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestRepository_CommitUsesAuthorAsCommitter(t *testing.T) {
+	repo := WithTestRepo()(t)
+	author := Author{Name: "release bot", Email: "release@example.com"}
+
+	err := repo.UpdateFile(context.Background(), "README.md", false, func(content string) (string, error) {
+		return content + "\nrelease", nil
+	})
+	require.NoError(t, err)
+
+	commit, err := repo.Commit(context.Background(), "chore: release v1.2.3", author)
+	require.NoError(t, err)
+
+	obj, err := repo.r.CommitObject(plumbing.NewHash(commit.Hash))
+	require.NoError(t, err)
+
+	assert.Equal(t, author.Name, obj.Author.Name)
+	assert.Equal(t, author.Email, obj.Author.Email)
+	assert.Equal(t, author.Name, obj.Committer.Name)
+	assert.Equal(t, author.Email, obj.Committer.Email)
 }
