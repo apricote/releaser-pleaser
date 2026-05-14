@@ -100,7 +100,7 @@ func textFromLines(source []byte, n gast.Node) string {
 	content := make([]byte, 0)
 
 	l := n.Lines().Len()
-	for i := 0; i < l; i++ {
+	for i := range l {
 		line := n.Lines().At(i)
 		content = append(content, line.Value(source)...)
 	}
