@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.8.1](https://github.com/apricote/releaser-pleaser/releases/tag/v0.8.1)
+
+### Bug Fixes
+
+- use release identity as commit committer (#382)
+- **gitlab**: scope PendingReleases to current project (#374)
+
 ## [v0.8.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.8.0)
 
 ### Features
