@@ -9,7 +9,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/go-git/go-billy/v5 v5.9.0
 	github.com/go-git/go-git/v5 v5.19.0
-	github.com/google/go-github/v83 v83.0.0
+	github.com/google/go-github/v86 v86.0.0
 	github.com/leodido/go-conventionalcommits v0.12.0
 	github.com/lmittmann/tint v1.1.3
 	github.com/spf13/cobra v1.10.2
