@@ -22,9 +22,17 @@ const (
 
 type Commit struct {
 	Hash    string
+	URL     string
 	Message string
 
 	PullRequest *PullRequest
+}
+
+func (c Commit) ShortHash() string {
+	if len(c.Hash) <= 7 {
+		return c.Hash
+	}
+	return c.Hash[:7]
 }
 
 type PullRequest struct {
