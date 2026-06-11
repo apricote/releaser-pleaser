@@ -29,7 +29,7 @@ jobs:
         with:
           ref: main
 
-      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+      - uses: jdx/mise-action@dba19683ed58901619b14f395a24841710cb4925 # v4
 
       # Build container image from current commit and replace image ref in `action.yml`
       # Without this, any new flags in `action.yml` would break the job in this repository until the new
