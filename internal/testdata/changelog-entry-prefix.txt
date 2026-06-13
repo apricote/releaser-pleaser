@@ -16,4 +16,4 @@ func IsPositive(number int) error {
 
 ### Bug Fixes
 
-- Foobar!
+- Foobar! ([abc1234](https://example.com/commit/abc1234567890))
