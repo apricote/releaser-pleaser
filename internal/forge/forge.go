@@ -14,6 +14,8 @@ type Forge interface {
 	CloneURL() string
 	ReleaseURL(version string) string
 	PullRequestURL(id int64) string
+	CommitURL(hash string) string
+	CompareURL(from, to string) string
 
 	GitAuth() transport.AuthMethod
 
