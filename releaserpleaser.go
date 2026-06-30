@@ -249,12 +249,19 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	}
 	logger.InfoContext(ctx, "next version", "version", nextVersion)
 
+	changelogBaseTag := releases.Stable
 	analyzedCommitsForChangelog := analyzedCommitsForVersioning
 	if releaseOverrides.NextVersionType.IsPrerelease() && releases.Latest != releases.Stable {
+		changelogBaseTag = releases.Latest
 		analyzedCommitsForChangelog, err = rp.analyzedCommitsSince(ctx, releases.Latest)
 		if err != nil {
 			return err
 		}
+	}
+
+	var compareURL string
+	if changelogBaseTag != nil {
+		compareURL = rp.forge.CompareURL(changelogBaseTag.Name, nextVersion)
 	}
 
 	logger.DebugContext(ctx, "cloning repository", "clone.url", rp.forge.CloneURL())
@@ -271,7 +278,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return err
 	}
 
-	changelogData := changelog.New(commitparser.ByType(analyzedCommitsForChangelog), nextVersion, rp.forge.ReleaseURL(nextVersion), releaseOverrides.Prefix, releaseOverrides.Suffix)
+	changelogData := changelog.New(commitparser.ByType(analyzedCommitsForChangelog), nextVersion, rp.forge.ReleaseURL(nextVersion), compareURL, releaseOverrides.Prefix, releaseOverrides.Suffix)
 
 	changelogEntry, err := changelog.Entry(logger, changelog.DefaultTemplate(), changelogData, changelog.Formatting{})
 	if err != nil {
