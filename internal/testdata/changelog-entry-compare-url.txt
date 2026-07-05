@@ -1,0 +1,7 @@
+## [1.0.0](https://example.com/1.0.0)
+
+[Compare to previous version](https://example.com/compare/0.1.0/1.0.0/)
+
+### Bug Fixes
+
+- Foobar! ([abc1234](https://example.com/commit/abc1234567890))

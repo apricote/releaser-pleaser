@@ -20,6 +20,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 		analyzedCommits []commitparser.AnalyzedCommit
 		version         string
 		link            string
+		compare         string
 		prefix          string
 		suffix          string
 	}
@@ -133,6 +134,23 @@ func Test_NewChangelogEntry(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "compare url",
+			args: args{
+				analyzedCommits: []commitparser.AnalyzedCommit{
+					{
+						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
+						Type:        "fix",
+						Description: "Foobar!",
+					},
+				},
+				version: "1.0.0",
+				link:    "https://example.com/1.0.0",
+				compare: "https://example.com/compare/0.1.0/1.0.0/",
+			},
+			want:    testdata.MustReadFileString(t, "changelog-entry-compare-url.txt"),
+			wantErr: assert.NoError,
+		},
+		{
 			name: "prefix",
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
@@ -170,7 +188,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data := New(commitparser.ByType(tt.args.analyzedCommits), tt.args.version, tt.args.link, "", tt.args.prefix, tt.args.suffix)
+			data := New(commitparser.ByType(tt.args.analyzedCommits), tt.args.version, tt.args.link, tt.args.compare, tt.args.prefix, tt.args.suffix)
 			got, err := Entry(slog.Default(), DefaultTemplate(), data, Formatting{})
 			if !tt.wantErr(t, err) {
 				return
