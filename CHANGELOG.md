@@ -1,5 +1,18 @@
 # Changelog
 
+## [v0.9.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.9.0)
+
+[Compare to previous version](https://github.com/apricote/releaser-pleaser/compare/v0.8.0...v0.9.0)
+
+### Features
+
+- add compareurl and commiturl for changelog (#401) ([9dbe17d](https://github.com/apricote/releaser-pleaser/commit/9dbe17d57963d9be0559975a1ff7d3960415bc5b))
+
+### Bug Fixes
+
+- use release identity as commit committer (#382) ([379e942](https://github.com/apricote/releaser-pleaser/commit/379e942aa66942d838add51eda4511d8358177cf))
+- **gitlab**: scope PendingReleases to current project (#374) ([0ed4974](https://github.com/apricote/releaser-pleaser/commit/0ed49742c86d5ecc77c845bbf3a8892b3b94de43))
+
 ## [v0.8.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.8.0)
 
 ### Features
