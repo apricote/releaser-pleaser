@@ -45,6 +45,14 @@ func (f *Forgejo) PullRequestURL(id int64) string {
 	return fmt.Sprintf("%s/pulls/%d", f.RepoURL(), id)
 }
 
+func (f *Forgejo) CommitURL(hash string) string {
+	return fmt.Sprintf("%s/commit/%s", f.RepoURL(), hash)
+}
+
+func (f *Forgejo) CompareURL(from, to string) string {
+	return fmt.Sprintf("%s/compare/%s...%s", f.RepoURL(), from, to)
+}
+
 func (f *Forgejo) GitAuth() transport.AuthMethod {
 	return &http.BasicAuth{
 		Username: f.options.Username,
@@ -134,6 +142,7 @@ func (f *Forgejo) CommitsSince(ctx context.Context, tag *git.Tag) ([]git.Commit,
 	for _, fCommit := range repositoryCommits {
 		commit := git.Commit{
 			Hash:    fCommit.SHA,
+			URL:     f.CommitURL(fCommit.SHA),
 			Message: fCommit.RepoCommit.Message,
 		}
 		commit.PullRequest, err = f.prForCommit(ctx, commit)

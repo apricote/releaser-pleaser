@@ -20,6 +20,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 		analyzedCommits []commitparser.AnalyzedCommit
 		version         string
 		link            string
+		compare         string
 		prefix          string
 		suffix          string
 	}
@@ -44,7 +45,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{},
+						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
 						Type:        "feat",
 						Description: "Foobar!",
 					},
@@ -52,7 +53,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
-			want:    "## [1.0.0](https://example.com/1.0.0)\n\n### Features\n\n- Foobar!\n",
+			want:    "## [1.0.0](https://example.com/1.0.0)\n\n### Features\n\n- Foobar! ([abc1234](https://example.com/commit/abc1234567890))\n",
 			wantErr: assert.NoError,
 		},
 		{
@@ -60,7 +61,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:         git.Commit{},
+						Commit:         git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
 						Type:           "feat",
 						Description:    "Foobar!",
 						BreakingChange: true,
@@ -69,7 +70,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
-			want:    "## [1.0.0](https://example.com/1.0.0)\n\n### Features\n\n- **BREAKING**: Foobar!\n",
+			want:    "## [1.0.0](https://example.com/1.0.0)\n\n### Features\n\n- **BREAKING**: Foobar! ([abc1234](https://example.com/commit/abc1234567890))\n",
 			wantErr: assert.NoError,
 		},
 		{
@@ -77,7 +78,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{},
+						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
@@ -85,7 +86,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 				version: "1.0.0",
 				link:    "https://example.com/1.0.0",
 			},
-			want:    "## [1.0.0](https://example.com/1.0.0)\n\n### Bug Fixes\n\n- Foobar!\n",
+			want:    "## [1.0.0](https://example.com/1.0.0)\n\n### Bug Fixes\n\n- Foobar! ([abc1234](https://example.com/commit/abc1234567890))\n",
 			wantErr: assert.NoError,
 		},
 		{
@@ -93,23 +94,23 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{},
+						Commit:      git.Commit{Hash: "aaa1111111111", URL: "https://example.com/commit/aaa1111111111"},
 						Type:        "feat",
 						Description: "Blabla!",
 					},
 					{
-						Commit:      git.Commit{},
+						Commit:      git.Commit{Hash: "bbb2222222222", URL: "https://example.com/commit/bbb2222222222"},
 						Type:        "feat",
 						Description: "So awesome!",
 						Scope:       ptr("awesome"),
 					},
 					{
-						Commit:      git.Commit{},
+						Commit:      git.Commit{Hash: "ccc3333333333", URL: "https://example.com/commit/ccc3333333333"},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
 					{
-						Commit:      git.Commit{},
+						Commit:      git.Commit{Hash: "ddd4444444444", URL: "https://example.com/commit/ddd4444444444"},
 						Type:        "fix",
 						Description: "So sad!",
 						Scope:       ptr("sad"),
@@ -122,14 +123,31 @@ func Test_NewChangelogEntry(t *testing.T) {
 
 ### Features
 
-- Blabla!
-- **awesome**: So awesome!
+- Blabla! ([aaa1111](https://example.com/commit/aaa1111111111))
+- **awesome**: So awesome! ([bbb2222](https://example.com/commit/bbb2222222222))
 
 ### Bug Fixes
 
-- Foobar!
-- **sad**: So sad!
+- Foobar! ([ccc3333](https://example.com/commit/ccc3333333333))
+- **sad**: So sad! ([ddd4444](https://example.com/commit/ddd4444444444))
 `,
+			wantErr: assert.NoError,
+		},
+		{
+			name: "compare url",
+			args: args{
+				analyzedCommits: []commitparser.AnalyzedCommit{
+					{
+						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
+						Type:        "fix",
+						Description: "Foobar!",
+					},
+				},
+				version: "1.0.0",
+				link:    "https://example.com/1.0.0",
+				compare: "https://example.com/compare/0.1.0/1.0.0/",
+			},
+			want:    testdata.MustReadFileString(t, "changelog-entry-compare-url.txt"),
 			wantErr: assert.NoError,
 		},
 		{
@@ -137,7 +155,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{},
+						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
@@ -154,7 +172,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{},
+						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
 						Type:        "fix",
 						Description: "Foobar!",
 					},
@@ -170,7 +188,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			data := New(commitparser.ByType(tt.args.analyzedCommits), tt.args.version, tt.args.link, tt.args.prefix, tt.args.suffix)
+			data := New(commitparser.ByType(tt.args.analyzedCommits), tt.args.version, tt.args.link, tt.args.compare, tt.args.prefix, tt.args.suffix)
 			got, err := Entry(slog.Default(), DefaultTemplate(), data, Formatting{})
 			if !tt.wantErr(t, err) {
 				return
