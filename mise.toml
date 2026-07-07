@@ -1,5 +1,5 @@
 [tools]
-go = "1.26.4"
+go = "1.26.5"
 golangci-lint = "2.12.2"
 goreleaser = "v2.17.0"
 mdbook = "v0.5.4" # renovate: datasource=github-releases depName=rust-lang/mdbook
