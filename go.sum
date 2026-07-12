@@ -117,8 +117,8 @@ github.com/teekennedy/goldmark-markdown v0.5.1 h1:2lIlJ3AcIwaD1wFl4dflJSJFMhRTKE
 github.com/teekennedy/goldmark-markdown v0.5.1/go.mod h1:so260mNSPELuRyynZY18719dRYlD+OSnAovqsyrOMOM=
 github.com/xanzy/ssh-agent v0.3.3 h1:+/15pJfg/RsTxqYcX6fHqOXZwwMP+2VyYWJeWM2qQFM=
 github.com/xanzy/ssh-agent v0.3.3/go.mod h1:6dzNDKs0J9rVPHPhaGCukekBHKqfl+L3KghI1Bc68Uw=
-github.com/yuin/goldmark v1.8.2 h1:kEGpgqJXdgbkhcOgBxkC0X0PmoPG1ZyoZ117rDVp4zE=
-github.com/yuin/goldmark v1.8.2/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
+github.com/yuin/goldmark v1.8.4 h1:oat/nd3U6NeQqFEL3xpEJq7d7c86NI+DbSNGAs4xnjA=
+github.com/yuin/goldmark v1.8.4/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
 gitlab.com/gitlab-org/api/client-go/v2 v2.46.0 h1:t9QSeMck3kuHu9R6C7h8cYk4qBI4ZD4SQ0jspxKYs2E=
 gitlab.com/gitlab-org/api/client-go/v2 v2.46.0/go.mod h1:1LK5UOowqo9apkL+zn7sM8t/hCzBV6F1b2RUIHL9+Oo=
 go.abhg.dev/goldmark/toc v0.11.0 h1:IRixVy3/yVPKvFBc37EeBPi8XLTXrtH6BYaonSjkF8o=
