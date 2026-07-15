@@ -75,7 +75,7 @@ include:
 
 <div class="warning">
 
-If you want to use `releaser-pleaser` on a self-managed GitLab instance, you need to mirror the GitLab.com component to your instance. See the official [GitLab documentation for details](https://docs.gitlab.com/ee/ci/components/#use-a-gitlabcom-component-in-a-self-managed-instance). 
+If you want to use `releaser-pleaser` on a self-managed GitLab instance, you need to mirror the GitLab.com component to your instance. See the official [GitLab documentation for details](https://docs.gitlab.com/ci/components/#use-a-gitlabcom-component-on-gitlab-self-managed). 
 
 </div>
 
