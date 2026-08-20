@@ -2,7 +2,7 @@ module github.com/apricote/releaser-pleaser
 
 go 1.25.0
 
-toolchain go1.26.6
+toolchain go1.27.0
 
 require (
 	codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2 v2.2.1-0.20260217203524-edf26081b649
