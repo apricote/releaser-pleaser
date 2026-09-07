@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -364,10 +365,146 @@ func (g *GitLab) PendingReleases(ctx context.Context, pendingLabel releasepr.Lab
 	prs := make([]*releasepr.ReleasePullRequest, 0, len(glMRs))
 
 	for _, mr := range glMRs {
-		prs = append(prs, gitlabMRToReleasePullRequest(mr))
+		pr := gitlabMRToReleasePullRequest(mr)
+
+		// On a fast-forward merge GitLab records neither a merge commit nor a
+		// squash commit, so gitlabMRToReleasePullRequest falls back to the merge
+		// request's recorded head. Since GitLab 19.2 a project can enable
+		// "Enable automatic rebase prior to merge", which rebases a merge
+		// request that is behind its target branch as part of merging it. That
+		// rebase is never written back to the merge request, so the recorded
+		// head is the PRE-rebase commit and is on no branch at all. Releasing
+		// there silently drops everything that landed while the merge request
+		// was open.
+		//
+		// Only the fallback needs checking; a merge or squash commit is on the
+		// target branch by construction, so projects using those merge methods
+		// make no additional requests.
+		usedRecordedHeadFallback := mr.MergeCommitSHA == "" && mr.SquashCommitSHA == ""
+		if usedRecordedHeadFallback && pr.ReleaseCommit != nil {
+			commit, err := g.resolveReleaseCommit(ctx, mr, pr.ReleaseCommit.Hash)
+			if err != nil {
+				return nil, err
+			}
+
+			pr.ReleaseCommit = &git.Commit{Hash: commit}
+		}
+
+		prs = append(prs, pr)
 	}
 
 	return prs, nil
+}
+
+// rebasedCommitSearchWindow bounds the commit search used to recover the commit
+// an automatic rebase produced. The rebase happens as part of the merge, so the
+// resulting commit is committed within seconds of MergedAt; the window is
+// generous only to tolerate clock skew.
+const rebasedCommitSearchWindow = 10 * time.Minute
+
+// resolveReleaseCommit returns the commit the merge request actually landed as
+// on the target branch.
+//
+// candidate is the merge request's recorded head. Usually that is exactly what
+// landed and it is returned unchanged. When the project rebased the branch
+// while merging it, the recorded head is stale and the commit that landed is
+// recovered instead.
+func (g *GitLab) resolveReleaseCommit(ctx context.Context, mr *gitlab.BasicMergeRequest, candidate string) (string, error) {
+	onBranch, err := g.commitOnBranch(ctx, candidate, g.options.BaseBranch)
+	if err != nil {
+		return "", fmt.Errorf("failed to check if commit %s is on %s: %w", candidate, g.options.BaseBranch, err)
+	}
+
+	if onBranch {
+		return candidate, nil
+	}
+
+	g.log.DebugContext(ctx, "merge request head is not on the target branch, looking for the rebased commit",
+		"mr.iid", mr.IID, "mr.sha", candidate, "branch", g.options.BaseBranch)
+
+	rebased, err := g.findRebasedCommit(ctx, mr)
+	if err != nil {
+		return "", err
+	}
+
+	if rebased == "" {
+		return "", fmt.Errorf(
+			"release commit %s for %q is not on %s and the commit it was rebased to could not be found. "+
+				"The merge request was rebased while being merged, so its recorded head is the pre-rebase "+
+				"commit; releasing there would omit everything merged while the release merge request was open",
+			candidate, mr.Title, g.options.BaseBranch,
+		)
+	}
+
+	g.log.InfoContext(ctx, "recovered rebased release commit",
+		"mr.iid", mr.IID, "mr.sha", candidate, "commit.hash", rebased)
+
+	return rebased, nil
+}
+
+// findRebasedCommit locates the commit on the target branch that the merge
+// request landed as, after GitLab rebased it during the merge.
+//
+// A rebase preserves the commit message, and GitLab associates the resulting
+// commit with the merge request, so a commit is only accepted when its title
+// matches AND the association confirms it.
+func (g *GitLab) findRebasedCommit(ctx context.Context, mr *gitlab.BasicMergeRequest) (string, error) {
+	if mr.MergedAt == nil {
+		return "", nil
+	}
+
+	since := mr.MergedAt.Add(-rebasedCommitSearchWindow)
+	until := mr.MergedAt.Add(rebasedCommitSearchWindow)
+
+	commits, err := all(func(listOptions gitlab.ListOptions) ([]*gitlab.Commit, *gitlab.Response, error) {
+		return g.client.Commits.ListCommits(g.options.Path, &gitlab.ListCommitsOptions{
+			RefName:     pointer.Pointer(g.options.BaseBranch),
+			Since:       &since,
+			Until:       &until,
+			ListOptions: listOptions,
+		}, gitlab.WithContext(ctx))
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to list commits on %s: %w", g.options.BaseBranch, err)
+	}
+
+	for _, commit := range commits {
+		if commit.Title != mr.Title {
+			continue
+		}
+
+		associated, _, err := g.client.Commits.ListMergeRequestsByCommit(
+			g.options.Path, commit.ID, gitlab.WithContext(ctx),
+		)
+		if err != nil {
+			return "", fmt.Errorf("failed to list merge requests for commit %s: %w", commit.ID, err)
+		}
+
+		if slices.ContainsFunc(associated, func(candidate *gitlab.BasicMergeRequest) bool {
+			return candidate.IID == mr.IID
+		}) {
+			return commit.ID, nil
+		}
+	}
+
+	return "", nil
+}
+
+// commitOnBranch reports whether the commit is contained in the named branch.
+func (g *GitLab) commitOnBranch(ctx context.Context, sha, branch string) (bool, error) {
+	refs, err := all(func(listOptions gitlab.ListOptions) ([]*gitlab.CommitRef, *gitlab.Response, error) {
+		return g.client.Commits.GetCommitRefs(g.options.Path, sha, &gitlab.GetCommitRefsOptions{
+			Type:        pointer.Pointer("branch"),
+			ListOptions: listOptions,
+		}, gitlab.WithContext(ctx))
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return slices.ContainsFunc(refs, func(ref *gitlab.CommitRef) bool {
+		return ref.Name == branch
+	}), nil
 }
 
 func (g *GitLab) CreateRelease(ctx context.Context, commit git.Commit, title, changelog string, _, _ bool) error {
