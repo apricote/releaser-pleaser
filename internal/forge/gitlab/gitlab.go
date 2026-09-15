@@ -41,6 +41,14 @@ type GitLab struct {
 	log    *slog.Logger
 }
 
+type currentUser struct {
+	Username    string `json:"username"`
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	PublicEmail string `json:"public_email"`
+	CommitEmail string `json:"commit_email"`
+}
+
 func (g *GitLab) RepoURL() string {
 	if g.options.ProjectURL != "" {
 		return g.options.ProjectURL
@@ -80,16 +88,33 @@ func (g *GitLab) GitAuth() transport.AuthMethod {
 func (g *GitLab) CommitAuthor(ctx context.Context) (git.Author, error) {
 	g.log.DebugContext(ctx, "getting commit author from current token user")
 
-	user, _, err := g.client.Users.CurrentUser(gitlab.WithContext(ctx))
+	req, err := g.client.NewRequest("GET", "user", nil, []gitlab.RequestOptionFunc{gitlab.WithContext(ctx)})
 	if err != nil {
 		return git.Author{}, err
 	}
 
-	// TODO: Return bot when nothing is returned?
+	user := &currentUser{}
+	_, err = g.client.Do(req, user)
+	if err != nil {
+		return git.Author{}, err
+	}
+
+	name := user.Name
+	if name == "" {
+		name = user.Username
+	}
+
+	email := user.CommitEmail
+	if email == "" {
+		email = user.Email
+	}
+	if email == "" {
+		email = user.PublicEmail
+	}
 
 	return git.Author{
-		Name:  user.Name,
-		Email: user.Email,
+		Name:  name,
+		Email: email,
 	}, nil
 }
 
