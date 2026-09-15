@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -33,6 +34,10 @@ const (
 	EnvProjectURL  = "CI_PROJECT_URL"
 	EnvProjectPath = "CI_PROJECT_PATH"
 )
+
+// ErrPaginationNotAdvancing is returned when the GitLab API points at a page that would
+// not advance the pagination, which we can not follow without looping forever.
+var ErrPaginationNotAdvancing = errors.New("pagination is not advancing")
 
 type GitLab struct {
 	options *Options
@@ -384,6 +389,12 @@ func (g *GitLab) CreateRelease(ctx context.Context, commit git.Commit, title, ch
 	return nil
 }
 
+// all fetches every page of an offset-paginated GitLab API endpoint.
+//
+// Pagination is driven exclusively by the X-Next-Page header (resp.NextPage), never by
+// X-Total-Pages. Some GitLab instances report an X-Total-Pages that disagrees with the
+// page actually being served, which previously made this loop request page 0 over and
+// over again without ever terminating.
 func all[T any](f func(listOptions gitlab.ListOptions) ([]T, *gitlab.Response, error)) ([]T, error) {
 	results := make([]T, 0)
 	page := int64(1)
@@ -396,9 +407,17 @@ func all[T any](f func(listOptions gitlab.ListOptions) ([]T, *gitlab.Response, e
 
 		results = append(results, pageResults...)
 
-		if page == resp.TotalPages || resp.TotalPages == 0 {
+		// An empty X-Next-Page header is reported as page 0 and marks the last page.
+		if resp.NextPage == 0 {
 			return results, nil
 		}
+
+		// The next page must be strictly after the current one. Anything else would make
+		// us fetch the same pages forever.
+		if resp.NextPage <= page {
+			return nil, fmt.Errorf("%w: server returned next page %d while serving page %d", ErrPaginationNotAdvancing, resp.NextPage, page)
+		}
+
 		page = resp.NextPage
 	}
 }
