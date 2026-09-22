@@ -40,7 +40,12 @@ type ReleaserPleaser struct {
 	extraPatchTypes *regexp.Regexp
 }
 
-func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater, extraPatchTypes *regexp.Regexp) *ReleaserPleaser {
+func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater, patchTypes ...*regexp.Regexp) *ReleaserPleaser {
+	var extraPatchTypes *regexp.Regexp
+	if len(patchTypes) > 0 {
+		extraPatchTypes = patchTypes[0]
+	}
+
 	return &ReleaserPleaser{
 		forge:        forge,
 		logger:       logger,
