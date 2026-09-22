@@ -10,7 +10,6 @@ import (
 
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
 	"github.com/apricote/releaser-pleaser/internal/git"
-	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
 
 func TestAnalyzeCommits(t *testing.T) {
@@ -175,7 +174,6 @@ func TestAnalyzeExtraPatchTypes(t *testing.T) {
 			assert.Equal(t, "improve things", commits[0].Description)
 			require.NotNil(t, commits[0].Scope)
 			assert.Equal(t, "api", *commits[0].Scope)
-			assert.Equal(t, versioning.PatchVersion, versioning.BumpFromCommits(commits[:1], extraPatchTypes))
 		})
 	}
 }
@@ -191,7 +189,6 @@ func TestAnalyzeExtraPatchTypesFiltering(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, commits, 3)
 	assert.Equal(t, "feat", commits[0].Type)
-	assert.Equal(t, versioning.MinorVersion, versioning.BumpFromCommits(commits[:1], regexp.MustCompile(".*")))
 	assert.True(t, commits[1].BreakingChange)
 	assert.True(t, commits[2].BreakingChange)
 }

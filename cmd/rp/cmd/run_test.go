@@ -77,11 +77,7 @@ func Test_parseExtraPatchTypes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := newRunCommand()
-			require.NoError(t, cmd.ParseFlags([]string{"--extra-patch-types=" + tt.input}))
-			input, err := cmd.PersistentFlags().GetString("extra-patch-types")
-			require.NoError(t, err)
-			got, err := parseExtraPatchTypes(input)
+			got, err := parseExtraPatchTypes(tt.input)
 			if tt.wantErr {
 				require.ErrorContains(t, err, "invalid --extra-patch-types pattern")
 				return

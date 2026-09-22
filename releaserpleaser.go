@@ -29,25 +29,27 @@ var (
 )
 
 type ReleaserPleaser struct {
-	forge           forge.Forge
-	logger          *slog.Logger
-	targetBranch    string
-	commitParser    commitparser.CommitParser
-	versioning      versioning.Strategy
-	extraFiles      []string
-	updaters        []updater.Updater
+	forge        forge.Forge
+	logger       *slog.Logger
+	targetBranch string
+	commitParser commitparser.CommitParser
+	versioning   versioning.Strategy
+	extraFiles   []string
+	updaters     []updater.Updater
+
 	extraPatchTypes *regexp.Regexp
 }
 
 func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater, extraPatchTypes *regexp.Regexp) *ReleaserPleaser {
 	return &ReleaserPleaser{
-		forge:           forge,
-		logger:          logger,
-		targetBranch:    targetBranch,
-		commitParser:    commitParser,
-		versioning:      versioningStrategy,
-		extraFiles:      extraFiles,
-		updaters:        updaters,
+		forge:        forge,
+		logger:       logger,
+		targetBranch: targetBranch,
+		commitParser: commitParser,
+		versioning:   versioningStrategy,
+		extraFiles:   extraFiles,
+		updaters:     updaters,
+
 		extraPatchTypes: extraPatchTypes,
 	}
 }

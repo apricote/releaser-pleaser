@@ -84,18 +84,17 @@ func (f *Framework) CloneRepo(t *testing.T, r *Repository) *git.Repository {
 	return repo
 }
 
-func (f *Framework) Run(t *testing.T, r *Repository, extraFiles []string, extraArgs ...string) error {
+func (f *Framework) Run(t *testing.T, r *Repository, extraFiles []string) error {
 	t.Helper()
 
 	ctx := t.Context()
 
 	rootCmd := cmd.NewRootCmd()
-	args := append([]string{
+	rootCmd.SetArgs(append([]string{
 		"run",
 		fmt.Sprintf("--repo=%s", r.Name),
 		fmt.Sprintf("--extra-files=%q", strings.Join(extraFiles, "\n")),
-	}, f.forge.RunArguments()...)
-	rootCmd.SetArgs(append(args, extraArgs...))
+	}, f.forge.RunArguments()...))
 
 	var stdout, stderr bytes.Buffer
 

@@ -14,8 +14,9 @@ import (
 )
 
 type Parser struct {
-	machine         conventionalcommits.Machine
-	logger          *slog.Logger
+	machine conventionalcommits.Machine
+	logger  *slog.Logger
+
 	extraPatchTypes *regexp.Regexp
 }
 
@@ -26,8 +27,9 @@ func NewParser(logger *slog.Logger, extraPatchTypes *regexp.Regexp) *Parser {
 	)
 
 	return &Parser{
-		machine:         parserMachine,
-		logger:          logger,
+		machine: parserMachine,
+		logger:  logger,
+
 		extraPatchTypes: extraPatchTypes,
 	}
 }

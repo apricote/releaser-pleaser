@@ -22,12 +22,13 @@ import (
 
 func newRunCommand() *cobra.Command {
 	var (
-		flagForge           string
-		flagBranch          string
-		flagOwner           string
-		flagRepo            string
-		flagExtraFiles      string
-		flagUpdaters        []string
+		flagForge      string
+		flagBranch     string
+		flagOwner      string
+		flagRepo       string
+		flagExtraFiles string
+		flagUpdaters   []string
+
 		flagExtraPatchTypes string
 
 		flagAPIURL   string
