@@ -11,7 +11,6 @@ import (
 
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
 	"github.com/apricote/releaser-pleaser/internal/git"
-	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
 
 type Parser struct {
@@ -58,16 +57,16 @@ func (c *Parser) Analyze(commits []git.Commit) ([]commitparser.AnalyzedCommit, e
 			continue
 		}
 
-		analyzedCommit := commitparser.AnalyzedCommit{
-			Commit:         commit,
-			Type:           conventionalCommit.Type,
-			Description:    conventionalCommit.Description,
-			Scope:          conventionalCommit.Scope,
-			BreakingChange: conventionalCommit.IsBreakingChange(),
-		}
-		if versioning.BumpFromCommit(analyzedCommit, c.extraPatchTypes) > versioning.UnknownVersion {
+		commitVersionBump := conventionalCommit.VersionBump(conventionalcommits.DefaultStrategy)
+		if commitVersionBump > conventionalcommits.UnknownVersion || (c.extraPatchTypes != nil && c.extraPatchTypes.MatchString(conventionalCommit.Type)) {
 			// We only care about releasable commits
-			analyzedCommits = append(analyzedCommits, analyzedCommit)
+			analyzedCommits = append(analyzedCommits, commitparser.AnalyzedCommit{
+				Commit:         commit,
+				Type:           conventionalCommit.Type,
+				Description:    conventionalCommit.Description,
+				Scope:          conventionalCommit.Scope,
+				BreakingChange: conventionalCommit.IsBreakingChange(),
+			})
 		}
 
 	}

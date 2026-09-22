@@ -70,7 +70,15 @@ func BumpFromCommits(commits []commitparser.AnalyzedCommit, extraPatchTypes *reg
 	bump := UnknownVersion
 
 	for _, commit := range commits {
-		entryBump := BumpFromCommit(commit, extraPatchTypes)
+		entryBump := UnknownVersion
+		switch {
+		case commit.BreakingChange:
+			entryBump = MajorVersion
+		case commit.Type == "feat":
+			entryBump = MinorVersion
+		case commit.Type == "fix" || (extraPatchTypes != nil && extraPatchTypes.MatchString(commit.Type)):
+			entryBump = PatchVersion
+		}
 
 		if entryBump > bump {
 			bump = entryBump
@@ -78,19 +86,6 @@ func BumpFromCommits(commits []commitparser.AnalyzedCommit, extraPatchTypes *reg
 	}
 
 	return bump
-}
-
-func BumpFromCommit(commit commitparser.AnalyzedCommit, extraPatchTypes *regexp.Regexp) VersionBump {
-	switch {
-	case commit.BreakingChange:
-		return MajorVersion
-	case commit.Type == "feat":
-		return MinorVersion
-	case commit.Type == "fix" || (extraPatchTypes != nil && extraPatchTypes.MatchString(commit.Type)):
-		return PatchVersion
-	default:
-		return UnknownVersion
-	}
 }
 
 func setPRVersion(version *semver.Version, prType string, count uint64) {

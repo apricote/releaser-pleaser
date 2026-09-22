@@ -191,7 +191,7 @@ func TestAnalyzeExtraPatchTypesFiltering(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, commits, 3)
 	assert.Equal(t, "feat", commits[0].Type)
-	assert.Equal(t, versioning.MinorVersion, versioning.BumpFromCommit(commits[0], regexp.MustCompile(".*")))
+	assert.Equal(t, versioning.MinorVersion, versioning.BumpFromCommits(commits[:1], regexp.MustCompile(".*")))
 	assert.True(t, commits[1].BreakingChange)
 	assert.True(t, commits[2].BreakingChange)
 }
