@@ -151,6 +151,72 @@ func Test_NewChangelogEntry(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "only other commits",
+			args: args{
+				analyzedCommits: []commitparser.AnalyzedCommit{
+					{
+						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
+						Type:        "docs",
+						Description: "Document API",
+					},
+				},
+				version: "1.0.1",
+				link:    "https://example.com/1.0.1",
+			},
+			want:    "## [1.0.1](https://example.com/1.0.1)\n\n### Other\n\n- Document API ([abc1234](https://example.com/commit/abc1234567890))\n",
+			wantErr: assert.NoError,
+		},
+		{
+			name: "other commits follow features and fixes",
+			args: args{
+				analyzedCommits: []commitparser.AnalyzedCommit{
+					{
+						Commit:         git.Commit{Hash: "aaa1111111111", URL: "https://example.com/commit/aaa1111111111"},
+						Type:           "refactor",
+						Description:    "Remove old API",
+						Scope:          ptr("api"),
+						BreakingChange: true,
+					},
+					{
+						Commit:      git.Commit{Hash: "bbb2222222222", URL: "https://example.com/commit/bbb2222222222"},
+						Type:        "docs",
+						Description: "Document API",
+					},
+					{
+						Commit:      git.Commit{Hash: "ccc3333333333", URL: "https://example.com/commit/ccc3333333333"},
+						Type:        "feat",
+						Description: "Add API",
+					},
+					{
+						Commit:      git.Commit{Hash: "ddd4444444444", URL: "https://example.com/commit/ddd4444444444"},
+						Type:        "fix",
+						Description: "Fix API",
+					},
+				},
+				version: "2.0.0",
+				link:    "https://example.com/2.0.0",
+				suffix:  "Additional notes.",
+			},
+			want: `## [2.0.0](https://example.com/2.0.0)
+
+### Features
+
+- Add API ([ccc3333](https://example.com/commit/ccc3333333333))
+
+### Bug Fixes
+
+- Fix API ([ddd4444](https://example.com/commit/ddd4444444444))
+
+### Other
+
+- Document API ([bbb2222](https://example.com/commit/bbb2222222222))
+- **BREAKING**: **api**: Remove old API ([aaa1111](https://example.com/commit/aaa1111111111))
+
+Additional notes.
+`,
+			wantErr: assert.NoError,
+		},
+		{
 			name: "prefix",
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
