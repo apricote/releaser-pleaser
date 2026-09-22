@@ -22,6 +22,18 @@
 {{ range . -}}{{template "entry" .}}{{end}}
 {{- end -}}
 
+{{- $hasOther := false -}}
+{{- range $type, $commits := .Data.Commits -}}
+{{- if and (ne $type "feat") (ne $type "fix") $commits -}}
+{{- if not $hasOther }}
+### Other
+
+{{ $hasOther = true -}}
+{{- end -}}
+{{ range $commits -}}{{template "entry" .}}{{end}}
+{{- end -}}
+{{- end -}}
+
 {{- if .Data.Suffix }}
 {{ .Data.Suffix }}
 {{ end }}

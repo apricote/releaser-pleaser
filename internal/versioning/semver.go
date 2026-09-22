@@ -2,6 +2,7 @@ package versioning
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -65,19 +66,11 @@ func (s semVer) NextVersion(r git.Releases, versionBump VersionBump, nextVersion
 	return "v" + next.String(), nil
 }
 
-func BumpFromCommits(commits []commitparser.AnalyzedCommit) VersionBump {
+func BumpFromCommits(commits []commitparser.AnalyzedCommit, extraPatchTypes *regexp.Regexp) VersionBump {
 	bump := UnknownVersion
 
 	for _, commit := range commits {
-		entryBump := UnknownVersion
-		switch {
-		case commit.BreakingChange:
-			entryBump = MajorVersion
-		case commit.Type == "feat":
-			entryBump = MinorVersion
-		case commit.Type == "fix":
-			entryBump = PatchVersion
-		}
+		entryBump := BumpFromCommit(commit, extraPatchTypes)
 
 		if entryBump > bump {
 			bump = entryBump
@@ -85,6 +78,19 @@ func BumpFromCommits(commits []commitparser.AnalyzedCommit) VersionBump {
 	}
 
 	return bump
+}
+
+func BumpFromCommit(commit commitparser.AnalyzedCommit, extraPatchTypes *regexp.Regexp) VersionBump {
+	switch {
+	case commit.BreakingChange:
+		return MajorVersion
+	case commit.Type == "feat":
+		return MinorVersion
+	case commit.Type == "fix" || (extraPatchTypes != nil && extraPatchTypes.MatchString(commit.Type)):
+		return PatchVersion
+	default:
+		return UnknownVersion
+	}
 }
 
 func setPRVersion(version *semver.Version, prType string, count uint64) {

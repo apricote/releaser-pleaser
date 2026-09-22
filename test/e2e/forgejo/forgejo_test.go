@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/apricote/releaser-pleaser/internal/git"
@@ -44,6 +45,46 @@ func TestCreateRepository(t *testing.T) {
 func TestEmptyRun(t *testing.T) {
 	repo := f.NewRepository(t, t.Name())
 	require.NoError(t, f.Run(t, repo, []string{}))
+}
+
+func TestRunExtraPatchTypes(t *testing.T) {
+	forge := &TestForge{}
+	framework, err := e2e.NewFramework(t.Context(), forge)
+	require.NoError(t, err)
+	repo := framework.NewRepository(t, t.Name())
+	clonedRepo := framework.CloneRepo(t, repo)
+
+	for _, message := range []string{"docs: document usage", "chore: tidy files", "test: add coverage"} {
+		err = clonedRepo.UpdateFile(t.Context(), "README.md", false, func(content string) (string, error) {
+			return content + "\n" + message, nil
+		})
+		require.NoError(t, err)
+		_, err = clonedRepo.Commit(t.Context(), message, TestAuthor)
+		require.NoError(t, err)
+	}
+	require.NoError(t, clonedRepo.ForcePush(t.Context(), e2e.TestDefaultBranch))
+
+	require.NoError(t, framework.Run(t, repo, nil))
+	prs, err := forge.ListOpenPRs(t, repo)
+	require.NoError(t, err)
+	assert.Empty(t, prs)
+
+	const extraPatchTypes = "--extra-patch-types=docs|chore"
+	require.NoError(t, framework.Run(t, repo, nil, extraPatchTypes))
+	pr := framework.HasReleasePR(t, repo, "v0.0.1")
+	assert.Contains(t, pr.Description, "### Other")
+	assert.Contains(t, pr.Description, "document usage")
+	assert.Contains(t, pr.Description, "tidy files")
+	assert.NotContains(t, pr.Description, "add coverage")
+
+	require.NoError(t, framework.Run(t, repo, nil, extraPatchTypes))
+	assert.Equal(t, pr.ID, framework.HasReleasePR(t, repo, "v0.0.1").ID)
+	framework.MergeReleasePR(t, repo, pr)
+	require.NoError(t, framework.Run(t, repo, nil, extraPatchTypes))
+	framework.HasTag(t, repo, "v0.0.1")
+	prs, err = forge.ListOpenPRs(t, repo)
+	require.NoError(t, err)
+	assert.Empty(t, prs)
 }
 
 func TestRunMultipleSimpleReleases(t *testing.T) {

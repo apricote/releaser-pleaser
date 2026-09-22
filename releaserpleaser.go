@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"regexp"
 
 	"github.com/apricote/releaser-pleaser/internal/changelog"
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
@@ -28,24 +29,26 @@ var (
 )
 
 type ReleaserPleaser struct {
-	forge        forge.Forge
-	logger       *slog.Logger
-	targetBranch string
-	commitParser commitparser.CommitParser
-	versioning   versioning.Strategy
-	extraFiles   []string
-	updaters     []updater.Updater
+	forge           forge.Forge
+	logger          *slog.Logger
+	targetBranch    string
+	commitParser    commitparser.CommitParser
+	versioning      versioning.Strategy
+	extraFiles      []string
+	updaters        []updater.Updater
+	extraPatchTypes *regexp.Regexp
 }
 
-func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater) *ReleaserPleaser {
+func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater, extraPatchTypes *regexp.Regexp) *ReleaserPleaser {
 	return &ReleaserPleaser{
-		forge:        forge,
-		logger:       logger,
-		targetBranch: targetBranch,
-		commitParser: commitParser,
-		versioning:   versioningStrategy,
-		extraFiles:   extraFiles,
-		updaters:     updaters,
+		forge:           forge,
+		logger:          logger,
+		targetBranch:    targetBranch,
+		commitParser:    commitParser,
+		versioning:      versioningStrategy,
+		extraFiles:      extraFiles,
+		updaters:        updaters,
+		extraPatchTypes: extraPatchTypes,
 	}
 }
 
@@ -241,7 +244,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return nil
 	}
 
-	versionBump := versioning.BumpFromCommits(analyzedCommitsForVersioning)
+	versionBump := versioning.BumpFromCommits(analyzedCommitsForVersioning, rp.extraPatchTypes)
 	// TODO: Set version in release pr
 	nextVersion, err := rp.versioning.NextVersion(releases, versionBump, releaseOverrides.NextVersionType)
 	if err != nil {
