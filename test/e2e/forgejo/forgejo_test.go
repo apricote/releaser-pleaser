@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/apricote/releaser-pleaser/cmd/rp/cmd"
 	"github.com/apricote/releaser-pleaser/internal/git"
 	"github.com/apricote/releaser-pleaser/test/e2e"
 )
@@ -44,6 +45,50 @@ func TestCreateRepository(t *testing.T) {
 func TestEmptyRun(t *testing.T) {
 	repo := f.NewRepository(t, t.Name())
 	require.NoError(t, f.Run(t, repo, []string{}))
+}
+
+func TestRunExtraPatchTypes(t *testing.T) {
+	forge := &TestForge{}
+	framework, err := e2e.NewFramework(t.Context(), forge)
+	require.NoError(t, err)
+	repo := framework.NewRepository(t, t.Name())
+	clonedRepo := framework.CloneRepo(t, repo)
+	run := func(pattern string) {
+		rootCmd := cmd.NewRootCmd()
+		rootCmd.SetArgs(append([]string{"run", "--repo=" + repo.Name, "--extra-patch-types=" + pattern}, forge.RunArguments()...))
+		require.NoError(t, rootCmd.ExecuteContext(t.Context()))
+	}
+
+	for _, message := range []string{"docs: document usage", "chore: tidy files", "test: add coverage"} {
+		err = clonedRepo.UpdateFile(t.Context(), "README.md", false, func(content string) (string, error) {
+			return content + "\n" + message, nil
+		})
+		require.NoError(t, err)
+		_, err = clonedRepo.Commit(t.Context(), message, TestAuthor)
+		require.NoError(t, err)
+	}
+	require.NoError(t, clonedRepo.ForcePush(t.Context(), e2e.TestDefaultBranch))
+
+	run("")
+	prs, err := forge.ListOpenPRs(t, repo)
+	require.NoError(t, err)
+	require.Empty(t, prs)
+
+	run("docs|chore")
+	pr := framework.HasReleasePR(t, repo, "v0.0.1")
+	require.Contains(t, pr.Description, "### Other")
+	require.Contains(t, pr.Description, "document usage")
+	require.Contains(t, pr.Description, "tidy files")
+	require.NotContains(t, pr.Description, "add coverage")
+
+	run("docs|chore")
+	require.Equal(t, pr.ID, framework.HasReleasePR(t, repo, "v0.0.1").ID)
+	framework.MergeReleasePR(t, repo, pr)
+	run("docs|chore")
+	framework.HasTag(t, repo, "v0.0.1")
+	prs, err = forge.ListOpenPRs(t, repo)
+	require.NoError(t, err)
+	require.Empty(t, prs)
 }
 
 func TestRunMultipleSimpleReleases(t *testing.T) {

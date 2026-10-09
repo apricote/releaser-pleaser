@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -28,6 +29,8 @@ func newRunCommand() *cobra.Command {
 		flagExtraFiles string
 		flagUpdaters   []string
 
+		flagExtraPatchTypes string
+
 		flagAPIURL   string
 		flagAPIToken string
 		flagUsername string
@@ -39,7 +42,10 @@ func newRunCommand() *cobra.Command {
 			ctx := cmd.Context()
 			logger := log.GetLogger(cmd.ErrOrStderr())
 
-			var err error
+			extraPatchTypes, err := parseExtraPatchTypes(flagExtraPatchTypes)
+			if err != nil {
+				return err
+			}
 
 			logger.DebugContext(ctx, "run called",
 				"forge", flagForge,
@@ -113,10 +119,11 @@ func newRunCommand() *cobra.Command {
 				f,
 				logger,
 				flagBranch,
-				conventionalcommits.NewParser(logger),
+				conventionalcommits.NewParser(logger, extraPatchTypes),
 				versioning.SemVer,
 				extraFiles,
 				updaters,
+				extraPatchTypes,
 			)
 
 			return releaserPleaser.Run(ctx)
@@ -129,6 +136,7 @@ func newRunCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flagRepo, "repo", "", "")
 	cmd.PersistentFlags().StringVar(&flagExtraFiles, "extra-files", "", "")
 	cmd.PersistentFlags().StringSliceVar(&flagUpdaters, "updaters", []string{}, "")
+	cmd.PersistentFlags().StringVar(&flagExtraPatchTypes, "extra-patch-types", "", "Regular expression matching whole conventional commit types that additionally trigger a patch release")
 
 	cmd.PersistentFlags().StringVar(&flagAPIURL, "api-url", "", "")
 	cmd.PersistentFlags().StringVar(&flagAPIToken, "api-token", "", "")
@@ -155,6 +163,18 @@ func parseExtraFiles(input string) []string {
 	}
 
 	return extraFiles
+}
+
+func parseExtraPatchTypes(input string) (*regexp.Regexp, error) {
+	if input == "" {
+		return nil, nil
+	}
+
+	pattern, err := regexp.Compile("^(?:" + input + ")$")
+	if err != nil {
+		return nil, fmt.Errorf("invalid --extra-patch-types pattern: %w", err)
+	}
+	return pattern, nil
 }
 
 func parseUpdaters(input []string) []string {

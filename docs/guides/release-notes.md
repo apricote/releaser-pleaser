@@ -1,6 +1,14 @@
 # Customizing Release Notes
 
-You can customize the generated Release Notes in two ways:
+You can customize the generated Release Notes as follows:
+
+## Additional patch types
+
+Set the `extra-patch-types` action or component input, or the `rp run --extra-patch-types` flag, to a Go regular expression such as `refactor|perf|chore|docs`. Matching additional types trigger patch releases and appear under **Other** in release notes. Patterns match whole types; an empty pattern preserves the defaults, and invalid patterns fail before any release actions.
+
+The parser supports these additional types: `build`, `ci`, `chore`, `docs`, `perf`, `refactor`, `revert`, `style`, and `test`. The pattern does not enable arbitrary custom commit types.
+
+`fix` still triggers patch releases, `feat` takes precedence with minor releases, and breaking changes take precedence with major releases. Release notes retain scopes, commit links, and breaking-change markers.
 
 ## For a single commit / pull request
 
