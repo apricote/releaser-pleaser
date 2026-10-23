@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"regexp"
 
 	"github.com/apricote/releaser-pleaser/internal/changelog"
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
@@ -35,9 +36,16 @@ type ReleaserPleaser struct {
 	versioning   versioning.Strategy
 	extraFiles   []string
 	updaters     []updater.Updater
+
+	extraPatchTypes *regexp.Regexp
 }
 
-func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater) *ReleaserPleaser {
+func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater, patchTypes ...*regexp.Regexp) *ReleaserPleaser {
+	var extraPatchTypes *regexp.Regexp
+	if len(patchTypes) > 0 {
+		extraPatchTypes = patchTypes[0]
+	}
+
 	return &ReleaserPleaser{
 		forge:        forge,
 		logger:       logger,
@@ -46,6 +54,8 @@ func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitPars
 		versioning:   versioningStrategy,
 		extraFiles:   extraFiles,
 		updaters:     updaters,
+
+		extraPatchTypes: extraPatchTypes,
 	}
 }
 
@@ -241,7 +251,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return nil
 	}
 
-	versionBump := versioning.BumpFromCommits(analyzedCommitsForVersioning)
+	versionBump := versioning.BumpFromCommits(analyzedCommitsForVersioning, rp.extraPatchTypes)
 	// TODO: Set version in release pr
 	nextVersion, err := rp.versioning.NextVersion(releases, versionBump, releaseOverrides.NextVersionType)
 	if err != nil {
