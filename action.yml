@@ -25,6 +25,10 @@ inputs:
     description: "Forge this action is run against"
     required: false
     default: "github"
+  extra-patch-types:
+    description: "Regular expression matching whole conventional commit types that additionally trigger a patch release."
+    required: false
+    default: ""
   api-url:
     description: "API URL of the selected forge "
     required: false
@@ -48,6 +52,7 @@ runs:
     - --branch=${{ inputs.branch }}
     - --extra-files="${{ inputs.extra-files }}"
     - --updaters="${{ inputs.updaters }}"
+    - --extra-patch-types=${{ inputs.extra-patch-types }}
     - --api-url=${{ inputs.api-url }}
     - --api-token=${{ inputs.token }}
     - --owner=${{ inputs.owner }}

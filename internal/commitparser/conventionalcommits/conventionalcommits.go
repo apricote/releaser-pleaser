@@ -3,6 +3,7 @@ package conventionalcommits
 import (
 	"fmt"
 	"log/slog"
+	"regexp"
 	"strings"
 
 	"github.com/leodido/go-conventionalcommits"
@@ -15,9 +16,11 @@ import (
 type Parser struct {
 	machine conventionalcommits.Machine
 	logger  *slog.Logger
+
+	extraPatchTypes *regexp.Regexp
 }
 
-func NewParser(logger *slog.Logger) *Parser {
+func NewParser(logger *slog.Logger, extraPatchTypes *regexp.Regexp) *Parser {
 	parserMachine := parser.NewMachine(
 		parser.WithBestEffort(),
 		parser.WithTypes(conventionalcommits.TypesConventional),
@@ -26,6 +29,8 @@ func NewParser(logger *slog.Logger) *Parser {
 	return &Parser{
 		machine: parserMachine,
 		logger:  logger,
+
+		extraPatchTypes: extraPatchTypes,
 	}
 }
 
@@ -55,7 +60,7 @@ func (c *Parser) Analyze(commits []git.Commit) ([]commitparser.AnalyzedCommit, e
 		}
 
 		commitVersionBump := conventionalCommit.VersionBump(conventionalcommits.DefaultStrategy)
-		if commitVersionBump > conventionalcommits.UnknownVersion {
+		if commitVersionBump > conventionalcommits.UnknownVersion || (c.extraPatchTypes != nil && c.extraPatchTypes.MatchString(conventionalCommit.Type)) {
 			// We only care about releasable commits
 			analyzedCommits = append(analyzedCommits, commitparser.AnalyzedCommit{
 				Commit:         commit,

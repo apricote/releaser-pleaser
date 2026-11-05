@@ -2,9 +2,11 @@ package conventionalcommits
 
 import (
 	"log/slog"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
 	"github.com/apricote/releaser-pleaser/internal/git"
@@ -146,7 +148,7 @@ func TestAnalyzeCommits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			analyzedCommits, err := NewParser(slog.Default()).Analyze(tt.commits)
+			analyzedCommits, err := NewParser(slog.Default(), nil).Analyze(tt.commits)
 			if !tt.wantErr(t, err) {
 				return
 			}
@@ -154,4 +156,39 @@ func TestAnalyzeCommits(t *testing.T) {
 			assert.Equal(t, tt.expectedCommits, analyzedCommits)
 		})
 	}
+}
+
+func TestAnalyzeExtraPatchTypes(t *testing.T) {
+	for _, commitType := range []string{"build", "ci", "chore", "docs", "perf", "refactor", "revert", "style", "test"} {
+		t.Run(commitType, func(t *testing.T) {
+			commit := git.Commit{Message: commitType + "(api): improve things"}
+			commits, err := NewParser(slog.Default(), nil).Analyze([]git.Commit{commit})
+			require.NoError(t, err)
+			assert.Empty(t, commits)
+
+			extraPatchTypes := regexp.MustCompile("^" + commitType + "$")
+			commits, err = NewParser(slog.Default(), extraPatchTypes).Analyze([]git.Commit{commit, {Message: "fix: fix things"}})
+			require.NoError(t, err)
+			require.Len(t, commits, 2)
+			assert.Equal(t, commitType, commits[0].Type)
+			assert.Equal(t, "improve things", commits[0].Description)
+			require.NotNil(t, commits[0].Scope)
+			assert.Equal(t, "api", *commits[0].Scope)
+		})
+	}
+}
+
+func TestAnalyzeExtraPatchTypesFiltering(t *testing.T) {
+	commits, err := NewParser(slog.Default(), regexp.MustCompile("^(?:docs|feat)$")).Analyze([]git.Commit{
+		{Message: "chore: still ignored"},
+		{Message: "not a conventional commit"},
+		{Message: "feat: still a feature"},
+		{Message: "docs!: breaking documentation"},
+		{Message: "refactor: change API\n\nBREAKING CHANGE: removed API"},
+	})
+	require.NoError(t, err)
+	require.Len(t, commits, 3)
+	assert.Equal(t, "feat", commits[0].Type)
+	assert.True(t, commits[1].BreakingChange)
+	assert.True(t, commits[2].BreakingChange)
 }
