@@ -2,6 +2,7 @@ package versioning
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -339,6 +340,7 @@ func TestVersionBumpFromCommits(t *testing.T) {
 	tests := []struct {
 		name            string
 		analyzedCommits []commitparser.AnalyzedCommit
+		extraPatchTypes *regexp.Regexp
 		want            VersionBump
 	}{
 		{
@@ -381,10 +383,46 @@ func TestVersionBumpFromCommits(t *testing.T) {
 			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "docs"}, {Type: "fix"}},
 			want:            PatchVersion,
 		},
+		{
+			name:            "configured extra type (patch)",
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "docs"}},
+			extraPatchTypes: regexp.MustCompile("^docs$"),
+			want:            PatchVersion,
+		},
+		{
+			name:            "unconfigured extra type (unknown)",
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "chore"}},
+			extraPatchTypes: regexp.MustCompile("^docs$"),
+			want:            UnknownVersion,
+		},
+		{
+			name:            "fix remains a patch with extra types",
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "fix"}},
+			extraPatchTypes: regexp.MustCompile("^docs$"),
+			want:            PatchVersion,
+		},
+		{
+			name:            "feature takes precedence over extra types",
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "docs"}, {Type: "feat"}},
+			extraPatchTypes: regexp.MustCompile(".*"),
+			want:            MinorVersion,
+		},
+		{
+			name:            "breaking extra type takes precedence",
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "refactor", BreakingChange: true}, {Type: "docs"}},
+			extraPatchTypes: regexp.MustCompile(".*"),
+			want:            MajorVersion,
+		},
+		{
+			name:            "unconfigured breaking type remains major",
+			analyzedCommits: []commitparser.AnalyzedCommit{{Type: "refactor", BreakingChange: true}},
+			extraPatchTypes: regexp.MustCompile("^docs$"),
+			want:            MajorVersion,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, BumpFromCommits(tt.analyzedCommits), "BumpFromCommits(%v)", tt.analyzedCommits)
+			assert.Equalf(t, tt.want, BumpFromCommits(tt.analyzedCommits, tt.extraPatchTypes), "BumpFromCommits(%v)", tt.analyzedCommits)
 		})
 	}
 }
