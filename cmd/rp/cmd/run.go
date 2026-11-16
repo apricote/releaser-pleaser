@@ -109,6 +109,14 @@ func newRunCommand() *cobra.Command {
 				}
 			}
 
+			signKey, err := signingKeyFromEnv()
+			if err != nil {
+				return err
+			}
+			if signKey != nil {
+				logger.InfoContext(ctx, "signing release commits", "key.id", signKey.PrimaryKey.KeyIdString())
+			}
+
 			releaserPleaser := rp.New(
 				f,
 				logger,
@@ -117,6 +125,7 @@ func newRunCommand() *cobra.Command {
 				versioning.SemVer,
 				extraFiles,
 				updaters,
+				signKey,
 			)
 
 			return releaserPleaser.Run(ctx)

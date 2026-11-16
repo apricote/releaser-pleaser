@@ -18,6 +18,7 @@
 - [Pre-releases](guides/pre-releases.md)
 - [Workflow Permissions on GitHub](guides/github-workflow-permissions.md)
 - [Updating arbitrary files](guides/updating-arbitrary-files.md)
+- [Signing release commits](guides/signed-commits.md)
 
 # Reference
 
