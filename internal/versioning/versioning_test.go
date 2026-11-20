@@ -5,11 +5,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/apricote/releaser-pleaser/internal/git"
 )
 
 func TestLatestReleases(t *testing.T) {
+	calver, err := NewCalVer("YYYY.0W.MICRO", nil)
+	require.NoError(t, err)
+
 	tests := []struct {
 		name       string
 		strategy   Strategy
@@ -48,6 +52,20 @@ func TestLatestReleases(t *testing.T) {
 			strategy:   SemVer,
 			tags:       []string{"v1.1.0-rc.0"},
 			wantLatest: "v1.1.0-rc.0",
+		},
+		{
+			name:       "calver ignores semver tags",
+			strategy:   calver,
+			tags:       []string{"v1.2.3", "2026.47.1-rc.0", "2026.47.0", "2026.46.0"},
+			wantLatest: "2026.47.1-rc.0",
+			wantStable: "2026.47.0",
+		},
+		{
+			name:       "calver unsorted tags",
+			strategy:   calver,
+			tags:       []string{"2026.09.0", "2026.10.0", "2026.10.10", "2026.10.9", "2026.10.11-rc.0"},
+			wantLatest: "2026.10.11-rc.0",
+			wantStable: "2026.10.10",
 		},
 	}
 	for _, tt := range tests {

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -27,6 +28,10 @@ func newRunCommand() *cobra.Command {
 		flagRepo       string
 		flagExtraFiles string
 		flagUpdaters   []string
+
+		flagVersioning   string
+		flagCalVerFormat string
+		flagNow          string
 
 		flagAPIURL   string
 		flagAPIToken string
@@ -121,12 +126,17 @@ func newRunCommand() *cobra.Command {
 				logger.InfoContext(ctx, "signing release commits", "key.id", signKey.PrimaryKey.KeyIdString())
 			}
 
+			versioningStrategy, err := parseVersioning(flagVersioning, flagCalVerFormat, flagNow)
+			if err != nil {
+				return err
+			}
+
 			releaserPleaser := rp.New(
 				f,
 				logger,
 				flagBranch,
 				conventionalcommits.NewParser(logger),
-				versioning.SemVer,
+				versioningStrategy,
 				extraFiles,
 				updaters,
 				signKey,
@@ -143,11 +153,54 @@ func newRunCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flagExtraFiles, "extra-files", "", "")
 	cmd.PersistentFlags().StringSliceVar(&flagUpdaters, "updaters", []string{}, "")
 
+	cmd.PersistentFlags().StringVar(&flagVersioning, "versioning", VersioningSemVer, "Versioning scheme: semver, calver")
+	cmd.PersistentFlags().StringVar(&flagCalVerFormat, "calver-format", versioning.DefaultCalVerFormat, "Format of CalVer versions, only used with --versioning=calver")
+	// Override the current date for CalVer. Only meant for tests.
+	cmd.PersistentFlags().StringVar(&flagNow, "now", "", "")
+	_ = cmd.PersistentFlags().MarkHidden("now")
+
 	cmd.PersistentFlags().StringVar(&flagAPIURL, "api-url", "", "")
 	cmd.PersistentFlags().StringVar(&flagAPIToken, "api-token", "", "")
 	cmd.PersistentFlags().StringVar(&flagUsername, "username", "", "")
 
 	return cmd
+}
+
+const (
+	VersioningSemVer = "semver"
+	VersioningCalVer = "calver"
+)
+
+func parseVersioning(versioningName, calVerFormat, now string) (versioning.Strategy, error) {
+	// Empty values happen when the GitHub Action/GitLab Component inputs are not set.
+	if versioningName == "" {
+		versioningName = VersioningSemVer
+	}
+	if calVerFormat == "" {
+		calVerFormat = versioning.DefaultCalVerFormat
+	}
+
+	switch versioningName {
+	case VersioningSemVer:
+		return versioning.SemVer, nil
+	case VersioningCalVer:
+		clock := time.Now
+		if now != "" {
+			parsedNow, err := time.Parse(time.RFC3339, now)
+			if err != nil {
+				return nil, fmt.Errorf("invalid --now: %w", err)
+			}
+			clock = func() time.Time { return parsedNow }
+		}
+
+		strategy, err := versioning.NewCalVer(calVerFormat, clock)
+		if err != nil {
+			return nil, fmt.Errorf("invalid --calver-format: %w", err)
+		}
+		return strategy, nil
+	default:
+		return nil, fmt.Errorf("unknown --versioning: %s", versioningName)
+	}
 }
 
 func parseExtraFiles(input string) []string {
