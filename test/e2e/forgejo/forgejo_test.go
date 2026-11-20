@@ -185,3 +185,36 @@ func TestCalVerPrerelease(t *testing.T) {
 		f.HasTag(t, repo, step.version)
 	}
 }
+
+func TestCalVerScopedCommits(t *testing.T) {
+	repo := f.NewRepository(t, t.Name())
+
+	steps := []struct {
+		message     string
+		now         string
+		version     string
+		description string
+	}{
+		{message: "api: add endpoint", now: "2026-11-18T12:00:00Z", version: "2026.47.0", description: "**api**: add endpoint"},
+		{message: "fix typo in readme", now: "2026-11-19T12:00:00Z", version: "2026.47.1", description: "- fix typo in readme"},
+		{message: "ui: new button", now: "2026-11-25T12:00:00Z", version: "2026.48.0", description: "**ui**: new button"},
+	}
+
+	for _, step := range steps {
+		args := append([]string{"--commit-parser=scoped"}, calVerArgs(step.now)...)
+
+		pushCommit(t, repo, step.message)
+
+		require.NoError(t, f.Run(t, repo, []string{}, args...))
+
+		pr := f.HasReleasePR(t, repo, step.version)
+		require.Contains(t, pr.Description, "### Changes")
+		require.Contains(t, pr.Description, step.description)
+		// Release commits of the previous releases must not show up in the changelog.
+		require.NotContains(t, pr.Description, "release 2026.")
+		f.MergeReleasePR(t, repo, pr)
+
+		require.NoError(t, f.Run(t, repo, []string{}, args...))
+		f.HasTag(t, repo, step.version)
+	}
+}
