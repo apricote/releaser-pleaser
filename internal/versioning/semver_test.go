@@ -422,3 +422,25 @@ func TestSemVer_IsPrerelease(t *testing.T) {
 		})
 	}
 }
+
+func TestSemVer_Compare(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want int
+	}{
+		{"v1.0.0", "v1.0.0", 0},
+		{"v1.0.0", "1.0.0", 0},
+		{"v1.9.0", "v1.10.0", -1},
+		{"v1.10.0", "v1.9.0", 1},
+		{"v1.10.0-rc.0", "v1.10.0", -1},
+		{"v1.10.0-alpha.1", "v1.10.0-beta.0", -1},
+		{"v1.10.0-rc.10", "v1.10.0-rc.9", 1},
+		{"invalid", "v0.0.1", -1},
+		{"v0.0.1", "invalid", 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.a+" vs "+tt.b, func(t *testing.T) {
+			assert.Equal(t, tt.want, SemVer.Compare(tt.a, tt.b))
+		})
+	}
+}

@@ -209,10 +209,12 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		}
 	}
 
-	releases, err := rp.forge.LatestTags(ctx)
+	tags, err := rp.forge.Tags(ctx)
 	if err != nil {
 		return err
 	}
+
+	releases := versioning.LatestReleases(ctx, logger, tags, rp.versioning)
 
 	if releases.Latest != nil {
 		logger.InfoContext(ctx, "found latest tag", "tag.hash", releases.Latest.Hash, "tag.name", releases.Latest.Name)

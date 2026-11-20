@@ -22,9 +22,9 @@ type Forge interface {
 	// CommitAuthor returns the git author used for the release commit. It should be the user whose token is used to talk to the API.
 	CommitAuthor(context.Context) (git.Author, error)
 
-	// LatestTags returns the last stable tag created on the main branch. If there is a more recent pre-release tag,
-	// that is also returned. If no tag is found, it returns nil.
-	LatestTags(context.Context) (git.Releases, error)
+	// Tags returns all tags in the repository, in any order. Selecting the relevant release tags is done by
+	// versioning.LatestReleases.
+	Tags(context.Context) ([]git.Tag, error)
 
 	// CommitsSince returns all commits to main branch after the Tag. The tag can be `nil`, in which case this
 	// function should return all commits.

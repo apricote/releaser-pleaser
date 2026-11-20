@@ -123,3 +123,23 @@ func (s semVer) IsPrerelease(version string) bool {
 
 	return false
 }
+
+func (s semVer) Validate(tag string) error {
+	_, err := parseSemverWithDefault(&git.Tag{Hash: "", Name: tag})
+	return err
+}
+
+// Compare sorts invalid versions before all valid versions.
+func (s semVer) Compare(a, b string) int {
+	va, errA := parseSemverWithDefault(&git.Tag{Hash: "", Name: a})
+	vb, errB := parseSemverWithDefault(&git.Tag{Hash: "", Name: b})
+	switch {
+	case errA != nil && errB != nil:
+		return 0
+	case errA != nil:
+		return -1
+	case errB != nil:
+		return 1
+	}
+	return va.Compare(vb)
+}

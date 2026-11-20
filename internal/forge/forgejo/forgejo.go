@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
-	"github.com/blang/semver/v4"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 
@@ -77,7 +76,7 @@ func (f *Forgejo) CommitAuthor(ctx context.Context) (git.Author, error) {
 	}, nil
 }
 
-func (f *Forgejo) LatestTags(ctx context.Context) (git.Releases, error) {
+func (f *Forgejo) Tags(ctx context.Context) ([]git.Tag, error) {
 	f.log.DebugContext(ctx, "listing all tags in forgejo repository")
 
 	tags, err := all(func(listOptions forgejo.ListOptions) ([]*forgejo.Tag, *forgejo.Response, error) {
@@ -86,40 +85,18 @@ func (f *Forgejo) LatestTags(ctx context.Context) (git.Releases, error) {
 		)
 	})
 	if err != nil {
-		return git.Releases{}, err
+		return nil, err
 	}
 
-	var releases git.Releases
-
+	result := make([]git.Tag, 0, len(tags))
 	for _, fTag := range tags {
-		tag := &git.Tag{
+		result = append(result, git.Tag{
 			Hash: fTag.Commit.SHA,
 			Name: fTag.Name,
-		}
-
-		version, err := semver.Parse(strings.TrimPrefix(tag.Name, "v"))
-		if err != nil {
-			f.log.WarnContext(
-				ctx, "unable to parse tag as semver, skipping",
-				"tag.name", tag.Name,
-				"tag.hash", tag.Hash,
-				"error", err,
-			)
-			continue
-		}
-
-		if releases.Latest == nil {
-			releases.Latest = tag
-		}
-		if len(version.Pre) == 0 {
-			// Stable version tag
-			// We return once we have found the latest stable tag, not needed to look at every single tag.
-			releases.Stable = tag
-			break
-		}
+		})
 	}
 
-	return releases, nil
+	return result, nil
 }
 
 func (f *Forgejo) CommitsSince(ctx context.Context, tag *git.Tag) ([]git.Commit, error) {
