@@ -25,6 +25,8 @@ The next version is calculated from the [Conventional Commits](glossary.md#conve
 | `feat`                          | Minor | `v1.2.3` → `v1.3.0` |
 | `fix`                           | Patch | `v1.2.3` → `v1.2.4` |
 
+The [`scoped` commit parser](commit-parsers.md#scoped-commits) can not be used with SemVer, because its commits do not tell which part of the version to bump.
+
 Versions always have a `v` prefix. If there is no previous release, the version is bumped from `v0.0.0`.
 
 Learn more about the scheme on [semver.org](https://semver.org/).
