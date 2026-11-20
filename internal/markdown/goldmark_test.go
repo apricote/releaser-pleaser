@@ -182,6 +182,20 @@ func TestGetSectionText(t *testing.T) {
 			want:    "Content\n",
 			wantErr: assert.NoError,
 		},
+		{
+			// GitLab's web-UI markdown editor strips whitespace inside HTML
+			// comments when a user edits the release-MR description, turning
+			// `<!-- section-start x -->` into `<!--section-start x-->`. The
+			// parser must accept that form or the release description ends up
+			// empty. https://github.com/apricote/releaser-pleaser/issues/TBD
+			name: "section with whitespace stripped from comment markers",
+			args: args{
+				source: []byte("<!--section-start test-->\nContent\n<!--section-end test-->"),
+				name:   "test",
+			},
+			want:    "Content\n",
+			wantErr: assert.NoError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
