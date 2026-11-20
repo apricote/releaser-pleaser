@@ -183,11 +183,13 @@ func TestRepository_CommitUsesAuthorAsCommitter(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	commit, err := repo.Commit(context.Background(), "chore: release v1.2.3", author)
+	commit, err := repo.Commit(context.Background(), "chore: release v1.2.3", author, nil)
 	require.NoError(t, err)
 
 	obj, err := repo.r.CommitObject(plumbing.NewHash(commit.Hash))
 	require.NoError(t, err)
+
+	assert.Empty(t, obj.PGPSignature)
 
 	assert.Equal(t, author.Name, obj.Author.Name)
 	assert.Equal(t, author.Email, obj.Author.Email)

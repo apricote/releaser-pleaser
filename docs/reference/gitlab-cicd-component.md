@@ -26,3 +26,7 @@ The following inputs are supported by the component.
 | `updaters`             | List of updaters that are run. Default updaters can be removed by specifying them as -name. Multiple updaters should be concatenated with a comma. Default Updaters: changelog,generic |    `""` |                                               `-generic,packagejson` |
 | `stage`                | Stage the job runs in. Must exists.                                                                                                                                                    | `build` |                                                               `test` |
 | `needs`                | Other jobs the releaser-pleaser job depends on.                                                                                                                                        |    `[]` |              <pre><code>- validate-foo<br>- prepare-bar</code></pre> |
+
+## Variables
+
+To sign the release commit, set the CI/CD variables described in [Signing release commits](../guides/signed-commits.md). The job reads them from its environment, so the component needs no inputs for them.

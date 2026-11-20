@@ -37,6 +37,14 @@ inputs:
     description: "Name of the repository"
     required: false
     default: ""
+  signing-key:
+    description: "ASCII-armored OpenPGP private key used to sign the release commit"
+    required: false
+    default: ""
+  signing-key-passphrase:
+    description: "Passphrase of the signing key, if it is encrypted"
+    required: false
+    default: ""
   # Remember to update docs/reference/github-action.md
 outputs: { }
 runs:
@@ -55,3 +63,5 @@ runs:
   env:
     GITHUB_TOKEN: "${{ inputs.token }}"
     GITHUB_USER: "oauth2"
+    RELEASER_PLEASER_SIGNING_KEY: "${{ inputs.signing-key }}"
+    RELEASER_PLEASER_SIGNING_KEY_PASSPHRASE: "${{ inputs.signing-key-passphrase }}"
