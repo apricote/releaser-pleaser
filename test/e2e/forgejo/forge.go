@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"os/exec"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -195,6 +196,27 @@ func (f *TestForge) MergePR(t *testing.T, repo *e2e.Repository, pr *git.PullRequ
 		time.Sleep(sleep)
 	}
 
+	return err
+}
+
+func (f *TestForge) AddPRLabels(t *testing.T, repo *e2e.Repository, pr *git.PullRequest, labels []string) error {
+	t.Helper()
+
+	repoLabels, _, err := f.client.ListRepoLabels(f.username, repo.Name, forgejo.ListLabelsOptions{})
+	if err != nil {
+		return err
+	}
+
+	ids := make([]int64, 0, len(labels))
+	for _, name := range labels {
+		index := slices.IndexFunc(repoLabels, func(label *forgejo.Label) bool { return label.Name == name })
+		if index < 0 {
+			return fmt.Errorf("label %q does not exist in repository", name)
+		}
+		ids = append(ids, repoLabels[index].ID)
+	}
+
+	_, _, err = f.client.AddIssueLabels(f.username, repo.Name, pr.ID, forgejo.IssueLabelsOption{Labels: ids})
 	return err
 }
 

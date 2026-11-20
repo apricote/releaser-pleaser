@@ -84,17 +84,22 @@ func (f *Framework) CloneRepo(t *testing.T, r *Repository) *git.Repository {
 	return repo
 }
 
-func (f *Framework) Run(t *testing.T, r *Repository, extraFiles []string) error {
+// Run executes `rp run` against the repository. extraArgs are appended to the command line, e.g. to select a
+// different commit parser or versioning strategy.
+func (f *Framework) Run(t *testing.T, r *Repository, extraFiles []string, extraArgs ...string) error {
 	t.Helper()
 
 	ctx := t.Context()
 
-	rootCmd := cmd.NewRootCmd()
-	rootCmd.SetArgs(append([]string{
+	args := append([]string{
 		"run",
 		fmt.Sprintf("--repo=%s", r.Name),
 		fmt.Sprintf("--extra-files=%q", strings.Join(extraFiles, "\n")),
-	}, f.forge.RunArguments()...))
+	}, f.forge.RunArguments()...)
+	args = append(args, extraArgs...)
+
+	rootCmd := cmd.NewRootCmd()
+	rootCmd.SetArgs(args)
 
 	var stdout, stderr bytes.Buffer
 
@@ -135,6 +140,13 @@ func (f *Framework) MergeReleasePR(t *testing.T, r *Repository, pr *git.PullRequ
 	t.Helper()
 
 	err := f.forge.MergePR(t, r, pr)
+	require.NoError(t, err)
+}
+
+func (f *Framework) AddReleasePRLabels(t *testing.T, r *Repository, pr *git.PullRequest, labels ...string) {
+	t.Helper()
+
+	err := f.forge.AddPRLabels(t, r, pr, labels)
 	require.NoError(t, err)
 }
 
