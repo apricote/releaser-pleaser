@@ -1,5 +1,10 @@
 # Glossary
 
+Calendar Versioning (CalVer)
+  : [Calendar Versioning](https://calver.org/) is a versioning scheme based on the release date, for example `2026.47.0`. It can be enabled with `versioning: calver`.
+
+    Learn more in the [Calendar Versioning](../guides/calendar-versioning.md) guide.
+
 Changelog
   : The Changelog is a file in the repository (`CHANGELOG.md`) that contains the [Release Notes](#release-notes) for every release of that repository. Usually, new releases are added at the top of the file.
 
@@ -17,7 +22,7 @@ Markdown
     In `releaser-pleaser` Markdown is used for most texts.
 
 Pre-release
-  : Pre-releases are a concept of [SemVer](#semantic-versioning-semver). They follow the normal versioning schema but use a suffix out of
+  : Pre-releases are a concept of [SemVer](#semantic-versioning-semver), and are also supported for [CalVer](#calendar-versioning-calver). They follow the normal versioning schema but use a suffix out of
 `-alpha.X`, `-beta.X` and `-rc.X`.
     
     Pre-releases are not considered "stable" and are usually not recommended for most users.
@@ -35,7 +40,7 @@ Release Notes
     Learn more in the [Release Notes customization](../guides/release-notes.md) guide.
 
 Semantic Versioning (SemVer)
-  : [Semantic Versioning](https://semver.org/) is a specification for version numbers. It is the only supported versioning schema in `releaser-pleaser`. Follow the link to learn more.
+  : [Semantic Versioning](https://semver.org/) is a specification for version numbers. It is the default versioning schema in `releaser-pleaser`. Follow the link to learn more.
 
 Updater
   : Updaters can update or create files that will be included in [Release Pull Request](#release-pull-request). Examples of Updaters are `changelog` for `CHANGELOG.md`, `generic` that can update arbitrary files and `packagejson` that knows how to update Node.JS `package.json` files.
