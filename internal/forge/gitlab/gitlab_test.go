@@ -135,7 +135,7 @@ func TestAll(t *testing.T) {
 func TestAllPropagatesError(t *testing.T) {
 	wantErr := assert.AnError
 	calls := 0
-	g
+
 	got, err := all(func(_ gitlab.ListOptions) ([]int, *gitlab.Response, error) {
 		calls++
 		return nil, nil, wantErr
