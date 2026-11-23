@@ -1,5 +1,21 @@
 # Changelog
 
+## [v0.10.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.10.0)
+
+[Compare to previous version](https://github.com/apricote/releaser-pleaser/compare/v0.9.0...v0.10.0)
+
+### Features
+
+- sign release commits with an OpenPGP key (#507) ([3fa2952](https://github.com/apricote/releaser-pleaser/commit/3fa29524ebc15be2293d9fad9048021ca3165952))
+- support calendar versioning (CalVer) (#521) ([a9c7b2b](https://github.com/apricote/releaser-pleaser/commit/a9c7b2b628d9191ee0a6c6af71dc5d4cf05bf365))
+- add commit parser for Scoped Commits (#522) ([9faced4](https://github.com/apricote/releaser-pleaser/commit/9faced4319ba4f3f086bee5aaa50d05f6e1fc480))
+
+### Bug Fixes
+
+- tolerate whitespace-stripped section-marker HTML comments (#440) ([3f6ebb9](https://github.com/apricote/releaser-pleaser/commit/3f6ebb93e93a36f6ed5f0bfaedae9492e41cf7d6))
+- **gitlab**: stop tag pagination from looping indefinitely (#489) ([727f377](https://github.com/apricote/releaser-pleaser/commit/727f3778a4d6679064d1b9ed3677190e6257e810))
+- **gitlab**: prefer commit identity for release authors (#383) ([5d8abec](https://github.com/apricote/releaser-pleaser/commit/5d8abec3da2cdf05082234d22cbaca53f404b16e))
+
 ## [v0.10.0-alpha.0](https://github.com/apricote/releaser-pleaser/releases/tag/v0.10.0-alpha.0)
 
 [Compare to previous version](https://github.com/apricote/releaser-pleaser/compare/v0.9.0...v0.10.0-alpha.0)
