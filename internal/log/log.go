@@ -11,7 +11,7 @@ import (
 
 func GetLogger(w io.Writer) *slog.Logger {
 	return slog.New(
-		tint.NewHandler(w, &tint.Options{
+		tint.NewTextHandler(w, &tint.Options{
 			Level:      slog.LevelDebug,
 			TimeFormat: time.RFC3339,
 		}),
