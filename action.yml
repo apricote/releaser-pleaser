@@ -21,6 +21,10 @@ inputs:
     description: "List of updaters that are run. Default updaters can be removed by specifying them as -name. Multiple updaters should be concatenated with a comma. Default Updaters: changelog,generic"
     required: false
     default: ""
+  commit-parser:
+    description: "Format of the commit messages. One of: conventional-commits (default), scoped"
+    required: false
+    default: ""
   versioning:
     description: "Versioning scheme. One of: semver (default), calver"
     required: false
@@ -64,6 +68,7 @@ runs:
     - --branch=${{ inputs.branch }}
     - --extra-files="${{ inputs.extra-files }}"
     - --updaters="${{ inputs.updaters }}"
+    - --commit-parser=${{ inputs.commit-parser }}
     - --versioning=${{ inputs.versioning }}
     - --calver-format=${{ inputs.calver-format }}
     - --api-url=${{ inputs.api-url }}

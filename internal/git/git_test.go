@@ -196,3 +196,28 @@ func TestRepository_CommitUsesAuthorAsCommitter(t *testing.T) {
 	assert.Equal(t, author.Name, obj.Committer.Name)
 	assert.Equal(t, author.Email, obj.Committer.Email)
 }
+
+func TestCommit_HasMergeMessage(t *testing.T) {
+	tests := []struct {
+		message string
+		want    bool
+	}{
+		{"Merge pull request #12 from owner/feature", true},
+		{"Merge pull request 'api: add endpoint' (#12) from feature into main", true},
+		{"Merge branch 'feature' into 'main'\n\nSee merge request owner/repo!12", true},
+		{"Merge branch 'main' of github.com:owner/repo", true},
+		{"Merge branches 'a' and 'b'", true},
+		{"Merge remote-tracking branch 'origin/main'", true},
+		{"Merge tag 'v1.2.3'", true},
+		{"Merge commit 'abc1234'", true},
+		{"api: add endpoint (#12)", false},
+		{"feat: merge configs", false},
+		{"Merge configs from defaults", false},
+		{"merge branch 'feature'", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.message, func(t *testing.T) {
+			assert.Equal(t, tt.want, Commit{Message: tt.message}.HasMergeMessage())
+		})
+	}
+}

@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/apricote/releaser-pleaser/internal/commitparser/conventionalcommits"
+	"github.com/apricote/releaser-pleaser/internal/commitparser/scoped"
 	"github.com/apricote/releaser-pleaser/internal/git"
 	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
@@ -107,40 +110,45 @@ func Test_parseUpdaters(t *testing.T) {
 	}
 }
 
-func Test_parseVersioning(t *testing.T) {
+func Test_parseCommitParserAndVersioning(t *testing.T) {
 	tests := []struct {
 		name         string
+		commitParser string
 		versioning   string
 		calVerFormat string
 		now          string
-		wantSemVer   bool
+		wantParser   any
 		wantErr      string
 	}{
-		{name: "defaults", wantSemVer: true},
-		{name: "semver", versioning: "semver", wantSemVer: true},
-		{name: "calver", versioning: "calver"},
-		{name: "calver with format", versioning: "calver", calVerFormat: "YYYY.0M.MICRO", now: "2026-11-18T12:00:00Z"},
+		{name: "defaults", wantParser: &conventionalcommits.Parser{}},
+		{name: "conventional semver", commitParser: "conventional-commits", versioning: "semver", wantParser: &conventionalcommits.Parser{}},
+		{name: "conventional calver", commitParser: "conventional-commits", versioning: "calver", wantParser: &conventionalcommits.Parser{}},
+		{name: "scoped calver", commitParser: "scoped", versioning: "calver", calVerFormat: "YYYY.0W.MICRO", now: "2026-11-18T12:00:00Z", wantParser: &scoped.Parser{}},
+		{name: "scoped semver", commitParser: "scoped", versioning: "semver", wantErr: "--commit-parser=scoped can not be used with --versioning=semver"},
+		{name: "scoped default versioning", commitParser: "scoped", wantErr: "--commit-parser=scoped can not be used with --versioning=semver"},
+		{name: "unknown parser", commitParser: "foo", wantErr: "unknown --commit-parser: foo"},
 		{name: "unknown versioning", versioning: "foo", wantErr: "unknown --versioning: foo"},
 		{name: "invalid calver format", versioning: "calver", calVerFormat: "YYYY.QQ.MICRO", wantErr: `invalid --calver-format: invalid calver format "YYYY.QQ.MICRO": unknown token "QQ"`},
 		{name: "invalid now", versioning: "calver", now: "yesterday", wantErr: "invalid --now"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			strategy, err := parseVersioning(tt.versioning, tt.calVerFormat, tt.now)
+			parser, strategy, err := parseCommitParserAndVersioning(slog.Default(), tt.commitParser, tt.versioning, tt.calVerFormat, tt.now)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, tt.wantErr)
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantSemVer, strategy == versioning.SemVer)
+			assert.IsType(t, tt.wantParser, parser)
+			assert.NotNil(t, strategy)
 		})
 	}
 }
 
-func Test_parseVersioning_CalVerNow(t *testing.T) {
+func Test_parseCommitParserAndVersioning_CalVerNow(t *testing.T) {
 	// The default format does not pad the week, 2026-02-11 is in ISO week 7.
-	strategy, err := parseVersioning("calver", "", "2026-02-11T12:00:00Z")
+	_, strategy, err := parseCommitParserAndVersioning(slog.Default(), "scoped", "calver", "", "2026-02-11T12:00:00Z")
 	require.NoError(t, err)
 
 	version, err := strategy.NextVersion(git.Releases{}, versioning.UnknownVersion, versioning.NextVersionTypeNormal)

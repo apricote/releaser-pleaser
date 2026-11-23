@@ -71,7 +71,17 @@ const (
 
 var (
 	TitleRegex = regexp.MustCompile("chore(.*): release (.*)")
+
+	// releaseCommitRegex matches the subject of release commits created by releaser-pleaser, including squash
+	// merges of the release pull request (which may have a " (#123)" suffix).
+	releaseCommitRegex = regexp.MustCompile(`^chore\([^)]*\): release \S+( \(#\d+\))?$`)
 )
+
+// IsReleaseCommit reports whether the commit is a release commit created by releaser-pleaser, including squash merges
+// of the release pull request. These commits should never show up in the changelog.
+func IsReleaseCommit(commit git.Commit) bool {
+	return releaseCommitRegex.MatchString(commit.Subject())
+}
 
 func (pr *ReleasePullRequest) GetOverrides() (ReleaseOverrides, error) {
 	overrides := ReleaseOverrides{}

@@ -10,7 +10,9 @@ import (
 	"github.com/spf13/cobra"
 
 	rp "github.com/apricote/releaser-pleaser"
+	"github.com/apricote/releaser-pleaser/internal/commitparser"
 	"github.com/apricote/releaser-pleaser/internal/commitparser/conventionalcommits"
+	"github.com/apricote/releaser-pleaser/internal/commitparser/scoped"
 	"github.com/apricote/releaser-pleaser/internal/forge"
 	"github.com/apricote/releaser-pleaser/internal/forge/forgejo"
 	"github.com/apricote/releaser-pleaser/internal/forge/github"
@@ -29,6 +31,7 @@ func newRunCommand() *cobra.Command {
 		flagExtraFiles string
 		flagUpdaters   []string
 
+		flagCommitParser string
 		flagVersioning   string
 		flagCalVerFormat string
 		flagNow          string
@@ -126,7 +129,7 @@ func newRunCommand() *cobra.Command {
 				logger.InfoContext(ctx, "signing release commits", "key.id", signKey.PrimaryKey.KeyIdString())
 			}
 
-			versioningStrategy, err := parseVersioning(flagVersioning, flagCalVerFormat, flagNow)
+			commitParser, versioningStrategy, err := parseCommitParserAndVersioning(logger, flagCommitParser, flagVersioning, flagCalVerFormat, flagNow)
 			if err != nil {
 				return err
 			}
@@ -135,7 +138,7 @@ func newRunCommand() *cobra.Command {
 				f,
 				logger,
 				flagBranch,
-				conventionalcommits.NewParser(logger),
+				commitParser,
 				versioningStrategy,
 				extraFiles,
 				updaters,
@@ -153,6 +156,7 @@ func newRunCommand() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flagExtraFiles, "extra-files", "", "")
 	cmd.PersistentFlags().StringSliceVar(&flagUpdaters, "updaters", []string{}, "")
 
+	cmd.PersistentFlags().StringVar(&flagCommitParser, "commit-parser", CommitParserConventionalCommits, "Format of commit messages: conventional-commits, scoped")
 	cmd.PersistentFlags().StringVar(&flagVersioning, "versioning", VersioningSemVer, "Versioning scheme: semver, calver")
 	cmd.PersistentFlags().StringVar(&flagCalVerFormat, "calver-format", versioning.DefaultCalVerFormat, "Format of CalVer versions, only used with --versioning=calver")
 	// Override the current date for CalVer. Only meant for tests.
@@ -167,12 +171,18 @@ func newRunCommand() *cobra.Command {
 }
 
 const (
+	CommitParserConventionalCommits = "conventional-commits"
+	CommitParserScoped              = "scoped"
+
 	VersioningSemVer = "semver"
 	VersioningCalVer = "calver"
 )
 
-func parseVersioning(versioningName, calVerFormat, now string) (versioning.Strategy, error) {
+func parseCommitParserAndVersioning(logger *slog.Logger, commitParserName, versioningName, calVerFormat, now string) (commitparser.CommitParser, versioning.Strategy, error) {
 	// Empty values happen when the GitHub Action/GitLab Component inputs are not set.
+	if commitParserName == "" {
+		commitParserName = CommitParserConventionalCommits
+	}
 	if versioningName == "" {
 		versioningName = VersioningSemVer
 	}
@@ -180,27 +190,44 @@ func parseVersioning(versioningName, calVerFormat, now string) (versioning.Strat
 		calVerFormat = versioning.DefaultCalVerFormat
 	}
 
+	var commitParser commitparser.CommitParser
+	switch commitParserName {
+	case CommitParserConventionalCommits:
+		commitParser = conventionalcommits.NewParser(logger)
+	case CommitParserScoped:
+		commitParser = scoped.NewParser(logger)
+	default:
+		return nil, nil, fmt.Errorf("unknown --commit-parser: %s", commitParserName)
+	}
+
+	var strategy versioning.Strategy
 	switch versioningName {
 	case VersioningSemVer:
-		return versioning.SemVer, nil
+		strategy = versioning.SemVer
 	case VersioningCalVer:
 		clock := time.Now
 		if now != "" {
 			parsedNow, err := time.Parse(time.RFC3339, now)
 			if err != nil {
-				return nil, fmt.Errorf("invalid --now: %w", err)
+				return nil, nil, fmt.Errorf("invalid --now: %w", err)
 			}
 			clock = func() time.Time { return parsedNow }
 		}
 
-		strategy, err := versioning.NewCalVer(calVerFormat, clock)
+		var err error
+		strategy, err = versioning.NewCalVer(calVerFormat, clock)
 		if err != nil {
-			return nil, fmt.Errorf("invalid --calver-format: %w", err)
+			return nil, nil, fmt.Errorf("invalid --calver-format: %w", err)
 		}
-		return strategy, nil
 	default:
-		return nil, fmt.Errorf("unknown --versioning: %s", versioningName)
+		return nil, nil, fmt.Errorf("unknown --versioning: %s", versioningName)
 	}
+
+	if commitParserName == CommitParserScoped && versioningName == VersioningSemVer {
+		return nil, nil, fmt.Errorf("--commit-parser=%s can not be used with --versioning=%s, because the commits do not tell which part of the version to bump; use --versioning=%s instead", commitParserName, versioningName, VersioningCalVer)
+	}
+
+	return commitParser, strategy, nil
 }
 
 func parseExtraFiles(input string) []string {

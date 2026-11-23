@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 
@@ -404,10 +405,17 @@ func (rp *ReleaserPleaser) analyzedCommitsSince(ctx context.Context, since *git.
 		return nil, err
 	}
 
+	// Commit parsers that consider every commit releasable would otherwise list our own release commits.
+	commits = slices.DeleteFunc(commits, releasepr.IsReleaseCommit)
+
 	commits, err = parsePRBodyForCommitOverrides(commits)
 	if err != nil {
 		return nil, err
 	}
+
+	// Merge commits with a default message like "Merge pull request #12 from owner/foo" do not describe a change.
+	// This runs after the overrides, so a merge commit whose pull request has a rp-commits block is still used.
+	commits = slices.DeleteFunc(commits, git.Commit.HasMergeMessage)
 
 	logger.InfoContext(ctx, "Found releasable commits", "length", len(commits))
 

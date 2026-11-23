@@ -16,6 +16,10 @@ spec:
       description: "List of updaters that are run. Default updaters can be removed by specifying them as -name. Multiple updaters should be concatenated with a comma. Default Updaters: changelog,generic"
       default: ""
 
+    commit-parser:
+      description: "Format of the commit messages. One of: conventional-commits (default), scoped"
+      default: ""
+
     versioning:
       description: "Versioning scheme. One of: semver (default), calver"
       default: ""
@@ -63,5 +67,6 @@ releaser-pleaser:
         --branch=$[[ inputs.branch ]] \
         --extra-files="$[[ inputs.extra-files ]]" \
         --updaters="$[[ inputs.updaters ]]" \
+        --commit-parser="$[[ inputs.commit-parser ]]" \
         --versioning="$[[ inputs.versioning ]]" \
         --calver-format="$[[ inputs.calver-format ]]"

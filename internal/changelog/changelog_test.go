@@ -85,6 +85,28 @@ func Test_NewChangelogEntry(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
+			name: "changes with and without scope",
+			args: args{
+				analyzedCommits: []commitparser.AnalyzedCommit{
+					{
+						Hash: "aaa1111111111", URL: "https://example.com/commit/aaa1111111111",
+						Type:        "change",
+						Scope:       new("api"),
+						Description: "add endpoint",
+					},
+					{
+						Hash: "bbb2222222222", URL: "https://example.com/commit/bbb2222222222",
+						Type:        "change",
+						Description: "fix typo in readme",
+					},
+				},
+				version: "2026.47.0",
+				link:    "https://example.com/2026.47.0",
+			},
+			want:    "## [2026.47.0](https://example.com/2026.47.0)\n\n### Changes\n\n- **api**: add endpoint ([aaa1111](https://example.com/commit/aaa1111111111))\n- fix typo in readme ([bbb2222](https://example.com/commit/bbb2222222222))\n",
+			wantErr: assert.NoError,
+		},
+		{
 			name: "multiple commits with scopes",
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
