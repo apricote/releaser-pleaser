@@ -21,6 +21,14 @@ inputs:
     description: "List of updaters that are run. Default updaters can be removed by specifying them as -name. Multiple updaters should be concatenated with a comma. Default Updaters: changelog,generic"
     required: false
     default: ""
+  versioning:
+    description: "Versioning scheme. One of: semver (default), calver"
+    required: false
+    default: ""
+  calver-format:
+    description: "Format of CalVer versions, only used with versioning: calver. Default: YYYY.WW.MICRO"
+    required: false
+    default: ""
   forge:
     description: "Forge this action is run against"
     required: false
@@ -56,6 +64,8 @@ runs:
     - --branch=${{ inputs.branch }}
     - --extra-files="${{ inputs.extra-files }}"
     - --updaters="${{ inputs.updaters }}"
+    - --versioning=${{ inputs.versioning }}
+    - --calver-format=${{ inputs.calver-format }}
     - --api-url=${{ inputs.api-url }}
     - --api-token=${{ inputs.token }}
     - --owner=${{ inputs.owner }}

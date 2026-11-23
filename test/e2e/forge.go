@@ -17,6 +17,8 @@ type TestForge interface {
 
 	ListOpenPRs(t *testing.T, repo *Repository) ([]*git.PullRequest, error)
 	MergePR(t *testing.T, repo *Repository, pr *git.PullRequest) error
+	// AddPRLabels adds the named labels to the pull request. The labels must already exist.
+	AddPRLabels(t *testing.T, repo *Repository, pr *git.PullRequest, labels []string) error
 	ListTags(t *testing.T, repo *Repository) ([]*git.Tag, error)
 
 	RunArguments() []string

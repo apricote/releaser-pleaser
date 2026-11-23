@@ -16,6 +16,7 @@
 
 - [Customizing Release Notes](guides/release-notes.md)
 - [Pre-releases](guides/pre-releases.md)
+- [Calendar Versioning](guides/calendar-versioning.md)
 - [Workflow Permissions on GitHub](guides/github-workflow-permissions.md)
 - [Updating arbitrary files](guides/updating-arbitrary-files.md)
 - [Signing release commits](guides/signed-commits.md)
@@ -27,6 +28,7 @@
 - [GitHub Action](reference/github-action.md)
 - [GitLab CI/CD Component](reference/gitlab-cicd-component.md)
 - [Updaters](reference/updaters.md)
+- [Versioning](reference/versioning.md)
 
 ---
 

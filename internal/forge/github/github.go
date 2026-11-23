@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/blang/semver/v4"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v93/github"
@@ -91,7 +90,7 @@ func (g *GitHub) CommitAuthor(ctx context.Context) (git.Author, error) {
 	}, nil
 }
 
-func (g *GitHub) LatestTags(ctx context.Context) (git.Releases, error) {
+func (g *GitHub) Tags(ctx context.Context) ([]git.Tag, error) {
 	g.log.DebugContext(ctx, "listing all tags in github repository")
 
 	tags, err := all(func(listOptions github.ListOptions) ([]*github.RepositoryTag, *github.Response, error) {
@@ -101,40 +100,18 @@ func (g *GitHub) LatestTags(ctx context.Context) (git.Releases, error) {
 		)
 	})
 	if err != nil {
-		return git.Releases{}, err
+		return nil, err
 	}
 
-	var releases git.Releases
-
+	result := make([]git.Tag, 0, len(tags))
 	for _, ghTag := range tags {
-		tag := &git.Tag{
+		result = append(result, git.Tag{
 			Hash: ghTag.GetCommit().GetSHA(),
 			Name: ghTag.GetName(),
-		}
-
-		version, err := semver.Parse(strings.TrimPrefix(tag.Name, "v"))
-		if err != nil {
-			g.log.WarnContext(
-				ctx, "unable to parse tag as semver, skipping",
-				"tag.name", tag.Name,
-				"tag.hash", tag.Hash,
-				"error", err,
-			)
-			continue
-		}
-
-		if releases.Latest == nil {
-			releases.Latest = tag
-		}
-		if len(version.Pre) == 0 {
-			// Stable version tag
-			// We return once we have found the latest stable tag, not needed to look at every single tag.
-			releases.Stable = tag
-			break
-		}
+		})
 	}
 
-	return releases, nil
+	return result, nil
 }
 
 func (g *GitHub) CommitsSince(ctx context.Context, tag *git.Tag) ([]git.Commit, error) {
