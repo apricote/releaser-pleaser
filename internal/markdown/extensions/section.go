@@ -14,9 +14,16 @@ import (
 	"github.com/apricote/releaser-pleaser/internal/markdown/extensions/ast"
 )
 
+// Section-start/end markers are emitted with a space on each side of the
+// keyword (see SectionStartFormat / SectionEndFormat) so they round-trip
+// through standard markdown tooling. GitLab's web-UI markdown editor, however,
+// normalises HTML comments by stripping inner whitespace when a user edits the
+// release-MR description — so `<!-- section-start changelog -->` comes back as
+// `<!--section-start changelog-->` and stops matching a strict regex. The
+// parser accepts both forms; the renderer still emits the canonical spaced form.
 var (
-	sectionStartRegex = regexp.MustCompile(`^<!-- section-start (.+) -->`)
-	sectionEndRegex   = regexp.MustCompile(`^<!-- section-end (.+) -->`)
+	sectionStartRegex = regexp.MustCompile(`^<!--\s*section-start\s+(.+?)\s*-->`)
+	sectionEndRegex   = regexp.MustCompile(`^<!--\s*section-end\s+(.+?)\s*-->`)
 )
 
 const (
