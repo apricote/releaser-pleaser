@@ -89,11 +89,22 @@ func (g *GitLab) CommitAuthor(ctx context.Context) (git.Author, error) {
 		return git.Author{}, err
 	}
 
-	// TODO: Return bot when nothing is returned?
+	name := user.Name
+	if name == "" {
+		name = user.Username
+	}
+
+	email := user.CommitEmail
+	if email == "" {
+		email = user.Email
+	}
+	if email == "" {
+		email = user.PublicEmail
+	}
 
 	return git.Author{
-		Name:  user.Name,
-		Email: user.Email,
+		Name:  name,
+		Email: email,
 	}, nil
 }
 
