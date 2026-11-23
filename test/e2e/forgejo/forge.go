@@ -172,16 +172,30 @@ func (f *TestForge) MergePR(t *testing.T, repo *e2e.Repository, pr *git.PullRequ
 		return fmt.Errorf("pull request not marked as mergable by forgejo after retries")
 	}
 
-	ok, resp, err := f.client.MergePullRequest(f.username, repo.Name, pr.ID, forgejo.MergePullRequestOption{Style: forgejo.MergeStyleSquash})
-	if err != nil {
-		return err
-	}
-	if !ok {
-		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("merging pull request #%d failed: %v", pr.ID, string(respBody))
+	// Forgejo sometimes rejects the merge right after marking the PR as mergeable, so we retry.
+	for range retries {
+		var ok bool
+		var resp *forgejo.Response
+		ok, resp, err = f.client.MergePullRequest(f.username, repo.Name, pr.ID, forgejo.MergePullRequestOption{Style: forgejo.MergeStyleSquash})
+		if err == nil && ok {
+			return nil
+		}
+
+		if err == nil {
+			var respBody []byte
+			status := 0
+			if resp != nil {
+				status = resp.StatusCode
+				respBody, _ = io.ReadAll(resp.Body)
+			}
+			err = fmt.Errorf("merging pull request #%d failed with status %d: %v", pr.ID, status, string(respBody))
+		}
+
+		t.Logf("sleeping, error while merging pr: %v", err)
+		time.Sleep(sleep)
 	}
 
-	return nil
+	return err
 }
 
 func (f *TestForge) ListTags(t *testing.T, repo *e2e.Repository) ([]*git.Tag, error) {
