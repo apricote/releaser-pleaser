@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"log"
-	"regexp"
 	"text/template"
 
 	"github.com/apricote/releaser-pleaser/internal/git"
@@ -36,13 +35,13 @@ type ReleasePullRequest struct {
 	ReleaseCommit *git.Commit
 }
 
-func NewReleasePullRequest(head, branch, version, changelogEntry string) (*ReleasePullRequest, error) {
+func NewReleasePullRequest(head string, titleFormat TitleFormat, branch, version, changelogEntry string) (*ReleasePullRequest, error) {
 	rp := &ReleasePullRequest{
 		Head:   head,
 		Labels: []Label{LabelReleasePending},
 	}
 
-	rp.SetTitle(branch, version)
+	rp.SetTitle(titleFormat, branch, version)
 	if err := rp.SetDescription(changelogEntry, ReleaseOverrides{}); err != nil {
 		return nil, err
 	}
@@ -63,14 +62,6 @@ const (
 
 const (
 	MarkdownSectionChangelog = "changelog"
-)
-
-const (
-	TitleFormat = "chore(%s): release %s"
-)
-
-var (
-	TitleRegex = regexp.MustCompile("chore(.*): release (.*)")
 )
 
 func (pr *ReleasePullRequest) GetOverrides() (ReleaseOverrides, error) {
@@ -132,17 +123,18 @@ func (pr *ReleasePullRequest) ChangelogText() (string, error) {
 
 }
 
-func (pr *ReleasePullRequest) SetTitle(branch, version string) {
-	pr.Title = fmt.Sprintf(TitleFormat, branch, version)
+func (pr *ReleasePullRequest) SetTitle(titleFormat TitleFormat, branch, version string) {
+	pr.Title = titleFormat.Title(branch, version)
 }
 
-func (pr *ReleasePullRequest) Version() (string, error) {
-	matches := TitleRegex.FindStringSubmatch(pr.Title)
-	if len(matches) != 3 {
-		return "", fmt.Errorf("title has unexpected format")
+// Version returns the version from the title of the pull request, which must be in titleFormat.
+func (pr *ReleasePullRequest) Version(titleFormat TitleFormat) (string, error) {
+	version, ok := titleFormat.ParseTitle(pr.Title)
+	if !ok {
+		return "", fmt.Errorf("title has unexpected format: %q", pr.Title)
 	}
 
-	return matches[2], nil
+	return version, nil
 }
 
 func (pr *ReleasePullRequest) SetDescription(changelogEntry string, overrides ReleaseOverrides) error {

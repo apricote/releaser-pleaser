@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 
@@ -34,6 +35,7 @@ type ReleaserPleaser struct {
 	logger       *slog.Logger
 	targetBranch string
 	commitParser commitparser.CommitParser
+	titleFormat  releasepr.TitleFormat
 	versioning   versioning.Strategy
 	extraFiles   []string
 	updaters     []updater.Updater
@@ -41,12 +43,13 @@ type ReleaserPleaser struct {
 }
 
 // New creates a ReleaserPleaser; a nil signKey leaves release commits unsigned.
-func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater, signKey *openpgp.Entity) *ReleaserPleaser {
+func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, titleFormat releasepr.TitleFormat, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater, signKey *openpgp.Entity) *ReleaserPleaser {
 	return &ReleaserPleaser{
 		forge:        forge,
 		logger:       logger,
 		targetBranch: targetBranch,
 		commitParser: commitParser,
+		titleFormat:  titleFormat,
 		versioning:   versioningStrategy,
 		extraFiles:   extraFiles,
 		updaters:     updaters,
@@ -126,7 +129,7 @@ func (rp *ReleaserPleaser) createPendingRelease(ctx context.Context, pr *release
 
 	logger.Info("Creating release", "commit.hash", pr.ReleaseCommit.Hash)
 
-	version, err := pr.Version()
+	version, err := pr.Version(rp.titleFormat)
 	if err != nil {
 		return err
 	}
@@ -309,7 +312,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 		return fmt.Errorf("failed to get commit author: %w", err)
 	}
 
-	releaseCommitMessage := fmt.Sprintf("chore(%s): release %s", rp.targetBranch, nextVersion)
+	releaseCommitMessage := rp.titleFormat.Title(rp.targetBranch, nextVersion)
 	releaseCommit, err := repo.Commit(ctx, releaseCommitMessage, releaseCommitAuthor, rp.signKey)
 	if err != nil {
 		return fmt.Errorf("failed to commit changes: %w", err)
@@ -343,7 +346,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 
 	// Open/Update PR
 	if pr == nil {
-		pr, err = releasepr.NewReleasePullRequest(rpBranch, rp.targetBranch, nextVersion, changelogEntryPullRequest)
+		pr, err = releasepr.NewReleasePullRequest(rpBranch, rp.titleFormat, rp.targetBranch, nextVersion, changelogEntryPullRequest)
 		if err != nil {
 			return err
 		}
@@ -371,7 +374,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 			return ErrorPullRequestConflict
 		}
 
-		pr.SetTitle(rp.targetBranch, nextVersion)
+		pr.SetTitle(rp.titleFormat, rp.targetBranch, nextVersion)
 
 		overrides, err := pr.GetOverrides()
 		if err != nil {
@@ -404,10 +407,20 @@ func (rp *ReleaserPleaser) analyzedCommitsSince(ctx context.Context, since *git.
 		return nil, err
 	}
 
+	// Commit parsers that consider every commit releasable would otherwise list our own release commits.
+	isValidVersion := func(version string) bool { return rp.versioning.Validate(version) == nil }
+	commits = slices.DeleteFunc(commits, func(commit git.Commit) bool {
+		return rp.titleFormat.IsReleaseCommit(commit, isValidVersion)
+	})
+
 	commits, err = parsePRBodyForCommitOverrides(commits)
 	if err != nil {
 		return nil, err
 	}
+
+	// Merge commits with a default message like "Merge pull request #12 from owner/foo" do not describe a change.
+	// This runs after the overrides, so a merge commit whose pull request has a rp-commits block is still used.
+	commits = slices.DeleteFunc(commits, git.Commit.HasMergeMessage)
 
 	logger.InfoContext(ctx, "Found releasable commits", "length", len(commits))
 

@@ -9,7 +9,9 @@ Changelog
   : The Changelog is a file in the repository (`CHANGELOG.md`) that contains the [Release Notes](#release-notes) for every release of that repository. Usually, new releases are added at the top of the file.
 
 Conventional Commits
-  : [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) is a specification for commit messages. It is the only supported commit message schema in `releaser-pleaser`. Follow the link to learn more.
+  : [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) is a specification for commit messages. It is the default commit message schema in `releaser-pleaser`. Follow the link to learn more.
+
+    Learn about other supported schemas in [Commit Parsers](commit-parsers.md).
 
 Forge
   : A **forge** is a web-based collaborative software platform for both developing and sharing computer applications.[^wp-forge]
@@ -38,6 +40,11 @@ Release Notes
   : Release Notes describe the changes made to the repository since the last release. They are made available in the [Changelog](#changelog), in Git Tags and through the [forge](#forge)-native Releases.
   
     Learn more in the [Release Notes customization](../guides/release-notes.md) guide.
+
+Scoped Commits
+  : [Scoped Commits](https://scopedcommits.com/) is a loose standard for commit messages in the format `<scope>: <description>`, for example `api: add endpoint`. It can be used with `commit-parser: scoped`.
+
+    Learn more in the [Using Scoped Commits](../guides/scoped-commits.md) guide.
 
 Semantic Versioning (SemVer)
   : [Semantic Versioning](https://semver.org/) is a specification for version numbers. It is the default versioning schema in `releaser-pleaser`. Follow the link to learn more.

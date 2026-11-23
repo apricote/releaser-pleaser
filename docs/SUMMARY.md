@@ -17,6 +17,7 @@
 - [Customizing Release Notes](guides/release-notes.md)
 - [Pre-releases](guides/pre-releases.md)
 - [Calendar Versioning](guides/calendar-versioning.md)
+- [Using Scoped Commits](guides/scoped-commits.md)
 - [Workflow Permissions on GitHub](guides/github-workflow-permissions.md)
 - [Updating arbitrary files](guides/updating-arbitrary-files.md)
 - [Signing release commits](guides/signed-commits.md)
@@ -27,6 +28,7 @@
 - [Pull Request Options](reference/pr-options.md)
 - [GitHub Action](reference/github-action.md)
 - [GitLab CI/CD Component](reference/gitlab-cicd-component.md)
+- [Commit Parsers](reference/commit-parsers.md)
 - [Updaters](reference/updaters.md)
 - [Versioning](reference/versioning.md)
 

@@ -6,6 +6,8 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
@@ -27,6 +29,22 @@ type Commit struct {
 	Message string
 
 	PullRequest *PullRequest
+}
+
+// mergeMessageRegex matches the default subjects of merge commits created by git, GitHub, GitLab and Forgejo, e.g.
+// "Merge branch 'foo' into 'main'" or "Merge pull request #12 from owner/foo".
+var mergeMessageRegex = regexp.MustCompile(`^Merge (pull request|branch|branches|remote-tracking branch|tag|commit) `)
+
+// HasMergeMessage reports whether the commit has the default message of a merge commit. Merge commits with a custom
+// message, e.g. the title of the pull request, are not matched.
+func (c Commit) HasMergeMessage() bool {
+	return mergeMessageRegex.MatchString(c.Subject())
+}
+
+// Subject returns the first line of the commit message.
+func (c Commit) Subject() string {
+	subject, _, _ := strings.Cut(strings.TrimSpace(c.Message), "\n")
+	return strings.TrimSpace(subject)
 }
 
 func (c Commit) ShortHash() string {

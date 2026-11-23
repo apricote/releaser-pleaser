@@ -65,7 +65,7 @@ func TestRunMultipleSimpleReleases(t *testing.T) {
 
 		require.NoError(t, f.Run(t, repo, []string{}))
 
-		pr := f.HasReleasePR(t, repo, "v0.1.0")
+		pr := f.HasReleasePR(t, repo, "chore(main): release v0.1.0")
 		f.MergeReleasePR(t, repo, pr)
 
 		require.NoError(t, f.Run(t, repo, []string{}))
@@ -87,7 +87,7 @@ func TestRunMultipleSimpleReleases(t *testing.T) {
 
 		require.NoError(t, f.Run(t, repo, []string{}))
 
-		pr := f.HasReleasePR(t, repo, "v0.1.1")
+		pr := f.HasReleasePR(t, repo, "chore(main): release v0.1.1")
 		f.MergeReleasePR(t, repo, pr)
 
 		require.NoError(t, f.Run(t, repo, []string{}))
@@ -140,7 +140,7 @@ func TestCalVer(t *testing.T) {
 
 		require.NoError(t, f.Run(t, repo, []string{}, calVerArgs(step.now)...))
 
-		pr := f.HasReleasePR(t, repo, step.version)
+		pr := f.HasReleasePR(t, repo, "chore(main): release "+step.version)
 		require.Contains(t, pr.Description, step.section)
 		require.Contains(t, pr.Description, step.description)
 		f.MergeReleasePR(t, repo, pr)
@@ -171,17 +171,50 @@ func TestCalVerPrerelease(t *testing.T) {
 
 		if len(step.labels) > 0 {
 			// The release PR is always opened as a stable release first, labels can only be set afterwards.
-			pr := f.HasReleasePR(t, repo, "2026.47.0")
+			pr := f.HasReleasePR(t, repo, "chore(main): release 2026.47.0")
 			f.AddReleasePRLabels(t, repo, pr, step.labels...)
 
 			require.NoError(t, f.Run(t, repo, []string{}, calVerArgs(now)...))
 		}
 
-		pr := f.HasReleasePR(t, repo, step.version)
+		pr := f.HasReleasePR(t, repo, "chore(main): release "+step.version)
 		require.Contains(t, pr.Description, strings.TrimPrefix(step.message, "feat(api): "))
 		f.MergeReleasePR(t, repo, pr)
 
 		require.NoError(t, f.Run(t, repo, []string{}, calVerArgs(now)...))
+		f.HasTag(t, repo, step.version)
+	}
+}
+
+func TestCalVerScopedCommits(t *testing.T) {
+	repo := f.NewRepository(t, t.Name())
+
+	steps := []struct {
+		message     string
+		now         string
+		version     string
+		description string
+	}{
+		{message: "api: add endpoint", now: "2026-11-18T12:00:00Z", version: "2026.47.0", description: "**api**: add endpoint"},
+		{message: "fix typo in readme", now: "2026-11-19T12:00:00Z", version: "2026.47.1", description: "- fix typo in readme"},
+		{message: "ui: new button", now: "2026-11-25T12:00:00Z", version: "2026.48.0", description: "**ui**: new button"},
+	}
+
+	for _, step := range steps {
+		args := append([]string{"--commit-parser=scoped"}, calVerArgs(step.now)...)
+
+		pushCommit(t, repo, step.message)
+
+		require.NoError(t, f.Run(t, repo, []string{}, args...))
+
+		pr := f.HasReleasePR(t, repo, "release: "+step.version)
+		require.Contains(t, pr.Description, "### Changes")
+		require.Contains(t, pr.Description, step.description)
+		// Release commits of the previous releases must not show up in the changelog.
+		require.NotContains(t, pr.Description, "release: 2026.")
+		f.MergeReleasePR(t, repo, pr)
+
+		require.NoError(t, f.Run(t, repo, []string{}, args...))
 		f.HasTag(t, repo, step.version)
 	}
 }

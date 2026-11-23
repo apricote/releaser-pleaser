@@ -21,6 +21,11 @@
 
 {{ range . -}}{{template "entry" .}}{{end}}
 {{- end -}}
+{{- with .Data.Commits.change }}
+### Changes
+
+{{ range . -}}{{template "entry" .}}{{end}}
+{{- end -}}
 
 {{- if .Data.Suffix }}
 {{ .Data.Suffix }}
