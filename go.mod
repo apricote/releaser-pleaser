@@ -1,6 +1,6 @@
 module github.com/apricote/releaser-pleaser
 
-go 1.25.0
+go 1.27.0
 
 toolchain go1.27.4
 

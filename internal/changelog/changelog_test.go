@@ -7,13 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
-	"github.com/apricote/releaser-pleaser/internal/git"
 	"github.com/apricote/releaser-pleaser/internal/testdata"
 )
-
-func ptr[T any](input T) *T {
-	return &input
-}
 
 func Test_NewChangelogEntry(t *testing.T) {
 	type args struct {
@@ -45,7 +40,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
+						Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890",
 						Type:        "feat",
 						Description: "Foobar!",
 					},
@@ -61,7 +56,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:         git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
+						Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890",
 						Type:           "feat",
 						Description:    "Foobar!",
 						BreakingChange: true,
@@ -78,7 +73,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
+						Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890",
 						Type:        "fix",
 						Description: "Foobar!",
 					},
@@ -94,26 +89,26 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{Hash: "aaa1111111111", URL: "https://example.com/commit/aaa1111111111"},
+						Hash: "aaa1111111111", URL: "https://example.com/commit/aaa1111111111",
 						Type:        "feat",
 						Description: "Blabla!",
 					},
 					{
-						Commit:      git.Commit{Hash: "bbb2222222222", URL: "https://example.com/commit/bbb2222222222"},
+						Hash: "bbb2222222222", URL: "https://example.com/commit/bbb2222222222",
 						Type:        "feat",
 						Description: "So awesome!",
-						Scope:       ptr("awesome"),
+						Scope:       new("awesome"),
 					},
 					{
-						Commit:      git.Commit{Hash: "ccc3333333333", URL: "https://example.com/commit/ccc3333333333"},
+						Hash: "ccc3333333333", URL: "https://example.com/commit/ccc3333333333",
 						Type:        "fix",
 						Description: "Foobar!",
 					},
 					{
-						Commit:      git.Commit{Hash: "ddd4444444444", URL: "https://example.com/commit/ddd4444444444"},
+						Hash: "ddd4444444444", URL: "https://example.com/commit/ddd4444444444",
 						Type:        "fix",
 						Description: "So sad!",
-						Scope:       ptr("sad"),
+						Scope:       new("sad"),
 					},
 				},
 				version: "1.0.0",
@@ -138,7 +133,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
+						Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890",
 						Type:        "fix",
 						Description: "Foobar!",
 					},
@@ -155,7 +150,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
+						Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890",
 						Type:        "fix",
 						Description: "Foobar!",
 					},
@@ -172,7 +167,7 @@ func Test_NewChangelogEntry(t *testing.T) {
 			args: args{
 				analyzedCommits: []commitparser.AnalyzedCommit{
 					{
-						Commit:      git.Commit{Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890"},
+						Hash: "abc1234567890", URL: "https://example.com/commit/abc1234567890",
 						Type:        "fix",
 						Description: "Foobar!",
 					},

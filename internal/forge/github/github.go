@@ -16,7 +16,6 @@ import (
 
 	"github.com/apricote/releaser-pleaser/internal/forge"
 	"github.com/apricote/releaser-pleaser/internal/git"
-	"github.com/apricote/releaser-pleaser/internal/pointer"
 	"github.com/apricote/releaser-pleaser/internal/releasepr"
 )
 
@@ -265,9 +264,9 @@ func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []releasepr.Label
 			_, _, err = g.client.Issues.CreateLabel(
 				ctx, g.options.Owner, g.options.Repo,
 				&github.Label{
-					Name:        pointer.Pointer(label.Name),
-					Color:       pointer.Pointer(label.Color),
-					Description: pointer.Pointer(label.Description),
+					Name:        new(label.Name),
+					Color:       new(label.Color),
+					Description: new(label.Description),
 				},
 			)
 			if err != nil {
@@ -286,8 +285,7 @@ func (g *GitHub) PullRequestForBranch(ctx context.Context, branch string) (*rele
 			return g.client.PullRequests.ListPullRequestsWithCommit(ctx, g.options.Owner, g.options.Repo, branch, &listOptions)
 		})
 	if err != nil {
-		var ghErr *github.ErrorResponse
-		if errors.As(err, &ghErr) {
+		if ghErr, ok := errors.AsType[*github.ErrorResponse](err); ok {
 			if ghErr.Message == fmt.Sprintf("No commit found for SHA: %s", branch) {
 				return nil, nil
 			}
@@ -393,7 +391,7 @@ func (g *GitHub) ClosePullRequest(ctx context.Context, pr *releasepr.ReleasePull
 	_, _, err := g.client.PullRequests.Edit(
 		ctx, g.options.Owner, g.options.Repo,
 		int(pr.ID), &github.PullRequest{
-			State: pointer.Pointer(PRStateClosed),
+			State: new(PRStateClosed),
 		},
 	)
 	if err != nil {

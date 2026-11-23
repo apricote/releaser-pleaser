@@ -68,7 +68,7 @@ func TestAnalyzeCommits(t *testing.T) {
 			},
 			expectedCommits: []commitparser.AnalyzedCommit{
 				{
-					Commit:      git.Commit{Message: "fix: blabla"},
+					Message:     "fix: blabla",
 					Type:        "fix",
 					Description: "blabla",
 				},
@@ -87,12 +87,12 @@ func TestAnalyzeCommits(t *testing.T) {
 			},
 			expectedCommits: []commitparser.AnalyzedCommit{
 				{
-					Commit:      git.Commit{Message: "fix: blabla"},
+					Message:     "fix: blabla",
 					Type:        "fix",
 					Description: "blabla",
 				},
 				{
-					Commit:      git.Commit{Message: "feat: foobar"},
+					Message:     "feat: foobar",
 					Type:        "feat",
 					Description: "foobar",
 				},
@@ -112,12 +112,12 @@ func TestAnalyzeCommits(t *testing.T) {
 			},
 			expectedCommits: []commitparser.AnalyzedCommit{
 				{
-					Commit:      git.Commit{Message: "fix: blabla"},
+					Message:     "fix: blabla",
 					Type:        "fix",
 					Description: "blabla",
 				},
 				{
-					Commit:         git.Commit{Message: "feat!: foobar"},
+					Message:        "feat!: foobar",
 					Type:           "feat",
 					Description:    "foobar",
 					BreakingChange: true,
@@ -135,7 +135,7 @@ func TestAnalyzeCommits(t *testing.T) {
 			},
 			expectedCommits: []commitparser.AnalyzedCommit{
 				{
-					Commit:         git.Commit{Message: "feat: some thing (hz/fl!144)\n\nFixes #15\n\nDepends on !143"},
+					Message:        "feat: some thing (hz/fl!144)\n\nFixes #15\n\nDepends on !143",
 					Type:           "feat",
 					Description:    "some thing (hz/fl!144)",
 					BreakingChange: false,
