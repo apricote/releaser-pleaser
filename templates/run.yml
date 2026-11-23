@@ -20,6 +20,10 @@ spec:
       default: build
       description: 'Defines the build stage'
 
+    extra-patch-types:
+      description: "Regular expression matching whole conventional commit types that additionally trigger a patch release."
+      default: ""
+
     needs:
       default: [ ]
       type: array
@@ -48,10 +52,12 @@ releaser-pleaser:
     entrypoint: [ "" ]
   variables:
     GITLAB_TOKEN: $[[ inputs.token ]]
+    RELEASER_PLEASER_EXTRA_PATCH_TYPES: $[[ inputs.extra-patch-types ]]
   script:
     - |
       rp run \
         --forge=gitlab \
         --branch=$[[ inputs.branch ]] \
         --extra-files="$[[ inputs.extra-files ]]" \
-        --updaters="$[[ inputs.updaters ]]"
+        --updaters="$[[ inputs.updaters ]]" \
+        --extra-patch-types="$RELEASER_PLEASER_EXTRA_PATCH_TYPES"
