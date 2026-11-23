@@ -12,7 +12,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/google/go-github/v86/github"
+	"github.com/google/go-github/v93/github"
 
 	"github.com/apricote/releaser-pleaser/internal/forge"
 	"github.com/apricote/releaser-pleaser/internal/git"
@@ -263,8 +263,8 @@ func (g *GitHub) EnsureLabelsExist(ctx context.Context, labels []releasepr.Label
 			g.log.Info("creating label in repository", "label.name", label.Name)
 			_, _, err = g.client.Issues.CreateLabel(
 				ctx, g.options.Owner, g.options.Repo,
-				&github.Label{
-					Name:        new(label.Name),
+				github.CreateIssueLabelRequest{
+					Name:        label.Name,
 					Color:       new(label.Color),
 					Description: new(label.Description),
 				},
@@ -324,10 +324,10 @@ func (g *GitHub) CreatePullRequest(ctx context.Context, pr *releasepr.ReleasePul
 
 	ghPR, _, err := g.client.PullRequests.Create(
 		ctx, g.options.Owner, g.options.Repo,
-		&github.NewPullRequest{
+		github.CreatePullRequest{
 			Title: &pr.Title,
-			Head:  &pr.Head,
-			Base:  &g.options.BaseBranch,
+			Head:  pr.Head,
+			Base:  g.options.BaseBranch,
 			Body:  &pr.Description,
 		},
 	)
@@ -446,8 +446,8 @@ func (g *GitHub) CreateRelease(ctx context.Context, commit git.Commit, title, ch
 	}
 	_, _, err := g.client.Repositories.CreateRelease(
 		ctx, g.options.Owner, g.options.Repo,
-		&github.RepositoryRelease{
-			TagName:         &title,
+		github.CreateReleaseRequest{
+			TagName:         title,
 			TargetCommitish: &commit.Hash,
 			Name:            &title,
 			Body:            &changelog,
@@ -534,6 +534,16 @@ func (g *Options) autodiscover() {
 	}
 }
 
+func (g *Options) clientOptions() []github.ClientOptionsFunc {
+	var opts []github.ClientOptionsFunc
+
+	if g.APIToken != "" {
+		opts = append(opts, github.WithAuthToken(g.APIToken))
+	}
+
+	return opts
+}
+
 type Options struct {
 	forge.Options
 
@@ -544,12 +554,12 @@ type Options struct {
 	Username string
 }
 
-func New(log *slog.Logger, options *Options) *GitHub {
+func New(log *slog.Logger, options *Options) (*GitHub, error) {
 	options.autodiscover()
 
-	client := github.NewClient(nil)
-	if options.APIToken != "" {
-		client = client.WithAuthToken(options.APIToken)
+	client, err := github.NewClient(options.clientOptions()...)
+	if err != nil {
+		return nil, err
 	}
 
 	gh := &GitHub{
@@ -559,5 +569,5 @@ func New(log *slog.Logger, options *Options) *GitHub {
 		log:    log.With("forge", "github"),
 	}
 
-	return gh
+	return gh, nil
 }

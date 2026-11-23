@@ -68,11 +68,15 @@ func newRunCommand() *cobra.Command {
 				}
 			case "github":
 				logger.DebugContext(ctx, "using forge GitHub")
-				f = github.New(logger, &github.Options{
+				f, err = github.New(logger, &github.Options{
 					Options: forgeOptions,
 					Owner:   flagOwner,
 					Repo:    flagRepo,
 				})
+				if err != nil {
+					logger.ErrorContext(ctx, "failed to create client", "err", err)
+					return fmt.Errorf("failed to create github client: %w", err)
+				}
 			case "forgejo":
 				logger.DebugContext(ctx, "using forge Forgejo")
 				f, err = forgejo.New(logger, &forgejo.Options{
