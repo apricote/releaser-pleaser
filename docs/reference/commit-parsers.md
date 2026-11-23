@@ -10,7 +10,7 @@ commit-parser: scoped
 
 These rules apply to all commit parsers:
 
-- Release commits created by `releaser-pleaser` are ignored.
+- Release commits created by `releaser-pleaser` are ignored. A commit only counts as a release commit if its title contains a valid version, so commits like `release: notes for QA` are still parsed.
 - Merge commits with the default message of git or your forge are ignored, for example `Merge pull request #12 from owner/foo` or `Merge branch 'foo' into 'main'`. Merge commits with a custom message, like the title of the pull request, are parsed like any other commit.
 - If the pull request of a commit has a `rp-commits` code block in its description, the lines of the code block are parsed instead of the commit message. See [Customizing Release Notes](../guides/release-notes.md#editing-the-release-notes).
 
@@ -45,6 +45,7 @@ The scope can not contain spaces or colons. Commits with multiple scopes (`api, 
 - Every commit is releasable.
 - Only the first line of the commit message is used.
 - Commits that do not start with a scope are listed with their whole first line and without a scope.
+- The release pull request and the release commit are titled `release: <version>` (e.g. `release: 2026.47.0`) instead of `chore(<branch>): release <version>`.
 
 All commits are listed in a single `Changes` section of the release notes:
 

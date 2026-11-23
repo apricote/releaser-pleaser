@@ -18,6 +18,7 @@ import (
 	"github.com/apricote/releaser-pleaser/internal/forge/github"
 	"github.com/apricote/releaser-pleaser/internal/forge/gitlab"
 	"github.com/apricote/releaser-pleaser/internal/log"
+	"github.com/apricote/releaser-pleaser/internal/releasepr"
 	"github.com/apricote/releaser-pleaser/internal/updater"
 	"github.com/apricote/releaser-pleaser/internal/versioning"
 )
@@ -129,7 +130,7 @@ func newRunCommand() *cobra.Command {
 				logger.InfoContext(ctx, "signing release commits", "key.id", signKey.PrimaryKey.KeyIdString())
 			}
 
-			commitParser, versioningStrategy, err := parseCommitParserAndVersioning(logger, flagCommitParser, flagVersioning, flagCalVerFormat, flagNow)
+			cfg, err := parseCommitParserAndVersioning(logger, flagCommitParser, flagVersioning, flagCalVerFormat, flagNow)
 			if err != nil {
 				return err
 			}
@@ -138,8 +139,9 @@ func newRunCommand() *cobra.Command {
 				f,
 				logger,
 				flagBranch,
-				commitParser,
-				versioningStrategy,
+				cfg.commitParser,
+				cfg.titleFormat,
+				cfg.versioning,
 				extraFiles,
 				updaters,
 				signKey,
@@ -178,7 +180,16 @@ const (
 	VersioningCalVer = "calver"
 )
 
-func parseCommitParserAndVersioning(logger *slog.Logger, commitParserName, versioningName, calVerFormat, now string) (commitparser.CommitParser, versioning.Strategy, error) {
+type commitParserAndVersioning struct {
+	commitParser commitparser.CommitParser
+	// titleFormat of release pull requests and commits, it matches the commit message format of the commitParser.
+	titleFormat releasepr.TitleFormat
+	versioning  versioning.Strategy
+}
+
+func parseCommitParserAndVersioning(logger *slog.Logger, commitParserName, versioningName, calVerFormat, now string) (commitParserAndVersioning, error) {
+	var cfg commitParserAndVersioning
+
 	// Empty values happen when the GitHub Action/GitLab Component inputs are not set.
 	if commitParserName == "" {
 		commitParserName = CommitParserConventionalCommits
@@ -190,44 +201,44 @@ func parseCommitParserAndVersioning(logger *slog.Logger, commitParserName, versi
 		calVerFormat = versioning.DefaultCalVerFormat
 	}
 
-	var commitParser commitparser.CommitParser
 	switch commitParserName {
 	case CommitParserConventionalCommits:
-		commitParser = conventionalcommits.NewParser(logger)
+		cfg.commitParser = conventionalcommits.NewParser(logger)
+		cfg.titleFormat = releasepr.TitleFormatConventionalCommits
 	case CommitParserScoped:
-		commitParser = scoped.NewParser(logger)
+		cfg.commitParser = scoped.NewParser(logger)
+		cfg.titleFormat = releasepr.TitleFormatScoped
 	default:
-		return nil, nil, fmt.Errorf("unknown --commit-parser: %s", commitParserName)
+		return cfg, fmt.Errorf("unknown --commit-parser: %s", commitParserName)
 	}
 
-	var strategy versioning.Strategy
 	switch versioningName {
 	case VersioningSemVer:
-		strategy = versioning.SemVer
+		cfg.versioning = versioning.SemVer
 	case VersioningCalVer:
 		clock := time.Now
 		if now != "" {
 			parsedNow, err := time.Parse(time.RFC3339, now)
 			if err != nil {
-				return nil, nil, fmt.Errorf("invalid --now: %w", err)
+				return cfg, fmt.Errorf("invalid --now: %w", err)
 			}
 			clock = func() time.Time { return parsedNow }
 		}
 
 		var err error
-		strategy, err = versioning.NewCalVer(calVerFormat, clock)
+		cfg.versioning, err = versioning.NewCalVer(calVerFormat, clock)
 		if err != nil {
-			return nil, nil, fmt.Errorf("invalid --calver-format: %w", err)
+			return cfg, fmt.Errorf("invalid --calver-format: %w", err)
 		}
 	default:
-		return nil, nil, fmt.Errorf("unknown --versioning: %s", versioningName)
+		return cfg, fmt.Errorf("unknown --versioning: %s", versioningName)
 	}
 
 	if commitParserName == CommitParserScoped && versioningName == VersioningSemVer {
-		return nil, nil, fmt.Errorf("--commit-parser=%s can not be used with --versioning=%s, because the commits do not tell which part of the version to bump; use --versioning=%s instead", commitParserName, versioningName, VersioningCalVer)
+		return cfg, fmt.Errorf("--commit-parser=%s can not be used with --versioning=%s, because the commits do not tell which part of the version to bump; use --versioning=%s instead", commitParserName, versioningName, VersioningCalVer)
 	}
 
-	return commitParser, strategy, nil
+	return cfg, nil
 }
 
 func parseExtraFiles(input string) []string {

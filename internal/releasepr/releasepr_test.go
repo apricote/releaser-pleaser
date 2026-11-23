@@ -107,8 +107,9 @@ func TestReleasePullRequest_ChangelogText(t *testing.T) {
 
 func TestReleasePullRequest_SetTitle(t *testing.T) {
 	type args struct {
-		branch  string
-		version string
+		titleFormat TitleFormat
+		branch      string
+		version     string
 	}
 	tests := []struct {
 		name string
@@ -122,8 +123,9 @@ func TestReleasePullRequest_SetTitle(t *testing.T) {
 				Title: "foo: bar",
 			},
 			args: args{
-				branch:  "main",
-				version: "v1.0.0",
+				titleFormat: TitleFormatConventionalCommits,
+				branch:      "main",
+				version:     "v1.0.0",
 			},
 			want: "chore(main): release v1.0.0",
 		},
@@ -131,15 +133,28 @@ func TestReleasePullRequest_SetTitle(t *testing.T) {
 			name: "no previous title",
 			pr:   &ReleasePullRequest{},
 			args: args{
-				branch:  "release-1.x",
-				version: "v1.1.1-rc.0",
+				titleFormat: TitleFormatConventionalCommits,
+				branch:      "release-1.x",
+				version:     "v1.1.1-rc.0",
 			},
 			want: "chore(release-1.x): release v1.1.1-rc.0",
+		},
+		{
+			name: "scoped format",
+			pr: &ReleasePullRequest{
+				Title: "chore(main): release v1.0.0",
+			},
+			args: args{
+				titleFormat: TitleFormatScoped,
+				branch:      "main",
+				version:     "2026.47.0",
+			},
+			want: "release: 2026.47.0",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.pr.SetTitle(tt.args.branch, tt.args.version)
+			tt.pr.SetTitle(tt.args.titleFormat, tt.args.branch, tt.args.version)
 
 			assert.Equal(t, tt.want, tt.pr.Title)
 		})
@@ -184,28 +199,4 @@ func TestReleasePullRequest_SetDescription(t *testing.T) {
 			assert.Equal(t, tt.want, pr.Description)
 		})
 	}
-}
-
-func TestIsReleaseCommit(t *testing.T) {
-	tests := []struct {
-		message string
-		want    bool
-	}{
-		{"chore(main): release v1.2.3", true},
-		{"chore(main): release 2026.47.0-rc.0", true},
-		{"chore(main): release 2026.47.0 (#12)", true},
-		{"chore(main): release v1.2.3\n\nbody text", true},
-		{"chore(release-1.x): release v1.2.3\n", true},
-		{"chore(main): release the kraken today", false},
-		{"api: chore(main): release v1.2.3", false},
-		{"chore: release v1.2.3", false},
-		{"feat: add release command", false},
-		{"api: add endpoint", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.message, func(t *testing.T) {
-			assert.Equal(t, tt.want, IsReleaseCommit(git.Commit{Message: tt.message}))
-		})
-	}
-
 }

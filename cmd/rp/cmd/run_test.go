@@ -118,12 +118,13 @@ func Test_parseCommitParserAndVersioning(t *testing.T) {
 		calVerFormat string
 		now          string
 		wantParser   any
+		wantTitle    string
 		wantErr      string
 	}{
-		{name: "defaults", wantParser: &conventionalcommits.Parser{}},
-		{name: "conventional semver", commitParser: "conventional-commits", versioning: "semver", wantParser: &conventionalcommits.Parser{}},
-		{name: "conventional calver", commitParser: "conventional-commits", versioning: "calver", wantParser: &conventionalcommits.Parser{}},
-		{name: "scoped calver", commitParser: "scoped", versioning: "calver", calVerFormat: "YYYY.0W.MICRO", now: "2026-11-18T12:00:00Z", wantParser: &scoped.Parser{}},
+		{name: "defaults", wantParser: &conventionalcommits.Parser{}, wantTitle: "chore(main): release 1.0"},
+		{name: "conventional semver", commitParser: "conventional-commits", versioning: "semver", wantParser: &conventionalcommits.Parser{}, wantTitle: "chore(main): release 1.0"},
+		{name: "conventional calver", commitParser: "conventional-commits", versioning: "calver", wantParser: &conventionalcommits.Parser{}, wantTitle: "chore(main): release 1.0"},
+		{name: "scoped calver", commitParser: "scoped", versioning: "calver", calVerFormat: "YYYY.0W.MICRO", now: "2026-11-18T12:00:00Z", wantParser: &scoped.Parser{}, wantTitle: "release: 1.0"},
 		{name: "scoped semver", commitParser: "scoped", versioning: "semver", wantErr: "--commit-parser=scoped can not be used with --versioning=semver"},
 		{name: "scoped default versioning", commitParser: "scoped", wantErr: "--commit-parser=scoped can not be used with --versioning=semver"},
 		{name: "unknown parser", commitParser: "foo", wantErr: "unknown --commit-parser: foo"},
@@ -133,25 +134,26 @@ func Test_parseCommitParserAndVersioning(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parser, strategy, err := parseCommitParserAndVersioning(slog.Default(), tt.commitParser, tt.versioning, tt.calVerFormat, tt.now)
+			cfg, err := parseCommitParserAndVersioning(slog.Default(), tt.commitParser, tt.versioning, tt.calVerFormat, tt.now)
 			if tt.wantErr != "" {
 				require.Error(t, err)
 				assert.ErrorContains(t, err, tt.wantErr)
 				return
 			}
 			require.NoError(t, err)
-			assert.IsType(t, tt.wantParser, parser)
-			assert.NotNil(t, strategy)
+			assert.IsType(t, tt.wantParser, cfg.commitParser)
+			assert.Equal(t, tt.wantTitle, cfg.titleFormat.Title("main", "1.0"))
+			assert.NotNil(t, cfg.versioning)
 		})
 	}
 }
 
 func Test_parseCommitParserAndVersioning_CalVerNow(t *testing.T) {
 	// The default format does not pad the week, 2026-02-11 is in ISO week 7.
-	_, strategy, err := parseCommitParserAndVersioning(slog.Default(), "scoped", "calver", "", "2026-02-11T12:00:00Z")
+	cfg, err := parseCommitParserAndVersioning(slog.Default(), "scoped", "calver", "", "2026-02-11T12:00:00Z")
 	require.NoError(t, err)
 
-	version, err := strategy.NextVersion(git.Releases{}, versioning.UnknownVersion, versioning.NextVersionTypeNormal)
+	version, err := cfg.versioning.NextVersion(git.Releases{}, versioning.UnknownVersion, versioning.NextVersionTypeNormal)
 	require.NoError(t, err)
 	assert.Equal(t, "2026.7.0", version)
 }

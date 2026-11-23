@@ -30,6 +30,8 @@ include:
       versioning: calver
 ```
 
+To match the commit format, the release pull request and the release commit are titled `release: <version>`, for example `release: 2026.47.0`.
+
 ## Release Notes
 
 Every commit since the last release is listed in a single `Changes` section of the release notes. Only the first line of the commit message is used. Commits that do not start with a scope are listed without one:

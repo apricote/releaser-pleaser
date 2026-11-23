@@ -121,17 +121,16 @@ func (f *Framework) Run(t *testing.T, r *Repository, extraFiles []string, extraA
 	return err
 }
 
-func (f *Framework) HasReleasePR(t *testing.T, r *Repository, version string) *git.PullRequest {
+func (f *Framework) HasReleasePR(t *testing.T, r *Repository, title string) *git.PullRequest {
 	t.Helper()
 
 	prs, err := f.forge.ListOpenPRs(t, r)
 	require.NoError(t, err)
 
-	expectedTitle := fmt.Sprintf("chore(main): release %s", version)
 	index := slices.IndexFunc(prs, func(pr *git.PullRequest) bool {
-		return pr.Title == expectedTitle
+		return pr.Title == title
 	})
-	require.GreaterOrEqualf(t, index, 0, "release pull request for version %q does not exist", version)
+	require.GreaterOrEqualf(t, index, 0, "release pull request %q does not exist", title)
 
 	return prs[index]
 }
