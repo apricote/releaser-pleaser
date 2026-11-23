@@ -26,6 +26,8 @@ The following inputs are supported by the `apricote/releaser-pleaser` GitHub Act
 | `api-url`     | API URL of the forge this action is run against.                                                                                                                                       |            `""` |                                        `https://forgejo.example.com` |
 | `owner`       | Owner of the repository. Only required for Forgejo Actions.                                                                                                                            |            `""` |                                                           `apricote` |
 | `repo`        | Name of the repository. Only required for Forgejo Actions.                                                                                                                             |            `""` |                                                   `releaser-pleaser` |
+| `signing-key` | ASCII-armored OpenPGP private key used to sign the release commit. See [Signing release commits](../guides/signed-commits.md).                                                        |            `""` |                          `${{secrets.RELEASER_PLEASER_SIGNING_KEY}}` |
+| `signing-key-passphrase` | Passphrase of the signing key, if it is encrypted.                                                                                                                          |            `""` |               `${{secrets.RELEASER_PLEASER_SIGNING_KEY_PASSPHRASE}}` |
 
 ## Outputs
 

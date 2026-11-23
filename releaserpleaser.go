@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
+
 	"github.com/apricote/releaser-pleaser/internal/changelog"
 	"github.com/apricote/releaser-pleaser/internal/commitparser"
 	"github.com/apricote/releaser-pleaser/internal/forge"
@@ -35,9 +37,11 @@ type ReleaserPleaser struct {
 	versioning   versioning.Strategy
 	extraFiles   []string
 	updaters     []updater.Updater
+	signKey      *openpgp.Entity
 }
 
-func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater) *ReleaserPleaser {
+// New creates a ReleaserPleaser; a nil signKey leaves release commits unsigned.
+func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitParser commitparser.CommitParser, versioningStrategy versioning.Strategy, extraFiles []string, updaters []updater.Updater, signKey *openpgp.Entity) *ReleaserPleaser {
 	return &ReleaserPleaser{
 		forge:        forge,
 		logger:       logger,
@@ -46,6 +50,7 @@ func New(forge forge.Forge, logger *slog.Logger, targetBranch string, commitPars
 		versioning:   versioningStrategy,
 		extraFiles:   extraFiles,
 		updaters:     updaters,
+		signKey:      signKey,
 	}
 }
 
@@ -303,7 +308,7 @@ func (rp *ReleaserPleaser) runReconcileReleasePR(ctx context.Context) error {
 	}
 
 	releaseCommitMessage := fmt.Sprintf("chore(%s): release %s", rp.targetBranch, nextVersion)
-	releaseCommit, err := repo.Commit(ctx, releaseCommitMessage, releaseCommitAuthor)
+	releaseCommit, err := repo.Commit(ctx, releaseCommitMessage, releaseCommitAuthor, rp.signKey)
 	if err != nil {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}

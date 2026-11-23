@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -169,7 +170,8 @@ func (r *Repository) UpdateFile(_ context.Context, path string, create bool, upd
 	return nil
 }
 
-func (r *Repository) Commit(_ context.Context, message string, author Author) (Commit, error) {
+// Commit commits the staged changes; a nil signKey leaves the commit unsigned.
+func (r *Repository) Commit(_ context.Context, message string, author Author, signKey *openpgp.Entity) (Commit, error) {
 	worktree, err := r.r.Worktree()
 	if err != nil {
 		return Commit{}, err
@@ -180,6 +182,7 @@ func (r *Repository) Commit(_ context.Context, message string, author Author) (C
 	releaseCommitHash, err := worktree.Commit(message, &git.CommitOptions{
 		Author:    author.signature(now),
 		Committer: author.signature(now),
+		SignKey:   signKey,
 	})
 	if err != nil {
 		return Commit{}, fmt.Errorf("failed to commit changes: %w", err)
