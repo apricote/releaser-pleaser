@@ -36,11 +36,12 @@ When none of them are set, the release commit is unsigned. When a key is set, th
 
 ### GitHub Actions
 
-Store the key and its passphrase as repository secrets and pass them to the action:
+Store the key and its passphrase as repository secrets and pass them to the action, together with the token of the user that owns the key:
 
 ```yaml
 - uses: apricote/releaser-pleaser@v0.9.0
   with:
+    token: ${{ secrets.RELEASER_PLEASER_TOKEN }}
     signing-key: ${{ secrets.RELEASER_PLEASER_SIGNING_KEY }}
     signing-key-passphrase: ${{ secrets.RELEASER_PLEASER_SIGNING_KEY_PASSPHRASE }}
 ```

@@ -72,6 +72,12 @@ func Test_signingKeyFromEnv(t *testing.T) {
 			}
 
 			got, err := signingKeyFromEnv()
+
+			for _, name := range []string{EnvSigningKey, EnvSigningKeyFile, EnvSigningKeyPassphrase} {
+				_, set := os.LookupEnv(name)
+				assert.False(t, set, "%s is still set", name)
+			}
+
 			if tt.wantErr != "" {
 				assert.ErrorContains(t, err, tt.wantErr)
 				return

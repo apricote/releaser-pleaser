@@ -57,7 +57,7 @@ func TestRunMultipleSimpleReleases(t *testing.T) {
 			return "# Hello World", nil
 		})
 
-		_, err := clonedRepo.Commit(t.Context(), "feat: cool new thing", TestAuthor)
+		_, err := clonedRepo.Commit(t.Context(), "feat: cool new thing", TestAuthor, nil)
 		require.NoError(t, err)
 
 		clonedRepo.ForcePush(t.Context(), e2e.TestDefaultBranch)
@@ -79,7 +79,7 @@ func TestRunMultipleSimpleReleases(t *testing.T) {
 			return "# Goodbye", nil
 		})
 
-		_, err := clonedRepo.Commit(t.Context(), "fix: readme was broken", TestAuthor)
+		_, err := clonedRepo.Commit(t.Context(), "fix: readme was broken", TestAuthor, nil)
 		require.NoError(t, err)
 
 		clonedRepo.ForcePush(t.Context(), e2e.TestDefaultBranch)

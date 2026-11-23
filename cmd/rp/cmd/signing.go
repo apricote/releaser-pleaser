@@ -16,7 +16,16 @@ const (
 )
 
 // signingKeyFromEnv loads the release commit signing key, returning nil when none is configured.
+//
+// It removes the signing variables from the environment, so the private key and passphrase do not leak
+// into child processes or environment dumps for the rest of the run.
 func signingKeyFromEnv() (*openpgp.Entity, error) {
+	defer func() {
+		for _, name := range []string{EnvSigningKey, EnvSigningKeyFile, EnvSigningKeyPassphrase} {
+			_ = os.Unsetenv(name)
+		}
+	}()
+
 	armored := os.Getenv(EnvSigningKey)
 
 	if path := os.Getenv(EnvSigningKeyFile); path != "" {
