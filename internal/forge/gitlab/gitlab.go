@@ -15,7 +15,6 @@ import (
 
 	"github.com/apricote/releaser-pleaser/internal/forge"
 	"github.com/apricote/releaser-pleaser/internal/git"
-	"github.com/apricote/releaser-pleaser/internal/pointer"
 	"github.com/apricote/releaser-pleaser/internal/releasepr"
 )
 
@@ -98,7 +97,7 @@ func (g *GitLab) LatestTags(ctx context.Context) (git.Releases, error) {
 
 	tags, err := all(func(listOptions gitlab.ListOptions) ([]*gitlab.Tag, *gitlab.Response, error) {
 		return g.client.Tags.ListTags(g.options.Path, &gitlab.ListTagsOptions{
-			OrderBy:     pointer.Pointer("updated"),
+			OrderBy:     new("updated"),
 			ListOptions: listOptions,
 		}, gitlab.WithContext(ctx))
 	})
@@ -232,9 +231,9 @@ func (g *GitLab) EnsureLabelsExist(ctx context.Context, labels []releasepr.Label
 		}) {
 			g.log.Info("creating label in repository", "label.name", label)
 			_, _, err := g.client.Labels.CreateLabel(g.options.Path, &gitlab.CreateLabelOptions{
-				Name:        pointer.Pointer(label.Name),
-				Color:       pointer.Pointer("#" + label.Color),
-				Description: pointer.Pointer(label.Description),
+				Name:        new(label.Name),
+				Color:       new("#" + label.Color),
+				Description: new(label.Description),
 			},
 			)
 			if err != nil {
@@ -250,13 +249,11 @@ func (g *GitLab) PullRequestForBranch(ctx context.Context, branch string) (*rele
 	// There should only be a single open merge request from branch into g.options.BaseBranch at any given moment.
 	// We can skip pagination and just return the first result.
 	mrs, _, err := g.client.MergeRequests.ListProjectMergeRequests(g.options.Path, &gitlab.ListProjectMergeRequestsOptions{
-		State:        pointer.Pointer(PRStateOpen),
-		SourceBranch: pointer.Pointer(branch),
-		TargetBranch: pointer.Pointer(g.options.BaseBranch),
-		ListOptions: gitlab.ListOptions{
-			Page:    1,
-			PerPage: PerPageMax,
-		},
+		State:        new(PRStateOpen),
+		SourceBranch: new(branch),
+		TargetBranch: new(g.options.BaseBranch),
+		Page:         1,
+		PerPage:      PerPageMax,
 	}, gitlab.WithContext(ctx))
 	if err != nil {
 		return nil, err
@@ -338,7 +335,7 @@ func (g *GitLab) SetPullRequestLabels(ctx context.Context, pr *releasepr.Release
 
 func (g *GitLab) ClosePullRequest(ctx context.Context, pr *releasepr.ReleasePullRequest) error {
 	_, _, err := g.client.MergeRequests.UpdateMergeRequest(g.options.Path, pr.ID, &gitlab.UpdateMergeRequestOptions{
-		StateEvent: pointer.Pointer(PRStateEventClose),
+		StateEvent: new(PRStateEventClose),
 	}, gitlab.WithContext(ctx))
 
 	if err != nil {
@@ -351,9 +348,9 @@ func (g *GitLab) ClosePullRequest(ctx context.Context, pr *releasepr.ReleasePull
 func (g *GitLab) PendingReleases(ctx context.Context, pendingLabel releasepr.Label) ([]*releasepr.ReleasePullRequest, error) {
 	glMRs, err := all(func(listOptions gitlab.ListOptions) ([]*gitlab.BasicMergeRequest, *gitlab.Response, error) {
 		return g.client.MergeRequests.ListProjectMergeRequests(g.options.Path, &gitlab.ListProjectMergeRequestsOptions{
-			State:        pointer.Pointer(PRStateMerged),
+			State:        new(PRStateMerged),
 			Labels:       &gitlab.LabelOptions{pendingLabel.Name},
-			TargetBranch: pointer.Pointer(g.options.BaseBranch),
+			TargetBranch: new(g.options.BaseBranch),
 			ListOptions:  listOptions,
 		}, gitlab.WithContext(ctx))
 	})

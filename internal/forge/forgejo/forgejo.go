@@ -14,11 +14,8 @@ import (
 
 	"github.com/apricote/releaser-pleaser/internal/forge"
 	"github.com/apricote/releaser-pleaser/internal/git"
-	"github.com/apricote/releaser-pleaser/internal/pointer"
 	"github.com/apricote/releaser-pleaser/internal/releasepr"
 )
-
-const ()
 
 var _ forge.Forge = &Forgejo{}
 
@@ -385,7 +382,7 @@ func (f *Forgejo) ClosePullRequest(_ context.Context, pr *releasepr.ReleasePullR
 	_, _, err := f.client.EditPullRequest(
 		f.options.Owner, f.options.Repo,
 		pr.ID, forgejo.EditPullRequestOption{
-			State: pointer.Pointer(forgejo.StateClosed),
+			State: new(forgejo.StateClosed),
 		},
 	)
 	if err != nil {

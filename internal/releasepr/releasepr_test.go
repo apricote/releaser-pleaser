@@ -94,9 +94,7 @@ func TestReleasePullRequest_ChangelogText(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := &ReleasePullRequest{
-				PullRequest: git.PullRequest{
-					Description: tt.description,
-				},
+				Description: tt.description,
 			}
 			got, err := pr.ChangelogText()
 			if !tt.wantErr(t, err, "ChangelogText()") {
@@ -121,9 +119,7 @@ func TestReleasePullRequest_SetTitle(t *testing.T) {
 		{
 			name: "simple update",
 			pr: &ReleasePullRequest{
-				PullRequest: git.PullRequest{
-					Title: "foo: bar",
-				},
+				Title: "foo: bar",
 			},
 			args: args{
 				branch:  "main",
