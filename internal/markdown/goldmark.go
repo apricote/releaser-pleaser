@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	markdown "github.com/teekennedy/goldmark-markdown"
-	"github.com/yuin/goldmark"
-	gast "github.com/yuin/goldmark/ast"
-	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/text"
-	"github.com/yuin/goldmark/util"
+	"github.com/yuin/goldmark/v2"
+	gast "github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/text"
+	"github.com/yuin/goldmark/v2/util"
 
 	"github.com/apricote/releaser-pleaser/internal/markdown/extensions"
 	"github.com/apricote/releaser-pleaser/internal/markdown/extensions/ast"
