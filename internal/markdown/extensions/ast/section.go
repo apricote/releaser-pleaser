@@ -1,7 +1,7 @@
 package ast
 
 import (
-	gast "github.com/yuin/goldmark/ast"
+	gast "github.com/yuin/goldmark/v2/ast"
 )
 
 // A Section struct represents a section of elements.
